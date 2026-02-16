@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { requestPortalAccess, signInWithPIN, checkMemberPINStatus } from '@/lib/actions/pin-auth';
-import { createClient } from '@/lib/supabase/client';
+import { requestPortalAccess, signInWithPIN, checkMemberPINStatus, getGymBySlug } from '@/lib/actions/pin-auth';
 import { toast } from 'sonner';
 import { Building2, Loader2, Mail, Lock } from 'lucide-react';
 
@@ -51,22 +50,17 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
         return;
       }
 
-      // Fetch from database using slug
+      // Fetch from database using slug (server action bypasses RLS)
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('gyms')
-          .select('id, name, logo_url')
-          .eq('slug', params.slug)
-          .single();
+        const result = await getGymBySlug(params.slug);
 
-        if (error || !data) {
-          toast.error('Gym not found');
+        if (!result.success || !result.data) {
+          toast.error(result.error || 'Gym not found');
           setIsLoadingGym(false);
           return;
         }
 
-        setGym(data);
+        setGym(result.data);
       } catch (error) {
         console.error('Error fetching gym:', error);
         toast.error('Failed to load gym information');

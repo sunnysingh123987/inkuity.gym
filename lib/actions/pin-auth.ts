@@ -114,6 +114,30 @@ function verifySessionToken(token: string): { memberId: string; gymId: string } 
 }
 
 /**
+ * Get gym info by slug (bypasses RLS for public access like QR scan sign-in)
+ */
+export async function getGymBySlug(slug: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data: gym, error } = await supabase
+      .from('gyms')
+      .select('id, name, logo_url')
+      .eq('slug', slug)
+      .single();
+
+    if (error || !gym) {
+      return { success: false, error: 'Gym not found' };
+    }
+
+    return { success: true, data: gym };
+  } catch (error: any) {
+    console.error('Error fetching gym:', error);
+    return { success: false, error: 'Failed to load gym information' };
+  }
+}
+
+/**
  * Check if member has existing PIN
  */
 export async function checkMemberPINStatus(email: string, gymId: string) {
