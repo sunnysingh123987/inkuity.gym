@@ -111,11 +111,7 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
         code={qrCode.code}
         gymName={gym?.name || 'Unknown Gym'}
         qrName={qrCode.name}
-        scanUrl={
-          process.env.NEXT_PUBLIC_APP_URL
-            ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/s/${qrCode.code}`
-            : `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/s/${qrCode.code}`
-        }
+        scanUrl={`${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')}/s/${qrCode.code}`}
       />
     </div>
   )

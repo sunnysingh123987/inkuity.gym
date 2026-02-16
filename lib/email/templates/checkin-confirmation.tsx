@@ -101,7 +101,7 @@ export const CheckInConfirmation = ({
                 manage diet plans, and see your check-in history.
               </Text>
               <Button
-                href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${gymSlug}/portal/sign-in`}
+                href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://inkuity.com'}/${gymSlug}/portal/sign-in`}
                 style={portalButton}
               >
                 Access Member Portal
