@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(supabase db push:*)",
+      "Bash(node -e:*)",
+      "Bash(node scripts/run-pin-migration.mjs:*)",
+      "Bash(node scripts/apply-migration.mjs:*)",
+      "Bash(node scripts/run-migration-api.mjs:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(netstat:*)",
+      "Bash(node scripts/create-test-member.mjs:*)",
+      "WebSearch",
+      "WebFetch(domain:www.mindbodyonline.com)",
+      "WebFetch(domain:www.glofox.com)",
+      "WebFetch(domain:gymdesk.com)",
+      "WebFetch(domain:zenplanner.com)",
+      "WebFetch(domain:www.pike13.com)",
+      "Bash(findstr:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(xargs:*)",
+      "Bash(npx next build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ]
+  }
+}
