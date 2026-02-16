@@ -53,8 +53,9 @@ export function MealManagement({
   const handleSaveMeal = async (mealData: any) => {
     if (!selectedDate) return;
 
-    const result = await saveMeal(planId, {
+    const result = await saveMeal({
       ...mealData,
+      dietPlanId: planId,
       mealType: selectedMealType,
       scheduledFor: selectedDate.toISOString(),
     });
@@ -70,7 +71,8 @@ export function MealManagement({
   };
 
   const handleToggleMeal = async (mealId: string) => {
-    const result = await toggleMealCompletion(mealId);
+    const meal = meals.find((m: any) => m.id === mealId);
+    const result = await toggleMealCompletion(mealId, !meal?.completed);
 
     if (result.success) {
       // Update local state

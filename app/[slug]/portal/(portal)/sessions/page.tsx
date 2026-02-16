@@ -59,9 +59,10 @@ export default async function SessionsPage({
       {sessions && sessions.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {sessions.map((workoutSession) => {
-            const routineName = Array.isArray(workoutSession.workout_routines)
-              ? workoutSession.workout_routines[0]?.name
-              : workoutSession.workout_routines?.name;
+            const routines = workoutSession.workout_routines as any;
+            const routineName = Array.isArray(routines)
+              ? routines[0]?.name
+              : routines?.name;
 
             return (
               <Link

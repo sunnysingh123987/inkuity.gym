@@ -62,13 +62,13 @@ export function DietPlanForm({
       memberId,
       gymId,
       name: formData.name,
-      description: formData.description || null,
+      description: formData.description || undefined,
       targetCalories: parseInt(formData.targetCalories),
       targetProtein: parseInt(formData.targetProtein),
       targetCarbs: parseInt(formData.targetCarbs),
       targetFat: parseInt(formData.targetFat),
       startDate: formData.startDate,
-      endDate: formData.endDate || null,
+      endDate: formData.endDate || undefined,
       isActive: formData.isActive,
     });
 

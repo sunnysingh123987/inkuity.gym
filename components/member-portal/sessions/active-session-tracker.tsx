@@ -37,7 +37,11 @@ export function ActiveSessionTracker({
     : session.workout_routines?.name;
 
   const handleExerciseComplete = (exerciseId: string) => {
-    setCompletedExercises(new Set([...completedExercises, exerciseId]));
+    setCompletedExercises((prev) => {
+      const next = new Set(prev);
+      next.add(exerciseId);
+      return next;
+    });
   };
 
   const handleCompleteWorkout = async () => {
