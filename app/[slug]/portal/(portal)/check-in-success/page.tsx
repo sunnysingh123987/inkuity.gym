@@ -86,13 +86,13 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full border-4 border-indigo-100 flex items-center justify-center mx-auto">
-              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <div className="w-20 h-20 rounded-full border-4 border-brand-cyan-500/20 flex items-center justify-center mx-auto">
+              <Loader2 className="w-10 h-10 text-brand-cyan-500 animate-spin" />
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Recording your check-in...</h2>
-            <p className="text-sm text-gray-500 mt-1">Just a moment</p>
+            <h2 className="text-lg font-semibold text-white">Recording your check-in...</h2>
+            <p className="text-sm text-slate-400 mt-1">Just a moment</p>
           </div>
         </div>
       </div>
@@ -103,13 +103,13 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
   if (error) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md bg-slate-900 border-slate-800">
           <CardContent className="text-center py-10 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Check-in Failed</h2>
-            <p className="text-gray-500">{error}</p>
+            <h2 className="text-xl font-semibold text-white">Check-in Failed</h2>
+            <p className="text-slate-400">{error}</p>
             <Button onClick={() => router.push(`/${params.slug}/portal/dashboard`)}>
               Go to Dashboard
             </Button>
@@ -135,38 +135,38 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       {/* Check-in Confirmation */}
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-8 text-center text-white">
+      <Card className="overflow-hidden bg-slate-900 border-slate-800">
+        <div className="bg-gradient-to-r from-brand-cyan-500 via-brand-purple-500 to-brand-pink-500 px-6 py-8 text-center text-white">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm mb-4">
             <CheckCircle2 className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Checked In!</h1>
-          <p className="text-green-100 mt-1">
+          <p className="text-white/80 mt-1">
             Welcome, {checkInData.memberName}
           </p>
         </div>
 
         <CardContent className="py-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">{formattedDate}</span>
-            <span className="font-mono font-semibold text-gray-900">{formattedTime}</span>
+            <span className="text-slate-400">{formattedDate}</span>
+            <span className="font-mono font-semibold text-white">{formattedTime}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Subscription Warning */}
       {checkInData.subscriptionWarning && (
-        <Card className="border-amber-300 bg-amber-50">
+        <Card className="border-amber-500/30 bg-amber-500/10">
           <CardContent className="py-4">
             <div className="flex gap-3">
               <div className="flex-shrink-0 mt-0.5">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-amber-900 text-sm">
+                <h3 className="font-semibold text-amber-200 text-sm">
                   Subscription {checkInData.membershipStatus}
                 </h3>
-                <p className="text-amber-700 text-sm mt-0.5">
+                <p className="text-amber-300 text-sm mt-0.5">
                   Your membership is currently <strong>{checkInData.membershipStatus}</strong>.
                   {checkInData.subscriptionEndDate && (
                     <>
@@ -190,7 +190,7 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
 
       {/* Workout Focus Selector */}
       {showWorkoutSelector && (
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardContent className="py-6">
             <WorkoutFocusSelector
               checkInId={checkInData.checkInId}
@@ -206,7 +206,7 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
           <Button
             variant="ghost"
             onClick={() => router.push(`/${params.slug}/portal/dashboard`)}
-            className="text-gray-500"
+            className="text-slate-400"
           >
             Go to Dashboard <ArrowRight className="w-4 h-4 ml-1" />
           </Button>

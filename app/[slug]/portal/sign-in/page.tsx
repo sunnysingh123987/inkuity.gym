@@ -171,10 +171,10 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
 
   if (isLoadingGym) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-slate-900 border-slate-800">
           <CardContent className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand-cyan-500" />
           </CardContent>
         </Card>
       </div>
@@ -183,10 +183,10 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
 
   if (!gym) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-slate-900 border-slate-800">
           <CardContent className="text-center py-12">
-            <p className="text-gray-600">Gym not found</p>
+            <p className="text-slate-400">Gym not found</p>
           </CardContent>
         </Card>
       </div>
@@ -194,8 +194,8 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-slate-900 border-slate-800">
         <CardHeader className="text-center">
           {gym.logo_url ? (
             <div className="flex justify-center mb-4">
@@ -207,20 +207,20 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
             </div>
           ) : (
             <div className="flex justify-center mb-4">
-              <div className="h-16 w-16 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500 flex items-center justify-center">
                 <Building2 className="h-8 w-8 text-white" />
               </div>
             </div>
           )}
 
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-2xl text-white">
             {step === 'email'
               ? searchParams.checkin === 'true'
                 ? 'Gym Check-in'
                 : 'Member Portal'
               : 'Enter Your PIN'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-slate-400">
             {step === 'email'
               ? searchParams.checkin === 'true'
                 ? `Sign in to check in at ${gym.name}`
@@ -236,7 +236,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
             // Step 1: Enter Email
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email" className="text-slate-300">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -246,10 +246,11 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
                   disabled={isLoading}
                   required
                   autoFocus
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full gradient-brand text-white shadow-glow-cyan hover:shadow-glow-pink" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -263,7 +264,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
                 )}
               </Button>
 
-              <div className="text-center text-xs text-gray-500 pt-2">
+              <div className="text-center text-xs text-slate-500 pt-2">
                 <p>First time? Check in at the gym to get started</p>
               </div>
             </form>
@@ -271,7 +272,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
             // Step 2: Enter PIN
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pin">4-Digit PIN</Label>
+                <Label htmlFor="pin" className="text-slate-300">4-Digit PIN</Label>
                 <Input
                   id="pin"
                   type="text"
@@ -286,14 +287,14 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
                   disabled={isLoading}
                   required
                   autoFocus
-                  className="text-center text-2xl tracking-widest font-mono"
+                  className="text-center text-2xl tracking-widest font-mono bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 />
-                <p className="text-xs text-gray-500 text-center">
+                <p className="text-xs text-slate-500 text-center">
                   {hasExistingPin ? 'Enter your existing PIN' : 'Check your email for the PIN'}
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full gradient-brand text-white shadow-glow-cyan hover:shadow-glow-pink" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -315,7 +316,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
                     setPin('');
                     setHasExistingPin(false);
                   }}
-                  className="text-indigo-600 hover:underline"
+                  className="text-brand-cyan-400 hover:text-brand-cyan-300"
                   disabled={isLoading}
                 >
                   ← Change email
@@ -324,7 +325,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
                 <button
                   type="button"
                   onClick={handleRequestNewPIN}
-                  className="text-gray-600 hover:underline"
+                  className="text-slate-400 hover:text-slate-300"
                   disabled={isLoading}
                 >
                   {hasExistingPin ? 'Request new PIN' : 'Resend PIN'}

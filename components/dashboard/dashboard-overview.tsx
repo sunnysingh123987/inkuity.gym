@@ -18,18 +18,18 @@ export function DashboardOverview({ gyms }: DashboardOverviewProps) {
     <div className="space-y-6">
       {/* Welcome Card */}
       {!hasGyms && (
-        <Card className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+        <Card className="bg-gradient-to-r from-brand-cyan-500 via-brand-purple-500 to-brand-pink-500 text-white">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Welcome to Inkuity! 🎉</h2>
-                <p className="mt-2 text-indigo-100">
+                <p className="mt-2 text-brand-cyan-100">
                   Get started by creating your first gym. Once set up, you can generate
                   QR codes and start tracking member analytics.
                 </p>
               </div>
               <Link href="/gyms/new">
-                <Button variant="secondary" className="bg-white text-indigo-600 hover:bg-indigo-50">
+                <Button variant="secondary" className="bg-white text-brand-cyan-600 hover:bg-brand-cyan-50">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Your First Gym
                 </Button>
@@ -128,8 +128,8 @@ export function DashboardOverview({ gyms }: DashboardOverviewProps) {
                   className="flex items-center justify-between py-4 hover:opacity-70"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-indigo-600" />
+                    <div className="h-10 w-10 rounded-lg bg-brand-cyan-100 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-brand-cyan-600" />
                     </div>
                     <div>
                       <p className="font-medium">{gym.name}</p>

@@ -42,7 +42,7 @@ export default async function PortalLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-950">
       <PortalHeader gym={gym} member={member} />
 
       <div className="flex">

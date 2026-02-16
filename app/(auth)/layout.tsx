@@ -14,7 +14,7 @@ export default function AuthLayout({
             href="/"
             className="flex items-center gap-2 rounded-lg transition-opacity hover:opacity-90"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500">
               <QrCode className="h-5 w-5 text-white" />
             </div>
             <span className="text-lg font-bold text-gray-900">Inkuity</span>
@@ -28,7 +28,7 @@ export default function AuthLayout({
             </Link>
             <Link
               href="/register"
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+              className="rounded-md bg-brand-cyan-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-cyan-600"
             >
               Get started
             </Link>

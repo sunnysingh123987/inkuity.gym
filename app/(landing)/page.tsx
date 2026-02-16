@@ -33,9 +33,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-emerald-600 shadow-lg shadow-blue-500/25">
-                <Dumbbell className="h-5 w-5 text-white" />
-              </div>
+              <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
               <span className="text-xl font-bold tracking-tight text-slate-900">Inkuity</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
@@ -51,7 +49,7 @@ export default function LandingPage() {
                 Sign in
               </Link>
               <Link href="/register">
-                <Button className="rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 px-5 shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 hover:scale-105">
+                <Button className="rounded-xl bg-gradient-to-r from-brand-cyan-600 to-brand-pink-600 px-5 shadow-glow-cyan hover:shadow-glow-pink transition-all duration-300 hover:scale-105">
                   Start Free Trial
                 </Button>
               </Link>
@@ -61,23 +59,23 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-cyan-50 via-white to-white">
         {/* Background Effects */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(37,99,235,0.12),transparent)]" />
-        <div className="absolute top-24 left-1/4 h-72 w-72 rounded-full bg-blue-200/30 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-emerald-200/20 blur-3xl" />
+        <div className="absolute top-24 left-1/4 h-72 w-72 rounded-full bg-brand-cyan-200/30 blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-brand-pink-200/20 blur-3xl" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200/60 bg-blue-50/80 px-4 py-1.5 text-sm font-medium text-blue-700">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-cyan-200/60 bg-brand-cyan-50/80 px-4 py-1.5 text-sm font-medium text-brand-cyan-700">
                 <Sparkles className="h-4 w-4" />
                 Trusted by 500+ gyms worldwide
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
                 Everything Your Gym Needs.{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-brand-cyan-400 via-brand-purple-400 to-brand-pink-400 bg-clip-text text-transparent">
                   All in One Place.
                 </span>
               </h1>
@@ -88,7 +86,7 @@ export default function LandingPage() {
                 <Link href="/register">
                   <Button
                     size="lg"
-                    className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-600 px-8 py-6 text-base font-semibold shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 hover:scale-105"
+                    className="gap-2 rounded-xl bg-gradient-to-r from-brand-cyan-600 to-brand-pink-600 px-8 py-6 text-base font-semibold shadow-glow-cyan hover:shadow-glow-pink transition-all duration-300 hover:scale-105"
                   >
                     Start Free Trial
                     <ArrowRight className="h-5 w-5" />
@@ -106,7 +104,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-2">
                     {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-emerald-400" />
+                      <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-brand-cyan-400 to-brand-pink-400" />
                     ))}
                   </div>
                   <span className="text-sm text-slate-600">500+ gyms</span>
@@ -122,10 +120,10 @@ export default function LandingPage() {
 
             {/* Right: Visual */}
             <div className="relative lg:h-[500px] hidden lg:block">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-emerald-100 rounded-3xl shadow-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-cyan-100 to-brand-pink-100 rounded-3xl shadow-2xl" />
               <div className="absolute inset-4 bg-white rounded-2xl shadow-inner flex items-center justify-center">
                 <div className="text-center p-8">
-                  <Dumbbell className="h-24 w-24 mx-auto text-blue-600 mb-4" />
+                  <Dumbbell className="h-24 w-24 mx-auto text-brand-cyan-600 mb-4" />
                   <p className="text-slate-600 text-sm">Dashboard Preview</p>
                   <p className="text-xs text-slate-400 mt-2">Real gym management interface</p>
                 </div>
@@ -166,50 +164,50 @@ export default function LandingPage() {
                 icon: Smartphone,
                 title: 'Member Portal & Mobile App',
                 description: 'Give members their own branded portal to track workouts, nutrition, and progress.',
-                gradient: 'from-blue-500 to-cyan-500',
-                color: 'blue',
+                gradient: 'from-brand-cyan-500 to-brand-cyan-500',
+                color: 'brand-cyan',
               },
               {
                 icon: QrCode,
                 title: 'Smart QR Check-Ins',
                 description: 'Contactless check-ins with instant notifications and attendance tracking.',
-                gradient: 'from-emerald-500 to-teal-500',
-                color: 'emerald',
+                gradient: 'from-brand-cyan-500 to-brand-cyan-600',
+                color: 'brand-cyan',
               },
               {
                 icon: Dumbbell,
                 title: 'Workout Tracking',
                 description: 'Create routines, log exercises, track PRs, and monitor member progress over time.',
-                gradient: 'from-orange-500 to-red-500',
-                color: 'orange',
+                gradient: 'from-brand-pink-500 to-brand-pink-600',
+                color: 'brand-pink',
               },
               {
                 icon: Heart,
                 title: 'Nutrition & Diet Plans',
                 description: 'Build custom meal plans, track macros, and help members reach their goals.',
-                gradient: 'from-pink-500 to-rose-500',
-                color: 'pink',
+                gradient: 'from-brand-pink-500 to-brand-pink-600',
+                color: 'brand-pink',
               },
               {
                 icon: BarChart3,
                 title: 'Advanced Analytics',
                 description: 'Track attendance, retention, revenue, and member engagement with powerful dashboards.',
-                gradient: 'from-violet-500 to-purple-500',
-                color: 'violet',
+                gradient: 'from-brand-purple-500 to-brand-purple-600',
+                color: 'brand-purple',
               },
               {
                 icon: Users,
                 title: 'Member Management',
                 description: 'Complete CRM with profiles, memberships, billing, and communication tools.',
-                gradient: 'from-blue-500 to-indigo-500',
-                color: 'blue',
+                gradient: 'from-brand-cyan-500 to-brand-cyan-600',
+                color: 'brand-cyan',
               },
             ].map((feature) => {
               const Icon = feature.icon
               return (
                 <div
                   key={feature.title}
-                  className="group relative rounded-2xl border border-slate-200/60 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 hover:border-blue-200/60"
+                  className="group relative rounded-2xl border border-slate-200/60 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 hover:border-brand-cyan-200/60"
                 >
                   <div
                     className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg group-hover:scale-110 transition-transform`}
@@ -228,7 +226,7 @@ export default function LandingPage() {
           </div>
 
           {/* Additional Features */}
-          <div className="mt-16 rounded-3xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-blue-50/30 p-8 sm:p-12">
+          <div className="mt-16 rounded-3xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-brand-cyan-50/30 p-8 sm:p-12">
             <h3 className="text-2xl font-bold text-slate-900 text-center mb-8">Plus So Much More</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
@@ -244,8 +242,8 @@ export default function LandingPage() {
                 const Icon = item.icon
                 return (
                   <div key={item.text} className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/10">
-                      <Icon className="h-5 w-5 text-blue-600" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-cyan-600/10">
+                      <Icon className="h-5 w-5 text-brand-cyan-600" />
                     </div>
                     <span className="text-sm font-medium text-slate-700">{item.text}</span>
                   </div>
@@ -257,14 +255,14 @@ export default function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 to-emerald-600 py-24 text-white">
+      <section className="relative bg-gradient-to-br from-brand-cyan-600 to-brand-pink-600 py-24 text-white">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-10" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl font-bold sm:text-4xl">
               Built for Gym Owners, Loved by Members
             </h2>
-            <p className="mt-4 text-lg text-blue-100">
+            <p className="mt-4 text-lg text-brand-cyan-100">
               Streamline your operations and deliver an exceptional member experience
             </p>
           </div>
@@ -290,7 +288,7 @@ export default function LandingPage() {
               <div key={item.label} className="text-center">
                 <div className="text-5xl font-bold mb-2">{item.stat}</div>
                 <div className="text-xl font-semibold mb-2">{item.label}</div>
-                <div className="text-blue-100">{item.description}</div>
+                <div className="text-brand-cyan-100">{item.description}</div>
               </div>
             ))}
           </div>
@@ -412,7 +410,7 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`relative rounded-2xl p-8 transition-all duration-300 ${
                   plan.popular
-                    ? 'bg-gradient-to-br from-blue-600 to-emerald-600 text-white shadow-2xl shadow-blue-500/30 ring-2 ring-blue-400/50 scale-105'
+                    ? 'bg-gradient-to-br from-brand-purple-500 to-brand-pink-500 text-white shadow-2xl shadow-brand-purple-500/30 ring-2 ring-brand-purple-400/50 scale-105'
                     : 'border border-slate-200/60 bg-white shadow-sm hover:shadow-lg'
                 }`}
               >
@@ -438,7 +436,7 @@ export default function LandingPage() {
                   </span>
                   <span
                     className={`ml-2 ${
-                      plan.popular ? 'text-blue-100' : 'text-slate-500'
+                      plan.popular ? 'text-brand-purple-100' : 'text-slate-500'
                     }`}
                   >
                     /{plan.period}
@@ -450,12 +448,12 @@ export default function LandingPage() {
                     <li key={feature} className="flex items-start gap-3">
                       <Check
                         className={`h-5 w-5 shrink-0 mt-0.5 ${
-                          plan.popular ? 'text-blue-100' : 'text-emerald-500'
+                          plan.popular ? 'text-brand-purple-100' : 'text-brand-cyan-500'
                         }`}
                       />
                       <span
                         className={
-                          plan.popular ? 'text-blue-50' : 'text-slate-600'
+                          plan.popular ? 'text-brand-purple-50' : 'text-slate-600'
                         }
                       >
                         {feature}
@@ -468,7 +466,7 @@ export default function LandingPage() {
                   <Button
                     className={`w-full rounded-xl py-6 text-base font-semibold ${
                       plan.popular
-                        ? 'bg-white text-blue-600 shadow-lg hover:bg-blue-50'
+                        ? 'bg-white text-brand-purple-600 shadow-lg hover:bg-brand-purple-50'
                         : 'bg-slate-900 text-white hover:bg-slate-800'
                     }`}
                   >
@@ -482,20 +480,20 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-emerald-600 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-cyan-600 via-brand-cyan-700 to-brand-pink-600 py-24">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_120%,rgba(255,255,255,0.15),transparent)]" />
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white sm:text-5xl">
             Ready to Transform Your Gym?
           </h2>
-          <p className="mt-6 text-xl text-blue-100">
+          <p className="mt-6 text-xl text-brand-cyan-100">
             Join 500+ gyms already growing their business with Inkuity. Start your free trial today.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
               <Button
                 size="lg"
-                className="rounded-xl bg-white px-10 py-6 text-lg font-semibold text-blue-600 shadow-xl transition-all hover:bg-blue-50 hover:scale-105"
+                className="rounded-xl bg-white px-10 py-6 text-lg font-semibold text-brand-cyan-600 shadow-xl transition-all hover:bg-brand-cyan-50 hover:scale-105"
               >
                 Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -509,21 +507,19 @@ export default function LandingPage() {
               Schedule Demo
             </Button>
           </div>
-          <p className="mt-6 text-sm text-blue-100">
+          <p className="mt-6 text-sm text-brand-cyan-100">
             ✓ No credit card required &nbsp;•&nbsp; ✓ 14-day free trial &nbsp;•&nbsp; ✓ Cancel anytime
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/60 bg-slate-900 py-16">
+      <footer className="border-t border-slate-200/60 bg-slate-950 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500">
-                  <Dumbbell className="h-5 w-5 text-white" />
-                </div>
+                <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
                 <span className="text-xl font-bold text-white">Inkuity</span>
               </div>
               <p className="text-slate-400 max-w-md">

@@ -26,6 +26,7 @@ export function StatsCards({
       description: 'All time',
       icon: Scan,
       trend: null,
+      color: 'text-brand-cyan-500',
     },
     {
       title: "Today's Scans",
@@ -33,6 +34,7 @@ export function StatsCards({
       description: 'Last 24 hours',
       icon: TrendingUp,
       trend: todayScans > 0 ? `+${todayScans}` : '0',
+      color: 'text-brand-purple-500',
     },
     {
       title: 'This Week',
@@ -40,6 +42,7 @@ export function StatsCards({
       description: 'Last 7 days',
       icon: TrendingUp,
       trend: weekScans > 0 ? `+${weekScans}` : '0',
+      color: 'text-brand-pink-500',
     },
     {
       title: 'Top QR Code',
@@ -47,6 +50,7 @@ export function StatsCards({
       description: topQRCode?.name || 'No scans yet',
       icon: QrCode,
       trend: null,
+      color: 'text-brand-blue-600',
     },
   ];
 
@@ -58,14 +62,14 @@ export function StatsCards({
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {card.title}
             </CardTitle>
-            <card.icon className="h-4 w-4 text-muted-foreground" />
+            <card.icon className={`h-4 w-4 ${card.color}`} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{card.value}</div>
             <p className="text-xs text-muted-foreground">
               {card.description}
               {card.trend && (
-                <span className="ml-1 text-green-600">{card.trend}</span>
+                <span className="ml-1 text-brand-cyan-600">{card.trend}</span>
               )}
             </p>
           </CardContent>

@@ -47,14 +47,14 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Gym Name */}
           <div className="flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden mr-3 p-2 rounded-md text-gray-600 hover:bg-gray-100"
+              className="md:hidden mr-3 p-2 rounded-md text-slate-300 hover:bg-slate-800"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -71,10 +71,10 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
                 </div>
               )}
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">
+                <h1 className="text-lg font-semibold text-white">
                   {gym.name}
                 </h1>
-                <p className="text-xs text-gray-500">Member Portal</p>
+                <p className="text-xs text-slate-400">Member Portal</p>
               </div>
             </div>
           </div>
@@ -94,11 +94,11 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
                       />
                     </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <User className="h-4 w-4 text-indigo-600" />
+                    <div className="h-8 w-8 rounded-full bg-brand-cyan-500/20 flex items-center justify-center">
+                      <User className="h-4 w-4 text-brand-cyan-400" />
                     </div>
                   )}
-                  <span className="hidden sm:inline-block text-sm font-medium">
+                  <span className="hidden sm:inline-block text-sm font-medium text-slate-300">
                     {member.full_name || 'Member'}
                   </span>
                 </div>
@@ -111,7 +111,7 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
                     {member.full_name || 'Member'}
                   </p>
                   {member.email && (
-                    <p className="text-xs text-gray-500">{member.email}</p>
+                    <p className="text-xs text-slate-400">{member.email}</p>
                   )}
                 </div>
               </DropdownMenuLabel>

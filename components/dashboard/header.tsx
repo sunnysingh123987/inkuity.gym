@@ -54,9 +54,7 @@ export function Header() {
         <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             <div className="lg:hidden flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <QrCode className="h-5 w-5 text-white" />
-              </div>
+              <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
               <span className="text-xl font-bold text-gray-900">Inkuity</span>
             </div>
           </div>
@@ -85,7 +83,7 @@ export function Header() {
               {/* Close button at top */}
               <div className="flex items-center justify-between h-16 border-b border-gray-200 px-6">
                 <Link href="/dashboard" className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500 flex items-center justify-center">
                     <QrCode className="h-5 w-5 text-white" />
                   </div>
                   <span className="text-lg font-bold text-gray-900">
@@ -112,7 +110,7 @@ export function Header() {
                       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                       pathname === item.href ||
                         pathname.startsWith(item.href + '/')
-                        ? 'bg-indigo-50 text-indigo-600'
+                        ? 'bg-brand-cyan-50 text-brand-cyan-600'
                         : 'text-gray-700 hover:bg-gray-50'
                     )}
                     onClick={() => setMobileMenuOpen(false)}

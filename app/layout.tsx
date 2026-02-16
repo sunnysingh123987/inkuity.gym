@@ -9,8 +9,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Inkuity - Gym QR Code Analytics Platform',
-  description: 'Generate QR codes for your gym and track member analytics',
+  title: 'Inkuity - Smart Gym Management Platform',
+  description: 'QR check-ins, workout tracking, member analytics, and more for modern gyms',
+  themeColor: '#06b6d4',
 }
 
 export default function RootLayout({

@@ -16,8 +16,8 @@ const WORKOUT_OPTIONS = [
     id: 'chest',
     label: 'Chest',
     color: 'from-red-500 to-rose-600',
-    bgHover: 'hover:border-red-400',
-    selectedBg: 'bg-red-50 border-red-500 ring-2 ring-red-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-cyan-500/10 border-brand-cyan-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M32 16C26 16 18 20 16 28C14 36 18 44 24 46C28 48 32 44 32 44C32 44 36 48 40 46C46 44 50 36 48 28C46 20 38 16 32 16Z" fill="currentColor" opacity="0.2" />
@@ -34,8 +34,8 @@ const WORKOUT_OPTIONS = [
     id: 'back',
     label: 'Back',
     color: 'from-blue-500 to-indigo-600',
-    bgHover: 'hover:border-blue-400',
-    selectedBg: 'bg-blue-50 border-blue-500 ring-2 ring-blue-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-cyan-500/10 border-brand-cyan-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M24 14C24 14 28 12 32 12C36 12 40 14 40 14L44 20L46 32L42 44L36 50H28L22 44L18 32L20 20L24 14Z" fill="currentColor" opacity="0.2" />
@@ -53,8 +53,8 @@ const WORKOUT_OPTIONS = [
     id: 'shoulders',
     label: 'Shoulders',
     color: 'from-purple-500 to-violet-600',
-    bgHover: 'hover:border-purple-400',
-    selectedBg: 'bg-purple-50 border-purple-500 ring-2 ring-purple-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-purple-500/10 border-brand-purple-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="20" cy="24" r="10" fill="currentColor" opacity="0.2" />
@@ -74,8 +74,8 @@ const WORKOUT_OPTIONS = [
     id: 'arms',
     label: 'Arms',
     color: 'from-orange-500 to-amber-600',
-    bgHover: 'hover:border-orange-400',
-    selectedBg: 'bg-orange-50 border-orange-500 ring-2 ring-orange-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-pink-500/10 border-brand-pink-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M18 12C18 12 14 20 14 28C14 32 16 36 20 36" fill="currentColor" opacity="0.2" />
@@ -95,8 +95,8 @@ const WORKOUT_OPTIONS = [
     id: 'legs',
     label: 'Legs',
     color: 'from-green-500 to-emerald-600',
-    bgHover: 'hover:border-green-400',
-    selectedBg: 'bg-green-50 border-green-500 ring-2 ring-green-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-emerald-500/10 border-emerald-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M24 8H40L42 20L40 36L38 48L36 56H34L32 48L30 56H28L26 48L24 36L22 20L24 8Z" fill="currentColor" opacity="0.15" />
@@ -114,8 +114,8 @@ const WORKOUT_OPTIONS = [
     id: 'core',
     label: 'Core',
     color: 'from-yellow-500 to-orange-500',
-    bgHover: 'hover:border-yellow-400',
-    selectedBg: 'bg-yellow-50 border-yellow-500 ring-2 ring-yellow-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-amber-500/10 border-amber-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="20" y="12" width="24" height="40" rx="4" fill="currentColor" opacity="0.15" />
@@ -137,8 +137,8 @@ const WORKOUT_OPTIONS = [
     id: 'cardio',
     label: 'Cardio',
     color: 'from-pink-500 to-rose-500',
-    bgHover: 'hover:border-pink-400',
-    selectedBg: 'bg-pink-50 border-pink-500 ring-2 ring-pink-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-pink-500/10 border-brand-pink-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M32 52C32 52 10 38 10 24C10 18 14 12 22 12C28 12 32 18 32 18C32 18 36 12 42 12C50 12 54 18 54 24C54 38 32 52 32 52Z" fill="currentColor" opacity="0.2" />
@@ -151,8 +151,8 @@ const WORKOUT_OPTIONS = [
     id: 'full-body',
     label: 'Full Body',
     color: 'from-teal-500 to-cyan-600',
-    bgHover: 'hover:border-teal-400',
-    selectedBg: 'bg-teal-50 border-teal-500 ring-2 ring-teal-200',
+    bgHover: 'hover:border-slate-600',
+    selectedBg: 'bg-brand-cyan-500/10 border-brand-cyan-500 shadow-glow-cyan',
     icon: (
       <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="32" cy="10" r="6" fill="currentColor" opacity="0.2" />
@@ -201,11 +201,11 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
   if (submitted) {
     return (
       <div className="text-center py-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-          <Check className="w-8 h-8 text-green-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-cyan-500/20 mb-4">
+          <Check className="w-8 h-8 text-brand-cyan-400" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">You're all set!</h3>
-        <p className="text-gray-500 mt-1">Have a great workout!</p>
+        <h3 className="text-lg font-semibold text-white">You're all set!</h3>
+        <p className="text-slate-400 mt-1">Have a great workout!</p>
       </div>
     );
   }
@@ -213,10 +213,10 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-white">
           What are you working on today?
         </h3>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-slate-400 mt-1">
           Tap to select one or more muscle groups
         </p>
       </div>
@@ -235,29 +235,25 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
                 ${
                   isSelected
                     ? `${option.selectedBg} scale-[1.02] shadow-md`
-                    : `bg-white border-gray-200 ${option.bgHover} hover:shadow-sm hover:scale-[1.01]`
+                    : `bg-slate-800 border-slate-700 ${option.bgHover} hover:bg-slate-700 hover:shadow-sm hover:scale-[1.01]`
                 }
               `}
             >
               {isSelected && (
                 <div className="absolute top-2 right-2">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center shadow-sm"
-                    style={{
-                      background: `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))`,
-                    }}
-                  >
+                  <div className="w-5 h-5 rounded-full bg-brand-cyan-500 flex items-center justify-center shadow-sm">
                     <Check className="w-3 h-3 text-white" />
                   </div>
                 </div>
               )}
 
-              <div className={`${isSelected ? 'text-gray-900' : 'text-gray-500'} transition-colors`}>
+              <div className={`${isSelected ? 'text-brand-cyan-400' : 'text-slate-400'} transition-colors`}>
                 {option.icon}
               </div>
 
               <span
                 className={`text-sm font-medium ${
-                  isSelected ? 'text-gray-900' : 'text-gray-600'
+                  isSelected ? 'text-white' : 'text-slate-300'
                 }`}
               >
                 {option.label}
@@ -268,9 +264,9 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
       </div>
 
       {selected.length > 0 && (
-        <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
-          <span className="text-sm text-gray-600">
-            <strong>{selected.length}</strong> selected:{' '}
+        <div className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-2">
+          <span className="text-sm text-slate-400">
+            <strong className="text-white">{selected.length}</strong> selected:{' '}
             {selected
               .map((s) => WORKOUT_OPTIONS.find((o) => o.id === s)?.label)
               .join(', ')}
@@ -278,7 +274,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
           <button
             type="button"
             onClick={() => setSelected([])}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            className="text-xs text-slate-500 hover:text-slate-300"
           >
             Clear
           </button>
@@ -289,7 +285,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting || selected.length === 0}
-          className="flex-1"
+          className="flex-1 gradient-brand text-white shadow-glow-cyan"
           size="lg"
         >
           {isSubmitting ? (
@@ -306,6 +302,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
           onClick={onComplete}
           disabled={isSubmitting}
           size="lg"
+          className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
         >
           Skip
         </Button>

@@ -114,8 +114,7 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
               />
             ) : (
               <div
-                className="h-12 w-12 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: '#4f46e5' }}
+                className="h-12 w-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500"
               >
                 <Building2 className="h-6 w-6 text-white" />
               </div>
@@ -158,7 +157,7 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
                     <Phone className="h-5 w-5 text-gray-400" />
                     <a
                       href={`tel:${gym.phone}`}
-                      className="text-sm text-indigo-600 hover:underline"
+                      className="text-sm text-brand-cyan-500 hover:underline"
                     >
                       {gym.phone}
                     </a>
@@ -170,7 +169,7 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
                     <Mail className="h-5 w-5 text-gray-400" />
                     <a
                       href={`mailto:${gym.email}`}
-                      className="text-sm text-indigo-600 hover:underline"
+                      className="text-sm text-brand-cyan-500 hover:underline"
                     >
                       {gym.email}
                     </a>
@@ -250,10 +249,10 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full border-2 border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50"
+                      className="w-full border-2 border-brand-cyan-200 hover:border-brand-cyan-300 hover:bg-brand-cyan-50"
                       onClick={() => setShowScanner(true)}
                     >
-                      <QrCode className="mr-2 h-5 w-5 text-indigo-600" />
+                      <QrCode className="mr-2 h-5 w-5 text-brand-cyan-500" />
                       Scan QR Code
                     </Button>
                   </div>
@@ -285,7 +284,7 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
                       className="w-full"
                       disabled={loading}
                       style={{
-                        backgroundColor: '#4f46e5',
+                        backgroundColor: '#06b6d4',
                       }}
                     >
                       {loading ? (
@@ -313,8 +312,8 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-indigo-600" />
+                <div className="h-10 w-10 rounded-lg bg-brand-cyan-100 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-brand-cyan-600" />
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Member Portal</p>
@@ -347,7 +346,7 @@ export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
               Powered by{' '}
               <a
                 href="https://inkuity.com"
-                className="text-indigo-600 hover:underline"
+                className="text-brand-cyan-500 hover:underline"
               >
                 Inkuity
               </a>

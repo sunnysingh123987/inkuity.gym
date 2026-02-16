@@ -17,44 +17,44 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       title: 'Start Workout',
       description: 'Begin a new workout session',
       icon: Dumbbell,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      hoverColor: 'hover:bg-purple-100',
+      color: 'text-brand-purple-400',
+      bgColor: 'bg-slate-800',
+      hoverColor: 'hover:bg-slate-700',
       onClick: () => router.push(`/${gymSlug}/portal/workouts`),
     },
     {
       title: 'Create Routine',
       description: 'Design a new workout routine',
       icon: Plus,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      hoverColor: 'hover:bg-green-100',
+      color: 'text-brand-cyan-400',
+      bgColor: 'bg-slate-800',
+      hoverColor: 'hover:bg-slate-700',
       onClick: () => router.push(`/${gymSlug}/portal/workouts/new`),
     },
     {
       title: 'View Diet Plan',
       description: 'Track your nutrition',
       icon: Apple,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50',
-      hoverColor: 'hover:bg-pink-100',
+      color: 'text-brand-pink-400',
+      bgColor: 'bg-slate-800',
+      hoverColor: 'hover:bg-slate-700',
       onClick: () => router.push(`/${gymSlug}/portal/diet`),
     },
     {
       title: 'Check-in History',
       description: 'View your attendance',
       icon: Calendar,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      hoverColor: 'hover:bg-blue-100',
+      color: 'text-brand-blue-400',
+      bgColor: 'bg-slate-800',
+      hoverColor: 'hover:bg-slate-700',
       onClick: () => router.push(`/${gymSlug}/portal/check-ins`),
     },
   ];
 
   return (
-    <Card>
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
+        <CardTitle className="text-white">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -70,10 +70,10 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
                   <Icon className={`h-6 w-6 ${action.color}`} />
                 </div>
                 <div className="ml-3 flex-1">
-                  <h4 className={`text-sm font-semibold ${action.color}`}>
+                  <h4 className="text-sm font-semibold text-white">
                     {action.title}
                   </h4>
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {action.description}
                   </p>
                 </div>
@@ -82,10 +82,10 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
           })}
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-slate-800">
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
             onClick={() => router.push(`/${gymSlug}`)}
           >
             Back to Gym Page

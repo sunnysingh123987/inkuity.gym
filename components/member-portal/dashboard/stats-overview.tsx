@@ -38,40 +38,40 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
       value: stats.totalCheckIns.toString(),
       description: `Last: ${formatLastCheckIn(stats.lastCheckIn)}`,
       icon: Calendar,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-brand-cyan-400',
+      bgColor: 'bg-brand-cyan-500/10',
     },
     {
       title: 'Current Streak',
       value: `${stats.currentStreak} ${stats.currentStreak === 1 ? 'day' : 'days'}`,
       description: stats.currentStreak > 0 ? 'Keep it up!' : 'Start your streak today',
       icon: Flame,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
     },
     {
       title: 'Workouts Completed',
       value: stats.workoutCount.toString(),
       description: `${stats.routineCount} active ${stats.routineCount === 1 ? 'routine' : 'routines'}`,
       icon: Dumbbell,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-brand-purple-400',
+      bgColor: 'bg-brand-purple-500/10',
     },
     {
       title: 'Active Routines',
       value: stats.routineCount.toString(),
       description: stats.routineCount === 0 ? 'Create your first routine' : 'Ready to train',
       icon: ListChecks,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
     },
     {
       title: 'Diet Plan',
       value: stats.hasActiveDiet ? 'Active' : 'Not Set',
       description: stats.hasActiveDiet ? 'Track your nutrition' : 'Create a diet plan',
       icon: Apple,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50',
+      color: 'text-brand-pink-400',
+      bgColor: 'bg-brand-pink-500/10',
     },
   ];
 
@@ -80,9 +80,9 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
       {statCards.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title}>
+          <Card key={stat.title} className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-slate-400">
                 {stat.title}
               </CardTitle>
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
@@ -90,10 +90,10 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${stat.color}`}>
+              <div className="text-2xl font-bold text-white">
                 {stat.value}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+              <p className="text-xs text-slate-400 mt-1">{stat.description}</p>
             </CardContent>
           </Card>
         );

@@ -40,7 +40,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-gray-200 px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary" />
+          <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
           <span className="text-lg font-bold">Inkuity</span>
         </Link>
       </div>
@@ -56,7 +56,7 @@ export function Sidebar({ className }: SidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-brand-cyan-50 text-brand-cyan-700'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
