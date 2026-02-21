@@ -74,7 +74,7 @@ export interface Member {
   avatar_url: string | null;
   member_since: string;
   membership_tier: string;
-  membership_status: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending';
+  membership_status: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial';
   subscription_start_date: string | null;
   subscription_plan: '1_month' | '3_months' | '6_months' | '1_year' | 'custom' | null;
   subscription_end_date: string | null;
@@ -145,6 +145,18 @@ export interface DailyAnalytics {
   conversion_rate: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  gym_id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata: Record<string, any>;
+  is_read: boolean;
+  created_at: string;
 }
 
 // Join types for queries

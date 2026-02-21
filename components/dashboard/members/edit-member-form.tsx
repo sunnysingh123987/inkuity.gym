@@ -24,9 +24,6 @@ export function EditMemberForm({ member }: EditMemberFormProps) {
     email: member.email || '',
     phone: member.phone || '',
     birth_date: member.birth_date || '',
-    membership_status: member.membership_status,
-    subscription_start_date: member.subscription_start_date || '',
-    subscription_plan: member.subscription_plan || '',
     notes: member.notes || '',
     // Metadata fields
     emergency_contact: member.metadata?.emergency_contact || '',
@@ -45,9 +42,6 @@ export function EditMemberForm({ member }: EditMemberFormProps) {
         email: formData.email,
         phone: formData.phone,
         birth_date: formData.birth_date || null,
-        membership_status: formData.membership_status as any,
-        subscription_start_date: formData.subscription_start_date || null,
-        subscription_plan: formData.subscription_plan as any,
         notes: formData.notes,
         metadata: {
           ...member.metadata,
@@ -148,66 +142,6 @@ export function EditMemberForm({ member }: EditMemberFormProps) {
                   onChange={(e) => handleChange('birth_date', e.target.value)}
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscription & Membership</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="membership_status" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Membership Status
-                </Label>
-                <Select value={formData.membership_status} onValueChange={(value) => handleChange('membership_status', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subscription_plan" className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Subscription Plan
-                </Label>
-                <Select value={formData.subscription_plan} onValueChange={(value) => handleChange('subscription_plan', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select plan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1_month">1 Month</SelectItem>
-                    <SelectItem value="3_months">3 Months</SelectItem>
-                    <SelectItem value="6_months">6 Months</SelectItem>
-                    <SelectItem value="1_year">1 Year</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="subscription_start_date" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Subscription Start Date
-              </Label>
-              <Input
-                id="subscription_start_date"
-                type="date"
-                value={formData.subscription_start_date}
-                onChange={(e) => handleChange('subscription_start_date', e.target.value)}
-              />
             </div>
           </CardContent>
         </Card>

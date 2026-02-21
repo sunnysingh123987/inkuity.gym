@@ -88,11 +88,11 @@ export function OnboardingWizard({ userName, userEmail }: OnboardingWizardProps)
       case 1:
         return formData.name.trim().length > 0
       case 2:
-        // If phone is entered, it must be valid and available
-        if (formData.phone.replace(/\D/g, '').length > 0) {
-          return phoneStatus.valid && phoneStatus.available && !phoneStatus.checking
+        // Phone is required
+        if (formData.phone.replace(/\D/g, '').length === 0) {
+          return false
         }
-        return true // Contact info is optional if no phone entered
+        return phoneStatus.valid && phoneStatus.available && !phoneStatus.checking
       case 3:
         return true // Logo is optional
       case 4:
@@ -459,12 +459,12 @@ function StepContactInfo({
         <h2 className="text-lg font-semibold">Contact Information</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Optional — this info will appear on your gym's public page.
+        Phone number is required. This info will appear on your gym's public page.
       </p>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="phone">Phone Number</Label>
+          <Label htmlFor="phone">Phone Number *</Label>
           {hasPhone && !phoneStatus.checking && (
             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">
               <ShieldX className="h-3 w-3" />

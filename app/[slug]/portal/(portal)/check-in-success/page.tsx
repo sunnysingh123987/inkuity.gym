@@ -73,16 +73,16 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
           // Check if this is a first-time check-in (no info collected yet)
           const infoCollected = await checkMemberInfoCollected(mId);
 
-          // Check if member is pending approval
-          const memberIsPending = result.data.membershipStatus === 'pending';
+          // Check if member is trial (new via QR)
+          const memberIsTrial = result.data.membershipStatus === 'trial' || result.data.membershipStatus === 'pending';
 
           // Animate tick then show info form, pending screen, or workout selector
           setTimeout(() => setShowTick(true), 300);
           if (!infoCollected) {
             // Show info form first, then pending or workout selector
             setTimeout(() => setShowMemberInfoForm(true), 1500);
-            if (memberIsPending) setIsPending(true);
-          } else if (memberIsPending) {
+            if (memberIsTrial) setIsPending(true);
+          } else if (memberIsTrial) {
             setIsPending(true);
           } else {
             setTimeout(() => setShowWorkoutSelector(true), 1500);
@@ -279,9 +279,9 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
             <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
               <Clock className="w-8 h-8 text-amber-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white">Request Submitted</h2>
+            <h2 className="text-xl font-semibold text-white">Trial Member</h2>
             <p className="text-slate-400 text-sm max-w-sm mx-auto">
-              Your membership request has been submitted. You&apos;ll get access once the gym owner approves your request.
+              You&apos;re checked in as a trial member. Contact the gym to activate your full membership.
             </p>
           </CardContent>
         </Card>

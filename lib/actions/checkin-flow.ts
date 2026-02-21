@@ -74,6 +74,36 @@ export async function recordQRCheckIn(
       }
     }
 
+    // If trial member, create notification for gym owner
+    if (member.membership_status === 'trial') {
+      const { data: gym } = await supabase
+        .from('gyms')
+        .select('owner_id, name')
+        .eq('id', gymId)
+        .single();
+
+      if (gym?.owner_id) {
+        const checkInTime = new Date(checkIn.check_in_at).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        import('@/lib/actions/notifications').then(({ createNotification }) => {
+          createNotification({
+            gym_id: gymId,
+            user_id: gym.owner_id,
+            type: 'trial_checkin',
+            title: 'Trial Member Check-in',
+            message: `${member.full_name || 'A trial member'} checked in at ${checkInTime}.`,
+            metadata: {
+              member_id: member.id,
+              member_name: member.full_name,
+              check_in_id: checkIn.id,
+            },
+          }).catch((err: any) => console.error('Failed to create trial notification:', err));
+        }).catch(() => {});
+      }
+    }
+
     // Check subscription status
     const isActive = member.membership_status === 'active';
     let subscriptionWarning = false;

@@ -62,6 +62,34 @@ export default async function DashboardPage() {
     totalMembers = count || 0
   }
 
+  // Get member status breakdown
+  let memberStatusBreakdown = { active: 0, trial: 0, inactive: 0 }
+  if (gym) {
+    const { data: allMembers } = await supabase
+      .from('members')
+      .select('membership_status')
+      .eq('gym_id', gym.id)
+
+    if (allMembers) {
+      for (const m of allMembers) {
+        if (m.membership_status === 'active') {
+          memberStatusBreakdown.active++
+        } else if (m.membership_status === 'trial') {
+          memberStatusBreakdown.trial++
+        } else {
+          memberStatusBreakdown.inactive++
+        }
+      }
+    }
+  }
+
+  // Fire-and-forget: check subscription expiry notifications
+  if (gym) {
+    import('@/lib/actions/notifications').then(({ checkSubscriptionExpiry }) => {
+      checkSubscriptionExpiry(gym.id).catch(() => {})
+    }).catch(() => {})
+  }
+
   return (
     <DashboardOverview
       gym={gym}
@@ -70,6 +98,7 @@ export default async function DashboardPage() {
       analytics={analytics}
       recentMembers={recentMembers}
       totalMembers={totalMembers}
+      memberStatusBreakdown={memberStatusBreakdown}
     />
   )
 }

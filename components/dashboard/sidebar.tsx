@@ -9,6 +9,7 @@ import { Logo } from '@/components/ui/logo';
 import {
   LayoutDashboard,
   Users,
+  CreditCard,
   BarChart3,
   Settings,
   LogOut,
@@ -23,6 +24,7 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Members', href: '/members', icon: Users },
+  { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

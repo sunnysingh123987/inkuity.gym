@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Users, Search, Mail, Phone, Calendar, TrendingUp, Clock, Edit, Check, X, Loader2 } from 'lucide-react'
-import { getMembers, calculateMembershipStatus, getMemberStats, approveMember, rejectMember } from '@/lib/actions/gyms'
-import { toast } from 'sonner'
+import { Plus, Users, Search, TrendingUp, Clock, Eye, Loader2 } from 'lucide-react'
+import { getMembers, calculateMembershipStatus, getMemberStats } from '@/lib/actions/gyms'
 
 interface MembersListProps {
   gyms: Gym[]
@@ -23,18 +22,19 @@ interface MemberWithStats extends Omit<Member, 'gym'> {
     currentStreak: number;
     averageSessionDuration: number;
   };
-  calculatedStatus?: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending';
+  calculatedStatus?: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial';
   gym?: {
     name: string;
   };
 }
 
+type TabFilter = 'all' | 'active' | 'inactive' | 'trial'
+
 export function MembersList({ gyms }: MembersListProps) {
   const [members, setMembers] = useState<MemberWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all')
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<TabFilter>('all')
 
   useEffect(() => {
     loadMembers()
@@ -43,12 +43,11 @@ export function MembersList({ gyms }: MembersListProps) {
   const loadMembers = async () => {
     try {
       setLoading(true)
-      // Get all members for all gyms owned by the current user
       const allMembers: MemberWithStats[] = []
-      
+
       for (const gym of gyms) {
         const { data: membersData } = await getMembers(gym.id)
-        
+
         if (membersData) {
           const membersWithStats = await Promise.all(
             membersData.map(async (member) => {
@@ -65,7 +64,7 @@ export function MembersList({ gyms }: MembersListProps) {
           allMembers.push(...membersWithStats);
         }
       }
-      
+
       setMembers(allMembers);
       setLoading(false);
     } catch (error) {
@@ -74,45 +73,30 @@ export function MembersList({ gyms }: MembersListProps) {
     }
   }
 
-  const pendingCount = members.filter(m => (m.calculatedStatus || m.membership_status) === 'pending').length
+  const inactiveStatuses = ['expired', 'cancelled', 'suspended']
+
+  const tabCounts = {
+    all: members.length,
+    active: members.filter(m => (m.calculatedStatus || m.membership_status) === 'active').length,
+    trial: members.filter(m => (m.calculatedStatus || m.membership_status) === 'trial').length,
+    inactive: members.filter(m => inactiveStatuses.includes(m.calculatedStatus || m.membership_status)).length,
+  }
 
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email?.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
-    if (activeTab === 'pending') {
-      return (member.calculatedStatus || member.membership_status) === 'pending'
-    }
+    const status = member.calculatedStatus || member.membership_status
+    if (activeTab === 'active') return status === 'active'
+    if (activeTab === 'trial') return status === 'trial'
+    if (activeTab === 'inactive') return inactiveStatuses.includes(status)
     return true
   })
 
-  const handleApprove = async (memberId: string) => {
-    setActionLoading(memberId)
-    const result = await approveMember(memberId)
-    if (result.success) {
-      toast.success('Member approved')
-      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, membership_status: 'active', calculatedStatus: 'active' } : m))
-    } else {
-      toast.error(result.error || 'Failed to approve member')
-    }
-    setActionLoading(null)
-  }
-
-  const handleReject = async (memberId: string) => {
-    setActionLoading(memberId)
-    const result = await rejectMember(memberId)
-    if (result.success) {
-      toast.success('Member rejected')
-      setMembers(prev => prev.filter(m => m.id !== memberId))
-    } else {
-      toast.error(result.error || 'Failed to reject member')
-    }
-    setActionLoading(null)
-  }
-
   const getStatusBadge = (status: string) => {
-    const variants = {
+    const variants: Record<string, string> = {
       active: 'bg-green-500/10 text-green-400',
+      trial: 'bg-cyan-500/10 text-cyan-400',
       expired: 'bg-red-500/10 text-red-400',
       suspended: 'bg-yellow-500/10 text-yellow-400',
       cancelled: 'bg-muted text-muted-foreground',
@@ -137,35 +121,35 @@ export function MembersList({ gyms }: MembersListProps) {
     )
   }
 
+  const tabs: { key: TabFilter; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: tabCounts.all },
+    { key: 'active', label: 'Active', count: tabCounts.active },
+    { key: 'trial', label: 'Trial', count: tabCounts.trial },
+    { key: 'inactive', label: 'Inactive', count: tabCounts.inactive },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'all'
-              ? 'border-primary text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          All Members
-        </button>
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'pending'
-              ? 'border-primary text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Pending Approval
-          {pendingCount > 0 && (
-            <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold">
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === tab.key
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -306,43 +290,12 @@ export function MembersList({ gyms }: MembersListProps) {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        {(member.calculatedStatus || member.membership_status) === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(member.id)}
-                              disabled={actionLoading === member.id}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              {actionLoading === member.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Approve
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReject(member.id)}
-                              disabled={actionLoading === member.id}
-                              className="text-red-400 border-red-400/30 hover:bg-red-500/10"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                        <Link href={`/members/${member.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link href={`/members/${member.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

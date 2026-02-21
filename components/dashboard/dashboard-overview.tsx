@@ -1,26 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import QRCodeLib from 'qrcode'
 import { Gym, QRCode as QRCodeType } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Building2,
   Users,
   Scan,
   TrendingUp,
-  QrCode,
-  Download,
-  Copy,
-  Check,
-  ArrowRight,
   BarChart3,
-  MapPin,
-  Mail,
-  Phone,
-  Globe,
+  ArrowRight,
   UserPlus,
 } from 'lucide-react'
 
@@ -43,6 +32,7 @@ interface DashboardOverviewProps {
     created_at: string
   }[]
   totalMembers: number
+  memberStatusBreakdown: { active: number; trial: number; inactive: number }
 }
 
 export function DashboardOverview({
@@ -52,9 +42,9 @@ export function DashboardOverview({
   analytics,
   recentMembers,
   totalMembers,
+  memberStatusBreakdown,
 }: DashboardOverviewProps) {
   const firstName = userName.split(' ')[0]
-  const checkInQR = qrCodes.find((qr) => qr.type === 'check-in') || qrCodes[0]
 
   if (!gym) {
     return (
@@ -93,12 +83,9 @@ export function DashboardOverview({
 
       {/* Stats Grid */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Members"
-          value={totalMembers.toLocaleString()}
-          description="Registered members"
-          icon={Users}
-          color="text-brand-cyan-500"
+        <MembersPieStatCard
+          totalMembers={totalMembers}
+          breakdown={memberStatusBreakdown}
         />
         <StatCard
           title="Total Check-ins"
@@ -121,95 +108,6 @@ export function DashboardOverview({
           icon={BarChart3}
           color="text-brand-blue-600"
         />
-      </div>
-
-      {/* Two-column layout: QR Code + Gym Info */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* QR Code Card */}
-        {checkInQR && (
-          <QRCodeCard qrCode={checkInQR} gymSlug={gym.slug} />
-        )}
-
-        {/* Gym Info Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold">Your Gym</CardTitle>
-            <Link href="/settings">
-              <Button variant="ghost" size="sm" className="text-xs">
-                Edit
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              {gym.logo_url ? (
-                <img
-                  src={gym.logo_url}
-                  alt={gym.name}
-                  className="h-12 w-12 rounded-lg object-cover border border-border"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-cyan-500/10">
-                  <Building2 className="h-6 w-6 text-brand-cyan-500" />
-                </div>
-              )}
-              <div>
-                <p className="font-semibold">{gym.name}</p>
-                {gym.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-1">{gym.description}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2.5 text-sm">
-              {(gym.address || gym.city) && (
-                <div className="flex items-start gap-2.5 text-muted-foreground">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    {[gym.address, gym.city, gym.state, gym.zip_code].filter(Boolean).join(', ')}
-                  </span>
-                </div>
-              )}
-              {gym.phone && (
-                <div className="flex items-center gap-2.5 text-muted-foreground">
-                  <Phone className="h-4 w-4 shrink-0" />
-                  <span>{gym.phone}</span>
-                </div>
-              )}
-              {gym.email && (
-                <div className="flex items-center gap-2.5 text-muted-foreground">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span>{gym.email}</span>
-                </div>
-              )}
-              {gym.website && (
-                <div className="flex items-center gap-2.5 text-muted-foreground">
-                  <Globe className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{gym.website}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-border">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Status</span>
-                {gym.is_active ? (
-                  <span className="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20">
-                    Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-border">
-                    Inactive
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between text-sm mt-2">
-                <span className="text-muted-foreground">Portal URL</span>
-                <span className="font-mono text-xs text-brand-cyan-400">/{gym.slug}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent Members */}
@@ -266,6 +164,97 @@ export function DashboardOverview({
   )
 }
 
+function MembersPieStatCard({
+  totalMembers,
+  breakdown,
+}: {
+  totalMembers: number
+  breakdown: { active: number; trial: number; inactive: number }
+}) {
+  const total = breakdown.active + breakdown.trial + breakdown.inactive
+  const activePercent = total > 0 ? (breakdown.active / total) * 100 : 0
+  const trialPercent = total > 0 ? (breakdown.trial / total) * 100 : 0
+  const inactivePercent = total > 0 ? (breakdown.inactive / total) * 100 : 0
+
+  // SVG donut chart calculations
+  const radius = 16
+  const circumference = 2 * Math.PI * radius
+  const activeOffset = 0
+  const trialOffset = (activePercent / 100) * circumference
+  const inactiveOffset = ((activePercent + trialPercent) / 100) * circumference
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
+          Total Members
+        </CardTitle>
+        <Users className="h-4 w-4 text-brand-cyan-500" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3">
+          <div className="text-2xl font-bold">{totalMembers.toLocaleString()}</div>
+          {total > 0 && (
+            <svg width="36" height="36" viewBox="0 0 40 40" className="shrink-0">
+              <circle cx="20" cy="20" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+              {breakdown.active > 0 && (
+                <circle
+                  cx="20" cy="20" r={radius}
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="6"
+                  strokeDasharray={`${(activePercent / 100) * circumference} ${circumference}`}
+                  strokeDashoffset={-activeOffset}
+                  transform="rotate(-90 20 20)"
+                  className="transition-all duration-700"
+                />
+              )}
+              {breakdown.trial > 0 && (
+                <circle
+                  cx="20" cy="20" r={radius}
+                  fill="none"
+                  stroke="#06b6d4"
+                  strokeWidth="6"
+                  strokeDasharray={`${(trialPercent / 100) * circumference} ${circumference}`}
+                  strokeDashoffset={-trialOffset}
+                  transform="rotate(-90 20 20)"
+                  className="transition-all duration-700"
+                />
+              )}
+              {breakdown.inactive > 0 && (
+                <circle
+                  cx="20" cy="20" r={radius}
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth="6"
+                  strokeDasharray={`${(inactivePercent / 100) * circumference} ${circumference}`}
+                  strokeDashoffset={-inactiveOffset}
+                  transform="rotate(-90 20 20)"
+                  className="transition-all duration-700"
+                />
+              )}
+            </svg>
+          )}
+        </div>
+        <div className="flex gap-3 mt-1.5 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+            {breakdown.active}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-cyan-500" />
+            {breakdown.trial}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+            {breakdown.inactive}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function StatCard({
   title,
   value,
@@ -295,88 +284,10 @@ function StatCard({
   )
 }
 
-function QRCodeCard({ qrCode, gymSlug }: { qrCode: QRCodeType; gymSlug: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [copied, setCopied] = useState(false)
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-  const scanUrl = `${appUrl}/s/${qrCode.code}`
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      QRCodeLib.toCanvas(canvasRef.current, scanUrl, {
-        width: 200,
-        margin: 2,
-        color: { dark: '#000000', light: '#FFFFFF' },
-      })
-    }
-  }, [scanUrl])
-
-  const handleDownload = () => {
-    if (canvasRef.current) {
-      const link = document.createElement('a')
-      link.href = canvasRef.current.toDataURL('image/png')
-      link.download = `${gymSlug}-check-in-qr.png`
-      link.click()
-    }
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(scanUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <QrCode className="h-5 w-5 text-brand-cyan-500" />
-          <CardTitle className="text-base font-semibold">Check-In QR Code</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-center rounded-lg bg-white p-4">
-          <canvas ref={canvasRef} />
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={handleDownload} size="sm" className="flex-1 gap-2">
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
-          <Button onClick={handleCopy} variant="outline" size="sm" className="flex-1 gap-2">
-            {copied ? (
-              <>
-                <Check className="h-4 w-4" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copy URL
-              </>
-            )}
-          </Button>
-        </div>
-
-        <div className="rounded-lg bg-secondary/50 p-3">
-          <p className="text-xs text-muted-foreground mb-1">Scan URL</p>
-          <p className="text-xs font-mono text-foreground break-all">{scanUrl}</p>
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Total scans</span>
-          <span className="font-semibold">{qrCode.total_scans.toLocaleString()}</span>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     active: 'bg-green-500/10 text-green-400 ring-green-500/20',
+    trial: 'bg-cyan-500/10 text-cyan-400 ring-cyan-500/20',
     pending: 'bg-yellow-500/10 text-yellow-400 ring-yellow-500/20',
     expired: 'bg-red-500/10 text-red-400 ring-red-500/20',
     suspended: 'bg-orange-500/10 text-orange-400 ring-orange-500/20',

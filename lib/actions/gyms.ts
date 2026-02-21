@@ -318,13 +318,20 @@ export async function createMember(formData: {
   email?: string;
   phone?: string;
   full_name?: string;
+  birth_date?: string;
+  gender?: string;
+  metadata?: Record<string, any>;
 }): Promise<{ success: boolean; data?: Member; error?: string }> {
   try {
     const supabase = createServerSupabaseClient();
 
     const { data: member, error } = await supabase
       .from('members')
-      .insert(formData)
+      .insert({
+        ...formData,
+        membership_status: 'active',
+        member_since: new Date().toISOString().split('T')[0],
+      })
       .select()
       .single();
 
@@ -405,13 +412,13 @@ export async function checkInMember(formData: {
     if (existingMember) {
       member = existingMember;
     } else {
-      // 2. Create new member with pending status
+      // 2. Create new member with trial status
       const { data: newMember, error: createError } = await supabase
         .from('members')
         .insert({
           gym_id: formData.gymId,
           email: formData.email,
-          membership_status: 'pending',
+          membership_status: 'trial',
         })
         .select()
         .single();
@@ -570,10 +577,15 @@ export async function rejectMember(memberId: string): Promise<{ success: boolean
   }
 }
 
-export async function calculateMembershipStatus(member: Member): Promise<'active' | 'expired' | 'suspended' | 'cancelled' | 'pending'> {
+export async function calculateMembershipStatus(member: Member): Promise<'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial'> {
   // If manually set to suspended or cancelled, respect that
   if (member.membership_status === 'suspended' || member.membership_status === 'cancelled') {
     return member.membership_status;
+  }
+
+  // If trial, keep as trial
+  if (member.membership_status === 'trial') {
+    return 'trial';
   }
 
   // If no subscription info, consider pending

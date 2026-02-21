@@ -6,26 +6,35 @@ import { useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
 import {
   Menu,
-  Bell,
   X,
   LogOut,
   LayoutDashboard,
   Users,
+  CreditCard,
   BarChart3,
   Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/logo'
+import { NotificationsDropdown } from '@/components/dashboard/notifications-dropdown'
+import type { Notification } from '@/types/database'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Members', href: '/members', icon: Users },
+  { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export function Header() {
+interface HeaderProps {
+  notifications?: Notification[]
+  unreadCount?: number
+  userId?: string
+}
+
+export function Header({ notifications = [], unreadCount = 0, userId = '' }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -66,13 +75,11 @@ export function Header() {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-x-4 lg:gap-x-6">
-            <button
-              type="button"
-              className="-m-2.5 p-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <span className="sr-only">View notifications</span>
-              <Bell className="h-6 w-6" aria-hidden="true" />
-            </button>
+            <NotificationsDropdown
+              notifications={notifications}
+              unreadCount={unreadCount}
+              userId={userId}
+            />
           </div>
         </div>
       </div>

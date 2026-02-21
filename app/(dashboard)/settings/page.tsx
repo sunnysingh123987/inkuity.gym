@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getGyms, getQRCodes } from '@/lib/actions/gyms'
 import { SettingsForm } from '@/components/dashboard/settings/settings-form'
 
 export const metadata = {
@@ -21,6 +22,16 @@ export default async function SettingsPage() {
     .eq('id', user.id)
     .single()
 
+  // Fetch gym and QR codes
+  const { data: gyms } = await getGyms()
+  const gym = gyms[0] || null
+
+  let checkInQRCode = null
+  if (gym) {
+    const { data: qrCodes } = await getQRCodes(gym.id)
+    checkInQRCode = qrCodes?.find((qr: any) => qr.type === 'check-in') || qrCodes?.[0] || null
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -30,7 +41,7 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <SettingsForm profile={profile} />
+      <SettingsForm profile={profile} gym={gym} checkInQRCode={checkInQRCode} />
     </div>
   )
 }
