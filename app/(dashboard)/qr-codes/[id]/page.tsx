@@ -30,13 +30,13 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
         <div>
           <Link
             href="/qr-codes"
-            className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 mb-2"
+            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to QR Codes
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{qrCode.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">{qrCode.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {qrCode.label || qrCode.code}
           </p>
         </div>
@@ -53,15 +53,15 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
           <CardContent className="space-y-4">
             <dl className="grid grid-cols-1 gap-2 text-sm">
               <div>
-                <dt className="font-medium text-gray-500">Code</dt>
-                <dd className="font-mono text-gray-900">{qrCode.code}</dd>
+                <dt className="font-medium text-muted-foreground">Code</dt>
+                <dd className="font-mono text-foreground">{qrCode.code}</dd>
               </div>
               <div>
-                <dt className="font-medium text-gray-500">Type</dt>
+                <dt className="font-medium text-muted-foreground">Type</dt>
                 <dd className="capitalize">{qrCode.type}</dd>
               </div>
               <div>
-                <dt className="font-medium text-gray-500">Total scans</dt>
+                <dt className="font-medium text-muted-foreground">Total scans</dt>
                 <dd className="flex items-center gap-1">
                   <Scan className="h-4 w-4" />
                   {qrCode.total_scans}
@@ -70,7 +70,7 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
               <div>
                 <span
                   className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    qrCode.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    qrCode.is_active ? 'bg-green-500/10 text-green-400' : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {qrCode.is_active ? 'Active' : 'Inactive'}
@@ -78,7 +78,7 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
               </div>
             </dl>
             {qrCode.redirect_url && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Redirect: {qrCode.redirect_url}
               </p>
             )}
@@ -101,7 +101,7 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
                 {gym.name}
               </Link>
             ) : (
-              <p className="text-sm text-gray-500">—</p>
+              <p className="text-sm text-muted-foreground">—</p>
             )}
           </CardContent>
         </Card>

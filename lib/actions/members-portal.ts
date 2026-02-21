@@ -1144,3 +1144,74 @@ export async function updateMemberPreferences(
     return { success: false, error: error.message, data: null };
   }
 }
+
+// ============================================================
+// MEMBER INFO UPDATE (First check-in info collection)
+// ============================================================
+
+export async function updateMemberInfo(
+  memberId: string,
+  info: {
+    full_name?: string | null
+    phone?: string | null
+    birth_date?: string | null
+    gender?: string | null
+    metadata?: Record<string, any>
+  }
+) {
+  try {
+    const supabase = createAdminSupabaseClient()
+
+    // Get current metadata to merge
+    const { data: member, error: fetchError } = await supabase
+      .from('members')
+      .select('metadata')
+      .eq('id', memberId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const updateData: Record<string, any> = {}
+    if (info.full_name !== undefined) updateData.full_name = info.full_name
+    if (info.phone !== undefined) updateData.phone = info.phone
+    if (info.birth_date !== undefined) updateData.birth_date = info.birth_date
+    if (info.gender !== undefined) updateData.gender = info.gender
+    if (info.metadata) {
+      updateData.metadata = {
+        ...(member?.metadata || {}),
+        ...info.metadata,
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('members')
+      .update(updateData)
+      .eq('id', memberId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    revalidatePath('/portal')
+    return { success: true, data }
+  } catch (error: any) {
+    console.error('Error updating member info:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function checkMemberInfoCollected(memberId: string): Promise<boolean> {
+  try {
+    const supabase = createAdminSupabaseClient()
+    const { data, error } = await supabase
+      .from('members')
+      .select('metadata')
+      .eq('id', memberId)
+      .single()
+
+    if (error) throw error
+    return !!data?.metadata?.info_collected_at
+  } catch {
+    return false
+  }
+}

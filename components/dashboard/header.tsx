@@ -4,18 +4,25 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
-import { Menu, Bell, X, QrCode, LogOut } from 'lucide-react'
-import { Sidebar } from './sidebar'
+import {
+  Menu,
+  Bell,
+  X,
+  LogOut,
+  LayoutDashboard,
+  Users,
+  BarChart3,
+  Settings,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/logo'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Gyms', href: '/gyms' },
-  { name: 'QR Codes', href: '/qr-codes' },
-  { name: 'Members', href: '/members' },
-  { name: 'Analytics', href: '/analytics' },
-  { name: 'Settings', href: '/settings' },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Members', href: '/members', icon: Users },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 export function Header() {
@@ -41,10 +48,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 lg:static">
-      <div className="flex h-16 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+      <div className="flex h-16 items-center gap-x-4 border-b border-border bg-card px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
         <button
           type="button"
-          className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+          className="-m-2.5 p-2.5 text-muted-foreground lg:hidden"
           onClick={() => setMobileMenuOpen(true)}
         >
           <span className="sr-only">Open sidebar</span>
@@ -53,16 +60,15 @@ export function Header() {
 
         <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
           <div className="flex items-center gap-x-4 lg:gap-x-6">
-            <div className="lg:hidden flex items-center gap-2">
-              <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
-              <span className="text-xl font-bold text-gray-900">Inkuity</span>
+            <div className="lg:hidden">
+              <Logo href="/dashboard" />
             </div>
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-x-4 lg:gap-x-6">
             <button
               type="button"
-              className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500"
+              className="-m-2.5 p-2.5 text-muted-foreground hover:text-foreground"
             >
               <span className="sr-only">View notifications</span>
               <Bell className="h-6 w-6" aria-hidden="true" />
@@ -78,21 +84,14 @@ export function Header() {
             className="fixed inset-0 bg-gray-900/50"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-full max-w-xs overflow-y-auto bg-white">
+          <div className="fixed inset-y-0 left-0 z-50 w-full max-w-xs overflow-y-auto bg-card">
             <div className="flex h-full flex-col">
               {/* Close button at top */}
-              <div className="flex items-center justify-between h-16 border-b border-gray-200 px-6">
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500 flex items-center justify-center">
-                    <QrCode className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">
-                    Inkuity
-                  </span>
-                </Link>
+              <div className="flex items-center justify-between h-16 border-b border-border px-6">
+                <Logo href="/dashboard" />
                 <button
                   type="button"
-                  className="-m-2.5 p-2.5 text-gray-700"
+                  className="-m-2.5 p-2.5 text-muted-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className="sr-only">Close menu</span>
@@ -107,24 +106,25 @@ export function Header() {
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                       pathname === item.href ||
                         pathname.startsWith(item.href + '/')
-                        ? 'bg-brand-cyan-50 text-brand-cyan-600'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-brand-cyan-500/10 text-brand-cyan-400'
+                        : 'text-muted-foreground hover:bg-muted'
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <item.icon className="h-5 w-5" />
                     {item.name}
                   </Link>
                 ))}
               </nav>
 
               {/* Sign Out button at bottom */}
-              <div className="border-t border-gray-200 p-4">
+              <div className="border-t border-border p-4">
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
                 >
                   <LogOut className="h-5 w-5" />
                   Sign Out

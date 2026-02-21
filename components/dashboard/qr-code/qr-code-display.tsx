@@ -78,7 +78,7 @@ export function QRCodeDisplay({ code, gymName, qrName, scanUrl }: QRCodeDisplayP
         <CardTitle>QR Code Image</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex justify-center p-6 bg-gray-50 rounded-lg">
+        <div className="flex justify-center p-6 bg-muted rounded-lg">
           <canvas ref={canvasRef} />
         </div>
 
@@ -123,8 +123,8 @@ export function QRCodeDisplay({ code, gymName, qrName, scanUrl }: QRCodeDisplayP
           </div>
 
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-2">Scan URL:</p>
-            <p className="text-sm font-mono text-gray-900 break-all">{scanUrl}</p>
+            <p className="text-xs text-muted-foreground mb-2">Scan URL:</p>
+            <p className="text-sm font-mono text-foreground break-all">{scanUrl}</p>
           </div>
         </div>
       </CardContent>

@@ -27,13 +27,13 @@ export default async function GymDetailPage({ params }: GymDetailPageProps) {
         <div>
           <Link
             href="/gyms"
-            className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 mb-2"
+            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Gyms
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{gym.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">{gym.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             View and manage this gym location
           </p>
         </div>
@@ -52,17 +52,17 @@ export default async function GymDetailPage({ params }: GymDetailPageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {gym.description && (
-              <p className="text-sm text-gray-600">{gym.description}</p>
+              <p className="text-sm text-muted-foreground">{gym.description}</p>
             )}
             <div className="flex items-center gap-2">
               <span
                 className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  gym.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  gym.is_active ? 'bg-green-500/10 text-green-400' : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {gym.is_active ? 'Active' : 'Inactive'}
               </span>
-              <span className="text-xs text-gray-500">Slug: {gym.slug}</span>
+              <span className="text-xs text-muted-foreground">Slug: {gym.slug}</span>
             </div>
           </CardContent>
         </Card>
@@ -74,13 +74,13 @@ export default async function GymDetailPage({ params }: GymDetailPageProps) {
           <CardContent className="space-y-3">
             {gym.address && (
               <div className="flex items-start gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <span>{gym.address}</span>
               </div>
             )}
             {(gym.city || gym.state || gym.zip_code) && (
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <span>
                   {[gym.city, gym.state, gym.zip_code].filter(Boolean).join(', ')}
                 </span>
@@ -88,7 +88,7 @@ export default async function GymDetailPage({ params }: GymDetailPageProps) {
             )}
             {gym.phone && (
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-gray-400" />
+                <Phone className="h-4 w-4 text-muted-foreground" />
                 <a href={`tel:${gym.phone}`} className="text-indigo-600 hover:underline">
                   {gym.phone}
                 </a>
@@ -96,14 +96,14 @@ export default async function GymDetailPage({ params }: GymDetailPageProps) {
             )}
             {gym.email && (
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-gray-400" />
+                <Mail className="h-4 w-4 text-muted-foreground" />
                 <a href={`mailto:${gym.email}`} className="text-indigo-600 hover:underline">
                   {gym.email}
                 </a>
               </div>
             )}
             {!gym.address && !gym.phone && !gym.email && (
-              <p className="text-sm text-gray-500">No contact or location details added yet.</p>
+              <p className="text-sm text-muted-foreground">No contact or location details added yet.</p>
             )}
           </CardContent>
         </Card>

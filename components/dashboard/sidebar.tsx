@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/ui/logo';
 import {
   LayoutDashboard,
-  Building2,
-  QrCode,
   Users,
   BarChart3,
   Settings,
@@ -23,8 +22,6 @@ interface SidebarProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Gyms', href: '/gyms', icon: Building2 },
-  { name: 'QR Codes', href: '/qr-codes', icon: QrCode },
   { name: 'Members', href: '/members', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -36,13 +33,10 @@ export function Sidebar({ className }: SidebarProps) {
   const supabase = createClient();
 
   return (
-    <div className={cn('flex h-full w-full flex-col border-r border-gray-200 bg-white', className)}>
+    <div className={cn('flex h-full w-full flex-col border-r border-border bg-card', className)}>
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
-          <span className="text-lg font-bold">Inkuity</span>
-        </Link>
+      <div className="flex h-16 items-center border-b border-border px-6">
+        <Logo href="/dashboard" />
       </div>
 
       {/* Navigation */}
@@ -54,9 +48,9 @@ export function Sidebar({ className }: SidebarProps) {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-brand-cyan-50 text-brand-cyan-700'
+                  ? 'bg-brand-cyan-500/10 text-brand-cyan-400 shadow-glow-cyan/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -68,9 +62,9 @@ export function Sidebar({ className }: SidebarProps) {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-border p-4">
         <button
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           onClick={async () => {
             try {
               const { error } = await supabase.auth.signOut();

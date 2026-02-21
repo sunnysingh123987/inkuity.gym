@@ -57,19 +57,19 @@ export function StatsCards({
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title}>
+        <Card key={card.title} className="hover:scale-[1.02] hover:shadow-glow-cyan/20 cursor-default">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {card.title}
             </CardTitle>
-            <card.icon className={`h-4 w-4 ${card.color}`} />
+            <card.icon className={`h-4 w-4 ${card.color} transition-transform group-hover:scale-110`} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{card.value}</div>
             <p className="text-xs text-muted-foreground">
               {card.description}
               {card.trend && (
-                <span className="ml-1 text-brand-cyan-600">{card.trend}</span>
+                <span className="ml-1 text-brand-cyan-400">{card.trend}</span>
               )}
             </p>
           </CardContent>

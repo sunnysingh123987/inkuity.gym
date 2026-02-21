@@ -42,16 +42,16 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+    <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Reset password</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Reset password</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Enter your email and we’ll send you a link to reset your password.
         </p>
       </div>
 
       {sent ? (
-        <Alert className="bg-green-50 text-green-800 border-green-200">
+        <Alert className="bg-green-500/10 text-green-400 border-green-200">
           <AlertDescription>
             Check your email for a link to reset your password. If you don’t see it, check your spam folder.
           </AlertDescription>
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
         </form>
       )}
 
-      <p className="mt-6 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
           Back to sign in
         </Link>

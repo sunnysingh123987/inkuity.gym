@@ -77,9 +77,9 @@ export function SettingsForm({ profile }: SettingsFormProps) {
                   type="email"
                   value={formData.email}
                   disabled
-                  className="bg-gray-50"
+                  className="bg-muted"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Email cannot be changed
                 </p>
               </div>
@@ -106,8 +106,8 @@ export function SettingsForm({ profile }: SettingsFormProps) {
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <Button type="submit" disabled={loading}>
+            <div className="flex flex-col sm:flex-row sm:justify-end">
+              <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -127,10 +127,10 @@ export function SettingsForm({ profile }: SettingsFormProps) {
           <CardTitle>Subscription</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-medium">Current Plan</p>
-              <p className="text-sm text-gray-500 capitalize">
+              <p className="text-sm text-muted-foreground capitalize">
                 {profile?.subscription_tier || 'Free'}
               </p>
             </div>

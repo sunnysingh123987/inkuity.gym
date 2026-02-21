@@ -15,10 +15,10 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Something went wrong!</h2>
-        <p className="mt-2 text-gray-600">
+        <h2 className="text-2xl font-bold text-foreground">Something went wrong!</h2>
+        <p className="mt-2 text-muted-foreground">
           We apologize for the inconvenience. Please try again.
         </p>
         <button

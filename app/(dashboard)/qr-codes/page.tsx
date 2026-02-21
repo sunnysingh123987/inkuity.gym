@@ -12,8 +12,8 @@ export default async function QRCodesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">QR Codes</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">QR Codes</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Create and manage QR codes for your gyms.
         </p>
       </div>

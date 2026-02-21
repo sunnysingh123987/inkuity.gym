@@ -405,12 +405,13 @@ export async function checkInMember(formData: {
     if (existingMember) {
       member = existingMember;
     } else {
-      // 2. Create new member
+      // 2. Create new member with pending status
       const { data: newMember, error: createError } = await supabase
         .from('members')
         .insert({
           gym_id: formData.gymId,
           email: formData.email,
+          membership_status: 'pending',
         })
         .select()
         .single();
@@ -527,6 +528,45 @@ export async function checkInMember(formData: {
       success: false,
       error: error.message
     };
+  }
+}
+
+export async function approveMember(memberId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createServerSupabaseClient();
+
+    const { error } = await supabase
+      .from('members')
+      .update({
+        membership_status: 'active',
+        member_since: new Date().toISOString().split('T')[0],
+      })
+      .eq('id', memberId);
+
+    if (error) throw error;
+
+    revalidatePath('/members');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function rejectMember(memberId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createServerSupabaseClient();
+
+    const { error } = await supabase
+      .from('members')
+      .delete()
+      .eq('id', memberId);
+
+    if (error) throw error;
+
+    revalidatePath('/members');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }
 

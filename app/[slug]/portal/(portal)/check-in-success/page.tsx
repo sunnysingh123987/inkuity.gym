@@ -7,12 +7,16 @@ import { Button } from '@/components/ui/button';
 import { recordQRCheckIn } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { WorkoutFocusSelector } from '@/components/member-portal/check-in/workout-focus-selector';
+import { MemberInfoForm } from '@/components/member-portal/check-in/member-info-form';
+import { checkMemberInfoCollected } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
+import { getRandomQuote } from '@/lib/data/fitness-quotes';
 import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
+  Clock,
 } from 'lucide-react';
 
 interface CheckInSuccessPageProps {
@@ -35,6 +39,11 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
   const [checkInData, setCheckInData] = useState<CheckInData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showWorkoutSelector, setShowWorkoutSelector] = useState(false);
+  const [showTick, setShowTick] = useState(false);
+  const [quote] = useState(() => getRandomQuote());
+  const [showMemberInfoForm, setShowMemberInfoForm] = useState(false);
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     async function performCheckIn() {
@@ -46,12 +55,13 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
           return;
         }
 
-        const { memberId, gymId } = authResult.data;
+        const { memberId: mId, gymId } = authResult.data;
+        setMemberId(mId);
         const scanId = searchParams.get('scan_id') || undefined;
         const qrCode = searchParams.get('qr_code') || undefined;
 
         // Record the check-in
-        const result = await recordQRCheckIn(memberId, gymId, scanId, qrCode);
+        const result = await recordQRCheckIn(mId, gymId, scanId, qrCode);
 
         if (result.success && result.data) {
           setCheckInData(result.data);
@@ -60,8 +70,23 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
             toast.warning('Your subscription is not active. Please contact the gym.');
           }
 
-          // Show workout selector after a brief delay
-          setTimeout(() => setShowWorkoutSelector(true), 800);
+          // Check if this is a first-time check-in (no info collected yet)
+          const infoCollected = await checkMemberInfoCollected(mId);
+
+          // Check if member is pending approval
+          const memberIsPending = result.data.membershipStatus === 'pending';
+
+          // Animate tick then show info form, pending screen, or workout selector
+          setTimeout(() => setShowTick(true), 300);
+          if (!infoCollected) {
+            // Show info form first, then pending or workout selector
+            setTimeout(() => setShowMemberInfoForm(true), 1500);
+            if (memberIsPending) setIsPending(true);
+          } else if (memberIsPending) {
+            setIsPending(true);
+          } else {
+            setTimeout(() => setShowWorkoutSelector(true), 1500);
+          }
         } else {
           setError(result.error || 'Failed to record check-in');
         }
@@ -134,22 +159,67 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      {/* Check-in Confirmation */}
+      {/* Check-in Confirmation with Animated Tick */}
       <Card className="overflow-hidden bg-slate-900 border-slate-800">
         <div className="bg-gradient-to-r from-brand-cyan-500 via-brand-purple-500 to-brand-pink-500 px-6 py-8 text-center text-white">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm mb-4">
-            <CheckCircle2 className="w-9 h-9 text-white" />
+          {/* Animated tick */}
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 transition-all duration-700 ease-out ${
+            showTick
+              ? 'bg-white/20 backdrop-blur-sm scale-100 opacity-100'
+              : 'bg-white/10 scale-50 opacity-0'
+          }`}>
+            <svg
+              className={`w-12 h-12 text-white transition-all duration-500 delay-300 ${
+                showTick ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+              }`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d="M5 13l4 4L19 7"
+                className={showTick ? 'animate-draw-check' : ''}
+                style={{
+                  strokeDasharray: 24,
+                  strokeDashoffset: showTick ? 0 : 24,
+                  transition: 'stroke-dashoffset 0.6s ease-out 0.5s',
+                }}
+              />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold">Checked In!</h1>
-          <p className="text-white/80 mt-1">
+          <h1 className={`text-2xl font-bold transition-all duration-500 delay-500 ${
+            showTick ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}>
+            Checked In!
+          </h1>
+          <p className={`text-white/80 mt-1 transition-all duration-500 delay-700 ${
+            showTick ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}>
             Welcome, {checkInData.memberName}
           </p>
         </div>
 
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-400">{formattedDate}</span>
             <span className="font-mono font-semibold text-white">{formattedTime}</span>
+          </div>
+
+          {/* Motivational Quote */}
+          <div className={`border-t border-slate-800 pt-3 transition-all duration-700 delay-1000 ${
+            showTick ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}>
+            <p className="text-sm italic text-slate-300 text-center leading-relaxed">
+              &ldquo;{quote.text}&rdquo;
+            </p>
+            {quote.author !== 'Unknown' && (
+              <p className="text-xs text-slate-500 text-center mt-1">
+                &mdash; {quote.author}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -188,6 +258,35 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
         </Card>
       )}
 
+      {/* Member Info Collection (first check-in only) */}
+      {showMemberInfoForm && memberId && (
+        <MemberInfoForm
+          memberId={memberId}
+          existingName={checkInData.memberName}
+          onComplete={() => {
+            setShowMemberInfoForm(false);
+            if (!isPending) {
+              setShowWorkoutSelector(true);
+            }
+          }}
+        />
+      )}
+
+      {/* Pending Approval Screen */}
+      {isPending && !showMemberInfoForm && (
+        <Card className="bg-slate-900 border-slate-800">
+          <CardContent className="py-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
+              <Clock className="w-8 h-8 text-amber-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-white">Request Submitted</h2>
+            <p className="text-slate-400 text-sm max-w-sm mx-auto">
+              Your membership request has been submitted. You&apos;ll get access once the gym owner approves your request.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Workout Focus Selector */}
       {showWorkoutSelector && (
         <Card className="bg-slate-900 border-slate-800">
@@ -201,7 +300,7 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
       )}
 
       {/* Skip to Dashboard */}
-      {!showWorkoutSelector && (
+      {!showWorkoutSelector && !isPending && (
         <div className="text-center">
           <Button
             variant="ghost"

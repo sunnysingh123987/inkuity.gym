@@ -37,13 +37,13 @@ export function ErrorState({ type = 'generic', title, message, onRetry }: ErrorS
 
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
-        <Icon className="h-8 w-8 text-red-600" />
+      <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+        <Icon className="h-8 w-8 text-red-400" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+      <h3 className="text-lg font-semibold text-foreground mb-2">
         {title || config.title}
       </h3>
-      <p className="text-gray-600 mb-6 max-w-sm">
+      <p className="text-muted-foreground mb-6 max-w-sm">
         {message || config.message}
       </p>
       {onRetry && (

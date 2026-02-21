@@ -1,29 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { Gym, Member } from '@/types/database'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { checkInMember } from '@/lib/actions/gyms'
-import { MemberOnboardingForm } from './member-onboarding-form'
-import { QRCodeScanner } from '@/components/qr-scanner/qr-code-scanner'
-import { toast } from 'sonner'
+import { useEffect, useRef } from 'react'
+import { gsap } from 'gsap'
+import { Gym } from '@/types/database'
 import {
   Building2,
   MapPin,
   Phone,
   Mail,
+  Globe,
   Clock,
-  LogIn,
-  BarChart3,
-  CheckCircle,
-  QrCode,
-  AlertCircle,
-  Loader2,
-  UserCircle,
+  Users,
+  Shield,
+  Dumbbell,
+  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -33,335 +23,265 @@ interface GymLandingPageProps {
   qrCode?: string
 }
 
-type CheckInState = 'form' | 'onboarding' | 'success'
+export function GymLandingPage({ gym }: GymLandingPageProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
 
-export function GymLandingPage({ gym, scanId, qrCode }: GymLandingPageProps) {
-  const [email, setEmail] = useState('')
-  const [checkInState, setCheckInState] = useState<CheckInState>('form')
-  const [loading, setLoading] = useState(false)
-  const [member, setMember] = useState<Member | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [showScanner, setShowScanner] = useState(false)
-  const [lastCheckInTime, setLastCheckInTime] = useState<string | null>(null)
+  useEffect(() => {
+    if (!containerRef.current) return
+    const sections = containerRef.current.querySelectorAll('[data-animate]')
+    gsap.set(sections, { y: 20, opacity: 0 })
+    gsap.to(sections, {
+      y: 0,
+      opacity: 1,
+      stagger: 0.1,
+      duration: 0.6,
+      ease: 'power2.out',
+    })
+  }, [])
 
-  const handleCheckIn = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      const result = await checkInMember({
-        email,
-        gymId: gym.id,
-        scanId,
-      })
-
-      if (result.success && result.member) {
-        setMember(result.member)
-        if (result.isNewMember) {
-          toast.success('Welcome! Please complete your profile')
-          setCheckInState('onboarding')
-        } else {
-          toast.success('Check-in successful! 🎉')
-          setCheckInState('success')
-        }
-      } else {
-        // Handle specific errors
-        if (result.error === 'DAILY_LIMIT_REACHED') {
-          setError('You\'ve already checked in today. See you tomorrow!')
-          setLastCheckInTime(result.lastCheckIn || null)
-          toast.error('Already checked in today')
-        } else {
-          setError(result.error || 'Check-in failed. Please try again.')
-          toast.error('Check-in failed')
-        }
-      }
-    } catch (error) {
-      setError('An error occurred during check-in. Please try again.')
-      toast.error('An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleScanSuccess = (code: string) => {
-    setShowScanner(false)
-    toast.success('QR code scanned successfully!')
-    // You can use the code if needed, but for now just proceed to check-in
-    // The scan was already recorded when they scanned via /s/[code] route
-    // So just show the check-in form or auto-check-in if email is provided
-  }
-
-  const handleOnboardingComplete = () => {
-    setCheckInState('success')
-  }
-
-  if (checkInState === 'onboarding' && member) {
-    return <MemberOnboardingForm member={member} gym={gym} onComplete={handleOnboardingComplete} />
-  }
+  const hasAddress = gym.address || gym.city || gym.state
+  const fullAddress = [gym.address, gym.city, gym.state, gym.zip_code].filter(Boolean).join(', ')
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <div className="flex items-center gap-4">
-            {gym.logo_url ? (
-              <img
-                src={gym.logo_url}
-                alt={gym.name}
-                className="h-12 w-12 rounded-lg object-cover"
-              />
-            ) : (
-              <div
-                className="h-12 w-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500"
-              >
-                <Building2 className="h-6 w-6 text-white" />
+    <div ref={containerRef} className="min-h-screen bg-[#0B1120] text-white">
+      {/* Header / Hero */}
+      <header className="relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0B1120] via-[#0e1726] to-[#0B1120]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-brand-cyan-500/5 rounded-full blur-[120px]" />
+
+        <div className="relative z-10">
+          {/* Top bar */}
+          <div data-animate className="border-b border-white/5">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+              <div className="flex h-14 items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {gym.logo_url ? (
+                    <img
+                      src={gym.logo_url}
+                      alt={gym.name}
+                      className="h-8 w-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500">
+                      <Building2 className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  <span className="text-sm font-semibold text-white">{gym.name}</span>
+                </div>
+                <Link
+                  href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-brand-cyan-500 hover:bg-brand-cyan-600 px-4 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 shadow-lg shadow-brand-cyan-500/20"
+                >
+                  Join the Gym
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
               </div>
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{gym.name}</h1>
-              <p className="text-sm text-gray-500">Powered by Inkuity</p>
+            </div>
+          </div>
+
+          {/* Hero content */}
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+            <div data-animate className="flex flex-col items-center text-center">
+              {gym.logo_url ? (
+                <img
+                  src={gym.logo_url}
+                  alt={gym.name}
+                  className="h-24 w-24 rounded-2xl object-cover border border-white/10 shadow-2xl mb-6"
+                />
+              ) : (
+                <div className="h-24 w-24 rounded-2xl flex items-center justify-center bg-gradient-to-br from-brand-cyan-500 to-brand-purple-500 shadow-2xl mb-6">
+                  <Building2 className="h-12 w-12 text-white" />
+                </div>
+              )}
+
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
+                {gym.name}
+              </h1>
+
+              {gym.description && (
+                <p className="mt-4 text-slate-400 text-base sm:text-lg max-w-xl leading-relaxed">
+                  {gym.description}
+                </p>
+              )}
+
+              {hasAddress && (
+                <div className="mt-4 flex items-center gap-2 text-slate-500 text-sm">
+                  <MapPin className="h-4 w-4" />
+                  <span>{fullAddress}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Gym Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>About</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {gym.description && (
-                <p className="text-gray-600">{gym.description}</p>
+      {/* Main Content */}
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-20">
+        {/* Quick Info Cards */}
+        <div data-animate className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 -mt-8 relative z-20">
+          {[
+            { icon: Dumbbell, label: 'Full Equipment', color: 'text-brand-cyan-400', bg: 'bg-brand-cyan-500/10' },
+            { icon: Clock, label: 'Open Daily', color: 'text-brand-purple-400', bg: 'bg-brand-purple-500/10' },
+            { icon: Users, label: 'Active Community', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+            { icon: Shield, label: 'Safe & Secure', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+          ].map((item) => {
+            const Icon = item.icon
+            return (
+              <div
+                key={item.label}
+                className="rounded-xl bg-[#111827] border border-white/5 p-4 text-center hover:border-white/10 transition-colors"
+              >
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${item.bg} mb-2`}>
+                  <Icon className={`h-5 w-5 ${item.color}`} />
+                </div>
+                <p className="text-xs font-medium text-slate-300">{item.label}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Contact & Details Section */}
+        <div className="mt-12 grid md:grid-cols-2 gap-6">
+          {/* Contact Information */}
+          <div data-animate className="rounded-2xl bg-[#111827] border border-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-5">Contact Information</h2>
+
+            <div className="space-y-4">
+              {hasAddress && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-brand-cyan-500/10 flex items-center justify-center mt-0.5">
+                    <MapPin className="h-4 w-4 text-brand-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Address</p>
+                    <p className="text-sm text-slate-500">{fullAddress}</p>
+                  </div>
+                </div>
               )}
 
-              <div className="space-y-3">
-                {gym.address && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-900">{gym.address}</p>
-                      <p className="text-sm text-gray-500">
-                        {gym.city}, {gym.state} {gym.zip_code}
-                      </p>
-                    </div>
+              {gym.phone && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-brand-cyan-500/10 flex items-center justify-center mt-0.5">
+                    <Phone className="h-4 w-4 text-brand-cyan-400" />
                   </div>
-                )}
-
-                {gym.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <a
-                      href={`tel:${gym.phone}`}
-                      className="text-sm text-brand-cyan-500 hover:underline"
-                    >
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Phone</p>
+                    <a href={`tel:${gym.phone}`} className="text-sm text-brand-cyan-400 hover:underline">
                       {gym.phone}
                     </a>
                   </div>
-                )}
+                </div>
+              )}
 
-                {gym.email && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                    <a
-                      href={`mailto:${gym.email}`}
-                      className="text-sm text-brand-cyan-500 hover:underline"
-                    >
+              {gym.email && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-brand-cyan-500/10 flex items-center justify-center mt-0.5">
+                    <Mail className="h-4 w-4 text-brand-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Email</p>
+                    <a href={`mailto:${gym.email}`} className="text-sm text-brand-cyan-400 hover:underline">
                       {gym.email}
                     </a>
                   </div>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                  <p className="text-sm text-gray-600">Open 24/7</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Check-in */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LogIn className="h-5 w-5" />
-                Check In
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {checkInState === 'success' ? (
-                <div className="text-center py-6">
-                  <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Check-in successful!
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-6">
-                    Welcome back{ member?.full_name ? `, ${member.full_name}` : ''}!
-                    You've been checked in to {gym.name}.
-                  </p>
-
-                  {/* Portal Access Button */}
-                  <div className="space-y-3">
-                    <Link
-                      href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
-                    >
-                      <Button className="w-full" variant="default">
-                        <UserCircle className="h-4 w-4 mr-2" />
-                        Access Member Portal
-                      </Button>
-                    </Link>
-                    <p className="text-xs text-gray-500">
-                      Track workouts, view progress, and manage your fitness journey
-                    </p>
-                  </div>
-                </div>
-              ) : checkInState === 'onboarding' && member ? (
-                <MemberOnboardingForm
-                  member={member}
-                  gym={gym}
-                  onComplete={handleOnboardingComplete}
-                />
-              ) : (
-                <>
-                  {/* Error Alert */}
-                  {error && (
-                    <Alert className="mb-4 border-red-200 bg-red-50">
-                      <AlertCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription className="text-red-800">
-                        {error}
-                        {lastCheckInTime && (
-                          <p className="mt-1 text-sm">
-                            Last check-in: {new Date(lastCheckInTime).toLocaleString()}
-                          </p>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* QR Scanner Button */}
-                  <div className="mb-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full border-2 border-brand-cyan-200 hover:border-brand-cyan-300 hover:bg-brand-cyan-50"
-                      onClick={() => setShowScanner(true)}
-                    >
-                      <QrCode className="mr-2 h-5 w-5 text-brand-cyan-500" />
-                      Scan QR Code
-                    </Button>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="bg-white px-2 text-gray-500">or check in with email</span>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleCheckIn} className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Enter your email to check in</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        required
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={loading}
-                      style={{
-                        backgroundColor: '#06b6d4',
-                      }}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Checking in...
-                        </>
-                      ) : (
-                        'Check In'
-                      )}
-                    </Button>
-
-                    <p className="text-xs text-center text-gray-500">
-                      By checking in, you agree to our terms of service.
-                    </p>
-                  </form>
-                </>
               )}
-            </CardContent>
-          </Card>
+
+              {gym.website && (
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-brand-cyan-500/10 flex items-center justify-center mt-0.5">
+                    <Globe className="h-4 w-4 text-brand-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Website</p>
+                    <a
+                      href={gym.website.startsWith('http') ? gym.website : `https://${gym.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-brand-cyan-400 hover:underline"
+                    >
+                      {gym.website}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {!gym.phone && !gym.email && !gym.website && !hasAddress && (
+                <p className="text-sm text-slate-500">No contact information available yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Member Portal CTA */}
+          <div data-animate className="rounded-2xl bg-gradient-to-br from-[#0e1a2e] to-[#111d32] border border-white/5 p-6 flex flex-col justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white mb-3">Join the Gym</h2>
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                Become a member and get access to your personal dashboard, check-in tracking, fitness streaks, and more.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                {[
+                  'Quick and easy sign-up process',
+                  'Track your check-ins & fitness streaks',
+                  'Access your personal dashboard',
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <div className="flex-shrink-0 h-5 w-5 rounded-full bg-brand-cyan-500/20 flex items-center justify-center">
+                      <svg className="h-3 w-3 text-brand-cyan-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-slate-400">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Link
+              href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
+              className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-brand-cyan-500 hover:bg-brand-cyan-600 py-3 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-brand-cyan-500/25"
+            >
+              Join the Gym
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
-        {/* Member Portal Preview */}
-        <Card className="mt-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-brand-cyan-100 flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-brand-cyan-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Member Portal</p>
-                  <p className="text-sm text-gray-500">
-                    Track workouts, manage diet plans, and view your fitness progress
-                  </p>
-                </div>
-              </div>
-              <Link
-                href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
-              >
-                <Button variant="outline">
-                  <UserCircle className="h-4 w-4 mr-2" />
-                  Access Portal
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        {/* About Section (if description is long, show expanded) */}
+        {gym.description && gym.description.length > 100 && (
+          <div data-animate className="mt-6 rounded-2xl bg-[#111827] border border-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-3">About {gym.name}</h2>
+            <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-line">{gym.description}</p>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-12">
-        <div className="mx-auto max-w-4xl px-4 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} {gym.name}. All rights reserved.
+      <footer className="border-t border-white/5">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-slate-500">
+              &copy; {new Date().getFullYear()} {gym.name}. All rights reserved.
             </p>
-            <p className="text-sm text-gray-500">
-              Powered by{' '}
-              <a
-                href="https://inkuity.com"
-                className="text-brand-cyan-500 hover:underline"
-              >
-                Inkuity
-              </a>
-            </p>
+            <div className="flex items-center gap-4">
+              <Link href="/terms" className="text-xs text-slate-500 hover:text-white transition-colors">
+                Terms
+              </Link>
+              <Link href="/privacy" className="text-xs text-slate-500 hover:text-white transition-colors">
+                Privacy
+              </Link>
+              <span className="text-xs text-slate-600">
+                Powered by{' '}
+                <a href="https://inkuity.com" className="text-brand-cyan-400 hover:underline">
+                  Inkuity
+                </a>
+              </span>
+            </div>
           </div>
         </div>
       </footer>
-
-      {/* QR Scanner Modal */}
-      {showScanner && (
-        <QRCodeScanner
-          onScanSuccess={handleScanSuccess}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
     </div>
   )
 }

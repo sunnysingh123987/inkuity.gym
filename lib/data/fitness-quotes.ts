@@ -1,0 +1,36 @@
+export const fitnessQuotes = [
+  { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
+  { text: "Strength does not come from the body. It comes from the will.", author: "Unknown" },
+  { text: "Your body can stand almost anything. It's your mind you have to convince.", author: "Unknown" },
+  { text: "The pain you feel today will be the strength you feel tomorrow.", author: "Unknown" },
+  { text: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
+  { text: "The harder you work, the luckier you get.", author: "Gary Player" },
+  { text: "Push yourself because no one else is going to do it for you.", author: "Unknown" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+  { text: "The difference between try and triumph is a little umph.", author: "Marvin Phillips" },
+  { text: "Sweat is just fat crying.", author: "Unknown" },
+  { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+  { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+  { text: "It never gets easier, you just get stronger.", author: "Unknown" },
+  { text: "Train insane or remain the same.", author: "Unknown" },
+  { text: "Fall in love with taking care of yourself.", author: "Unknown" },
+  { text: "Strive for progress, not perfection.", author: "Unknown" },
+  { text: "Wake up with determination. Go to bed with satisfaction.", author: "Unknown" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "What seems impossible today will one day become your warm-up.", author: "Unknown" },
+  { text: "A one hour workout is only 4% of your day. No excuses.", author: "Unknown" },
+  { text: "You are one workout away from a good mood.", author: "Unknown" },
+  { text: "The body achieves what the mind believes.", author: "Napoleon Hill" },
+  { text: "Be stronger than your excuses.", author: "Unknown" },
+  { text: "Fitness is not about being better than someone else. It's about being better than you used to be.", author: "Khloe Kardashian" },
+  { text: "Rome wasn't built in a day, but they worked on it every single day.", author: "Unknown" },
+  { text: "Every champion was once a contender who refused to give up.", author: "Rocky Balboa" },
+  { text: "Your health is an investment, not an expense.", author: "Unknown" },
+  { text: "If it doesn't challenge you, it won't change you.", author: "Fred DeVito" },
+]
+
+export function getRandomQuote() {
+  return fitnessQuotes[Math.floor(Math.random() * fitnessQuotes.length)]
+}

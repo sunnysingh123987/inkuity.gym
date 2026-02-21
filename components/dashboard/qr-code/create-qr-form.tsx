@@ -122,7 +122,7 @@ export function CreateQRCodeForm({ gyms }: CreateQRCodeFormProps) {
               name="label"
               placeholder="Main Entrance"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               This will be shown on the public landing page
             </p>
           </div>
@@ -138,14 +138,14 @@ export function CreateQRCodeForm({ gyms }: CreateQRCodeFormProps) {
                   className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
                     selectedType === type.value
                       ? 'border-indigo-600 bg-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border-border'
                   }`}
                 >
                   <div
                     className={`flex h-5 w-5 items-center justify-center rounded-full border ${
                       selectedType === type.value
                         ? 'border-indigo-600 bg-indigo-600'
-                        : 'border-gray-300'
+                        : 'border-border'
                     }`}
                   >
                     {selectedType === type.value && (
@@ -154,7 +154,7 @@ export function CreateQRCodeForm({ gyms }: CreateQRCodeFormProps) {
                   </div>
                   <div>
                     <p className="font-medium">{type.label}</p>
-                    <p className="text-sm text-gray-500">{type.description}</p>
+                    <p className="text-sm text-muted-foreground">{type.description}</p>
                   </div>
                 </button>
               ))}

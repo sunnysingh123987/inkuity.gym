@@ -128,8 +128,8 @@ const config: Config = {
           '50%': { boxShadow: '0 0 30px rgba(236, 72, 153, 0.5)' },
         },
         'shimmer': {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
       },
       animation: {

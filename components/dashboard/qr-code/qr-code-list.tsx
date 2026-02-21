@@ -17,11 +17,11 @@ export function QRCodeList({ qrCodes }: QRCodeListProps) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <QrCode className="h-6 w-6 text-gray-400" />
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <QrCode className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No QR codes yet</h3>
-          <p className="text-sm text-gray-500 mb-6 text-center max-w-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-2">No QR codes yet</h3>
+          <p className="text-sm text-muted-foreground mb-6 text-center max-w-sm">
             Create your first QR code to start tracking gym visits and member analytics.
           </p>
           <Link href="/qr-codes/new">
@@ -37,9 +37,9 @@ export function QRCodeList({ qrCodes }: QRCodeListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Link href="/qr-codes/new">
-          <Button>
+      <div className="flex flex-col sm:flex-row sm:justify-end">
+        <Link href="/qr-codes/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Create QR Code
           </Button>
@@ -58,8 +58,8 @@ export function QRCodeList({ qrCodes }: QRCodeListProps) {
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                       qrCode.is_active
-                        ? 'bg-green-50 text-green-700 ring-green-600/20'
-                        : 'bg-gray-50 text-gray-600 ring-gray-500/10'
+                        ? 'bg-green-500/10 text-green-400 ring-green-500/20'
+                        : 'bg-muted text-muted-foreground ring-border'
                     }`}
                   >
                     {qrCode.is_active ? 'Active' : 'Inactive'}
@@ -67,24 +67,24 @@ export function QRCodeList({ qrCodes }: QRCodeListProps) {
                 </div>
 
                 <div className="mt-4">
-                  <h3 className="font-semibold text-gray-900">{qrCode.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-semibold text-foreground">{qrCode.name}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {qrCode.label || qrCode.type}
                   </p>
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Scan className="mr-2 h-4 w-4" />
                     <span>{qrCode.total_scans} scans</span>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Building2 className="mr-2 h-4 w-4" />
                     <span className="truncate">
                       {(qrCode as any).gym?.name || 'Unknown Gym'}
                     </span>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Calendar className="mr-2 h-4 w-4" />
                     <span>
                       Created {new Date(qrCode.created_at).toLocaleDateString()}
@@ -93,7 +93,7 @@ export function QRCodeList({ qrCodes }: QRCodeListProps) {
                 </div>
 
                 <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs font-mono text-gray-400">
+                  <p className="text-xs font-mono text-muted-foreground">
                     {qrCode.code}
                   </p>
                 </div>

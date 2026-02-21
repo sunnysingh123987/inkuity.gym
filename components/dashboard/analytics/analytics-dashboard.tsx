@@ -130,39 +130,39 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
       value: summary.totalCheckIns.toLocaleString(),
       change: `${summary.growthPercentage >= 0 ? '+' : ''}${summary.growthPercentage}%`,
       icon: BarChart3,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
     },
     {
       title: 'Active Members',
       value: summary.activeMembers.toLocaleString(),
       change: `${summary.totalMembers} total`,
       icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10',
     },
     {
       title: 'This Week',
       value: summary.weekCheckIns.toLocaleString(),
       change: `${summary.todayCheckIns} today`,
       icon: TrendingUp,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
     },
     {
       title: 'Retention Rate',
       value: `${retention.retentionRate}%`,
       change: 'Last 30 days',
       icon: Activity,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-500/10',
     },
   ]
 
   if (loading && !checkInTrends.length) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -174,7 +174,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
@@ -205,7 +205,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
             <Button
               variant="outline"
               size="sm"
-              className="ml-auto"
+              className="w-full sm:w-auto sm:ml-auto"
               onClick={handleExport}
               disabled={loading || checkInTrends.length === 0}
             >
@@ -223,10 +223,10 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                   <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
                   {stat.change && (
-                    <p className={`mt-1 text-sm ${stat.change.startsWith('+') ? 'text-green-600' : 'text-gray-500'}`}>
+                    <p className={`mt-1 text-sm ${stat.change.startsWith('+') ? 'text-green-400' : 'text-muted-foreground'}`}>
                       {stat.change}
                     </p>
                   )}
@@ -250,7 +250,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
           </CardHeader>
           <CardContent>
             {checkInTrends.length > 0 ? (
-              <div className="h-[300px]">
+              <div className="h-[200px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={checkInTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -268,7 +268,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-400">
+              <div className="h-[200px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
                 No check-in data available
               </div>
             )}
@@ -282,7 +282,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
           <CardContent>
             {deviceBreakdown.length > 0 ? (
               <>
-                <div className="h-[300px]">
+                <div className="h-[200px] sm:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -309,7 +309,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         {item.name} ({item.percentage}%)
                       </span>
                     </div>
@@ -317,7 +317,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
                 </div>
               </>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-400">
+              <div className="h-[200px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
                 No device data available
               </div>
             )}
@@ -332,7 +332,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
         </CardHeader>
         <CardContent>
           {peakHours.length > 0 ? (
-            <div className="h-[300px]">
+            <div className="h-[200px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={peakHours}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -344,7 +344,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-400">
+            <div className="h-[200px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
               No hourly data available
             </div>
           )}
@@ -362,20 +362,20 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
               {topMembers.map((member, index) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted"
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-semibold">
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{member.name}</p>
-                      <p className="text-sm text-gray-500">{member.email}</p>
+                      <p className="font-medium text-foreground">{member.name}</p>
+                      <p className="text-sm text-muted-foreground">{member.email}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">{member.checkIns} check-ins</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-semibold text-foreground">{member.checkIns} check-ins</p>
+                    <p className="text-xs text-muted-foreground">
                       Last: {new Date(member.lastCheckIn).toLocaleDateString()}
                     </p>
                   </div>

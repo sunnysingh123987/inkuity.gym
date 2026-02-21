@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') || '/dashboard'
+  const next = searchParams.get('next')
 
   if (code) {
     const cookieStore = cookies()
@@ -30,7 +30,28 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      // If there's an explicit next URL, use it
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
+
+      // Otherwise check onboarding status to decide where to redirect
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.onboarding_completed) {
+          return NextResponse.redirect(`${origin}/dashboard`)
+        }
+      }
+
+      // New user or onboarding not completed
+      return NextResponse.redirect(`${origin}/onboarding`)
     }
   }
 
