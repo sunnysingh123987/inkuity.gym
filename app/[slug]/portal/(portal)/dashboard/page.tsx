@@ -28,8 +28,8 @@ export default async function DashboardPage({
     .eq('id', memberId)
     .single();
 
-  // Block access for pending members
-  if (member?.membership_status === 'pending') {
+  // Block access for pending/trial members
+  if (member?.membership_status === 'pending' || member?.membership_status === 'trial') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center space-y-4 max-w-md">

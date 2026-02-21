@@ -5,7 +5,7 @@ import { Member, CheckIn } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, User, Mail, Phone, Calendar, Droplets, Ruler, Weight } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Heart } from 'lucide-react'
 
 interface MemberDetailViewProps {
   member: Member
@@ -25,6 +25,13 @@ export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
       pending: 'bg-blue-500/10 text-blue-400',
     }
     return variants[status] || variants.pending
+  }
+
+  const formatHeight = () => {
+    const ft = member.metadata?.height_ft
+    const inches = member.metadata?.height_in
+    if (ft || inches) return `${ft || 0}' ${inches || 0}"`
+    return '—'
   }
 
   return (
@@ -54,12 +61,35 @@ export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
             <InfoRow icon={Phone} label="Phone" value={member.phone || '—'} />
             <InfoRow icon={Calendar} label="Date of Birth" value={member.birth_date ? new Date(member.birth_date).toLocaleDateString() : '—'} />
             <InfoRow icon={User} label="Gender" value={member.gender || '—'} />
-            <InfoRow icon={Droplets} label="Blood Group" value={member.metadata?.blood_group || '—'} />
-            <InfoRow icon={Ruler} label="Height" value={member.metadata?.height ? `${member.metadata.height} cm` : '—'} />
+            <InfoRow icon={Ruler} label="Height" value={formatHeight()} />
             <InfoRow icon={Weight} label="Weight" value={member.metadata?.weight ? `${member.metadata.weight} kg` : '—'} />
           </div>
         </CardContent>
       </Card>
+
+      {/* Emergency & Medical */}
+      {(member.metadata?.emergency_contact_name || member.metadata?.emergency_contact_phone || member.metadata?.medical_conditions) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Emergency & Medical</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <InfoRow icon={ShieldAlert} label="Emergency Contact" value={member.metadata?.emergency_contact_name || '—'} />
+              <InfoRow icon={Phone} label="Emergency Phone" value={member.metadata?.emergency_contact_phone || '—'} />
+            </div>
+            {member.metadata?.medical_conditions && (
+              <div className="mt-4 flex items-start gap-3 py-2">
+                <Heart className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Medical Conditions</p>
+                  <p className="text-sm font-medium text-foreground">{member.metadata.medical_conditions}</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Check-in History */}
       <Card>

@@ -588,9 +588,9 @@ export async function calculateMembershipStatus(member: Member): Promise<'active
     return 'trial';
   }
 
-  // If no subscription info, consider pending
+  // If no subscription info, keep current status (trial members stay trial)
   if (!member.subscription_start_date || !member.subscription_plan) {
-    return 'pending';
+    return member.membership_status;
   }
 
   // For custom plans, we can't auto-calculate, so use manual status

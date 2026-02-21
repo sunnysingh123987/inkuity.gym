@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { getGyms } from '@/lib/actions/gyms'
 import { CreateMemberForm } from '@/components/dashboard/members/create-member-form'
-import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata = {
@@ -11,6 +10,7 @@ export const metadata = {
 
 export default async function NewMemberPage() {
   const { data: gyms } = await getGyms()
+  const gym = gyms?.[0] || null
 
   return (
     <div className="space-y-6">
@@ -24,12 +24,12 @@ export default async function NewMemberPage() {
         </Link>
         <h1 className="text-2xl font-bold text-foreground">Add Member</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add a new member to one of your gyms.
+          Add a new member to your gym.
         </p>
       </div>
 
       <div className="max-w-2xl">
-        <CreateMemberForm gyms={gyms || []} />
+        <CreateMemberForm gymId={gym?.id || ''} />
       </div>
     </div>
   )

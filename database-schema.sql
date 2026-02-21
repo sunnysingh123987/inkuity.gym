@@ -148,7 +148,7 @@ CREATE TABLE public.members (
   is_verified boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  membership_status text CHECK (membership_status IS NULL OR (membership_status = ANY (ARRAY['active'::text, 'expired'::text, 'suspended'::text, 'cancelled'::text, 'pending'::text]))),
+  membership_status text CHECK (membership_status IS NULL OR (membership_status = ANY (ARRAY['active'::text, 'expired'::text, 'suspended'::text, 'cancelled'::text, 'pending'::text, 'trial'::text]))),
   subscription_plan text CHECK (subscription_plan IS NULL OR (subscription_plan = ANY (ARRAY['1_month'::text, '3_months'::text, '6_months'::text, '1_year'::text, 'custom'::text]))),
   subscription_start_date timestamp with time zone,
   auth_user_id uuid,
