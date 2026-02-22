@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MapPin, LocateFixed } from 'lucide-react'
 import { updateProfile } from '@/lib/actions/profile'
 import { updateGym } from '@/lib/actions/gyms'
 import { QRCodeCard } from '@/components/dashboard/qr-code-card'
@@ -42,6 +42,12 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
     email: gym?.email || '',
     website: gym?.website || '',
   })
+  const [geoData, setGeoData] = useState({
+    latitude: (gym?.settings as any)?.latitude?.toString() || '',
+    longitude: (gym?.settings as any)?.longitude?.toString() || '',
+    geofence_radius: (gym?.settings as any)?.geofence_radius?.toString() || '200',
+  })
+  const [geoLoading, setGeoLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,6 +71,23 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
 
       // Update gym if exists
       if (gym) {
+        // Merge geofence settings into existing settings
+        const existingSettings = (gym.settings || {}) as Record<string, any>
+        const lat = geoData.latitude ? parseFloat(geoData.latitude) : undefined
+        const lng = geoData.longitude ? parseFloat(geoData.longitude) : undefined
+        const radius = geoData.geofence_radius ? parseInt(geoData.geofence_radius, 10) : 200
+
+        const updatedSettings = {
+          ...existingSettings,
+          ...(lat != null && !isNaN(lat) ? { latitude: lat } : {}),
+          ...(lng != null && !isNaN(lng) ? { longitude: lng } : {}),
+          geofence_radius: radius,
+        }
+
+        // Remove lat/lng from settings if fields are cleared
+        if (!geoData.latitude) delete updatedSettings.latitude
+        if (!geoData.longitude) delete updatedSettings.longitude
+
         const gymResult = await updateGym(gym.id, {
           name: gymData.name,
           description: gymData.description || null,
@@ -75,6 +98,7 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
           phone: gymData.phone || null,
           email: gymData.email || null,
           website: gymData.website || null,
+          settings: updatedSettings,
         } as any)
 
         if (!gymResult.success) {
@@ -265,6 +289,104 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Geofence / Location Settings */}
+        {gym && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Check-in Location Restriction
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Set your gym&apos;s coordinates to restrict QR check-ins to members physically at the gym. Leave blank to allow check-ins from anywhere.
+              </p>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="geoLatitude">Latitude</Label>
+                  <Input
+                    id="geoLatitude"
+                    type="number"
+                    step="any"
+                    value={geoData.latitude}
+                    onChange={(e) => setGeoData({ ...geoData, latitude: e.target.value })}
+                    placeholder="e.g. 40.7128"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="geoLongitude">Longitude</Label>
+                  <Input
+                    id="geoLongitude"
+                    type="number"
+                    step="any"
+                    value={geoData.longitude}
+                    onChange={(e) => setGeoData({ ...geoData, longitude: e.target.value })}
+                    placeholder="e.g. -74.0060"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="geoRadius">Geofence Radius (meters)</Label>
+                  <Input
+                    id="geoRadius"
+                    type="number"
+                    min="50"
+                    max="5000"
+                    value={geoData.geofence_radius}
+                    onChange={(e) => setGeoData({ ...geoData, geofence_radius: e.target.value })}
+                    placeholder="200"
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={geoLoading}
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    setError('Geolocation is not supported by your browser')
+                    return
+                  }
+                  setGeoLoading(true)
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      setGeoData({
+                        ...geoData,
+                        latitude: position.coords.latitude.toFixed(6),
+                        longitude: position.coords.longitude.toFixed(6),
+                      })
+                      setGeoLoading(false)
+                    },
+                    (err) => {
+                      setError(`Failed to get location: ${err.message}`)
+                      setGeoLoading(false)
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                  )
+                }}
+              >
+                {geoLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Getting location...
+                  </>
+                ) : (
+                  <>
+                    <LocateFixed className="mr-2 h-4 w-4" />
+                    Get Current Location
+                  </>
+                )}
+              </Button>
+              {geoData.latitude && geoData.longitude && (
+                <p className="text-xs text-muted-foreground">
+                  Members must be within <strong>{geoData.geofence_radius || 200}m</strong> of ({geoData.latitude}, {geoData.longitude}) to check in via QR.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}

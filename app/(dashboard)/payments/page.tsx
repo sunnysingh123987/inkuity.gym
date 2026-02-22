@@ -1,4 +1,5 @@
 import { getGyms, getMembers } from '@/lib/actions/gyms'
+import { getPayments } from '@/lib/actions/payments'
 import { PaymentsManager } from '@/components/dashboard/payments/payments-manager'
 
 export const metadata = {
@@ -11,9 +12,14 @@ export default async function PaymentsPage() {
   const gym = gyms[0] || null
 
   let members: any[] = []
+  let payments: any[] = []
   if (gym) {
-    const { data } = await getMembers(gym.id)
-    members = data || []
+    const [membersResult, paymentsResult] = await Promise.all([
+      getMembers(gym.id),
+      getPayments(gym.id),
+    ])
+    members = membersResult.data || []
+    payments = paymentsResult.data || []
   }
 
   return (
@@ -21,11 +27,11 @@ export default async function PaymentsPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Payments</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage member subscriptions and payment plans.
+          Manage member subscriptions, record payments, and track history.
         </p>
       </div>
 
-      <PaymentsManager members={members} />
+      <PaymentsManager members={members} payments={payments} gym={gym} />
     </div>
   )
 }

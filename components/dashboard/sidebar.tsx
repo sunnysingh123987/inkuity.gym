@@ -11,6 +11,10 @@ import {
   Users,
   CreditCard,
   BarChart3,
+  Megaphone,
+  Gift,
+  Wallet,
+  Shield,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -25,7 +29,11 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Members', href: '/members', icon: Users },
   { name: 'Payments', href: '/payments', icon: CreditCard },
+  { name: 'Announcements', href: '/announcements', icon: Megaphone },
+  { name: 'Referrals', href: '/referrals', icon: Gift },
+  { name: 'Staff & Finances', href: '/staff-expenses', icon: Wallet },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Team', href: '/team', icon: Shield },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

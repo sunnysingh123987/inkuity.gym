@@ -4,7 +4,11 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { StatsOverview } from '@/components/member-portal/dashboard/stats-overview';
 import { RecentActivity } from '@/components/member-portal/dashboard/recent-activity';
 import { QuickActions } from '@/components/member-portal/dashboard/quick-actions';
+import { WorkoutSuggestions } from '@/components/member-portal/dashboard/workout-suggestions';
 import { PageEntrance } from '@/components/animations/page-entrance';
+import { getWorkoutSuggestions } from '@/lib/actions/members-portal';
+import { getActiveAnnouncements } from '@/lib/actions/announcements';
+import { ActiveAnnouncements } from '@/components/member-portal/dashboard/active-announcements';
 
 export default async function DashboardPage({
   params,
@@ -147,6 +151,15 @@ export default async function DashboardPage({
     .order('started_at', { ascending: false })
     .limit(5);
 
+  // Get workout suggestions
+  const suggestionsResult = await getWorkoutSuggestions(memberId, gymId);
+  const workoutSuggestions = suggestionsResult.data?.suggestions || [];
+  const lastWorkoutsMap = suggestionsResult.data?.lastWorkouts || {};
+
+  // Get active announcements
+  const announcementsResult = await getActiveAnnouncements(gymId);
+  const activeAnnouncements = announcementsResult.data || [];
+
   const stats = {
     totalCheckIns: totalCheckIns || 0,
     currentStreak,
@@ -168,6 +181,12 @@ export default async function DashboardPage({
         </p>
       </div>
 
+      {activeAnnouncements.length > 0 && (
+        <div data-animate>
+          <ActiveAnnouncements announcements={activeAnnouncements} />
+        </div>
+      )}
+
       <div data-animate>
         <StatsOverview stats={stats} />
       </div>
@@ -180,7 +199,11 @@ export default async function DashboardPage({
           />
         </div>
 
-        <div>
+        <div className="space-y-6">
+          <WorkoutSuggestions
+            suggestions={workoutSuggestions}
+            lastWorkouts={lastWorkoutsMap}
+          />
           <QuickActions gymSlug={params.slug} />
         </div>
       </div>

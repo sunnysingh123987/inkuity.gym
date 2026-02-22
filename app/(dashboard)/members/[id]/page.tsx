@@ -30,6 +30,14 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     .order('check_in_at', { ascending: false })
     .limit(50)
 
+  // Fetch recent payments for this member
+  const { data: payments } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('member_id', member.id)
+    .order('payment_date', { ascending: false })
+    .limit(5)
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,7 +47,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
         </p>
       </div>
 
-      <MemberDetailView member={member} checkIns={checkIns || []} />
+      <MemberDetailView member={member} checkIns={checkIns || []} payments={payments || []} />
     </div>
   )
 }

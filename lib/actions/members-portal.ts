@@ -1215,3 +1215,217 @@ export async function checkMemberInfoCollected(memberId: string): Promise<boolea
     return false
   }
 }
+
+// ============================================================
+// WORKOUT SUGGESTIONS
+// ============================================================
+
+const MUSCLE_GROUPS = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio'] as const;
+
+// Map sub-categories to standard groups
+const CATEGORY_MAP: Record<string, string> = {
+  chest: 'chest',
+  back: 'back',
+  shoulders: 'shoulders',
+  arms: 'arms',
+  biceps: 'arms',
+  triceps: 'arms',
+  legs: 'legs',
+  glutes: 'legs',
+  hamstrings: 'legs',
+  quads: 'legs',
+  calves: 'legs',
+  core: 'core',
+  abs: 'core',
+  cardio: 'cardio',
+};
+
+export async function getWorkoutSuggestions(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // 1. Query check-ins with tags for the last 30 days
+    const { data: checkIns, error: checkInError } = await supabase
+      .from('check_ins')
+      .select('check_in_at, tags')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('check_in_at', thirtyDaysAgo.toISOString())
+      .order('check_in_at', { ascending: false });
+
+    if (checkInError) throw checkInError;
+
+    // 2. Query workout sessions with exercise categories for the last 30 days
+    const { data: sessions, error: sessionError } = await supabase
+      .from('workout_sessions')
+      .select(`
+        started_at,
+        status,
+        session_exercises (
+          exercise_library (
+            category
+          )
+        )
+      `)
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('started_at', thirtyDaysAgo.toISOString())
+      .in('status', ['completed', 'in_progress'])
+      .order('started_at', { ascending: false });
+
+    if (sessionError) throw sessionError;
+
+    // Track the last date each muscle group was trained
+    const lastTrained: Record<string, Date> = {};
+
+    // Parse check-in tags (format: ["qr-scan", "workout:chest", "workout:arms"])
+    if (checkIns) {
+      for (const checkIn of checkIns) {
+        if (!checkIn.tags || !Array.isArray(checkIn.tags)) continue;
+
+        const checkInDate = new Date(checkIn.check_in_at);
+
+        for (const tag of checkIn.tags) {
+          if (typeof tag === 'string' && tag.startsWith('workout:')) {
+            const rawGroup = tag.replace('workout:', '').toLowerCase();
+            const group = CATEGORY_MAP[rawGroup] || rawGroup;
+
+            if (MUSCLE_GROUPS.includes(group as any)) {
+              if (!lastTrained[group] || checkInDate > lastTrained[group]) {
+                lastTrained[group] = checkInDate;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Parse workout session exercise categories
+    if (sessions) {
+      for (const session of sessions) {
+        const sessionDate = new Date(session.started_at);
+        const exercises = session.session_exercises as any[];
+
+        if (!exercises) continue;
+
+        for (const se of exercises) {
+          const exerciseLib = Array.isArray(se.exercise_library)
+            ? se.exercise_library[0]
+            : se.exercise_library;
+
+          if (!exerciseLib?.category) continue;
+
+          const rawCategory = exerciseLib.category.toLowerCase();
+          const group = CATEGORY_MAP[rawCategory] || rawCategory;
+
+          if (MUSCLE_GROUPS.includes(group as any)) {
+            if (!lastTrained[group] || sessionDate > lastTrained[group]) {
+              lastTrained[group] = sessionDate;
+            }
+          }
+        }
+      }
+    }
+
+    // Calculate days since last workout for each group and generate suggestions
+    const now = new Date();
+    const suggestions: Array<{ group: string; daysSince: number; message: string }> = [];
+    const lastWorkouts: Record<string, string> = {};
+
+    for (const group of MUSCLE_GROUPS) {
+      if (lastTrained[group]) {
+        const daysSince = Math.floor(
+          (now.getTime() - lastTrained[group].getTime()) / (1000 * 60 * 60 * 24)
+        );
+        lastWorkouts[group] = lastTrained[group].toISOString();
+
+        if (daysSince >= 3) {
+          const capitalizedGroup = group.charAt(0).toUpperCase() + group.slice(1);
+          let message: string;
+
+          if (daysSince >= 7) {
+            message = `You haven't trained ${capitalizedGroup} in ${daysSince} days. Time to get back to it!`;
+          } else if (daysSince >= 5) {
+            message = `${capitalizedGroup} is overdue! It's been ${daysSince} days since your last session.`;
+          } else {
+            message = `You haven't trained ${capitalizedGroup} in ${daysSince} days. Consider adding it to your next workout.`;
+          }
+
+          suggestions.push({ group, daysSince, message });
+        }
+      } else {
+        // If we have any workout data at all but this group was never trained
+        const hasAnyData =
+          (checkIns && checkIns.length > 0) || (sessions && sessions.length > 0);
+
+        if (hasAnyData) {
+          const capitalizedGroup = group.charAt(0).toUpperCase() + group.slice(1);
+          suggestions.push({
+            group,
+            daysSince: 30,
+            message: `No ${capitalizedGroup} workouts found in the last 30 days. Don't neglect this muscle group!`,
+          });
+        }
+      }
+    }
+
+    // Sort by daysSince descending (most overdue first)
+    suggestions.sort((a, b) => b.daysSince - a.daysSince);
+
+    return { success: true, data: { suggestions, lastWorkouts } };
+  } catch (error: any) {
+    console.error('Error fetching workout suggestions:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: { suggestions: [], lastWorkouts: {} },
+    };
+  }
+}
+
+// ============================================================
+// MEMBER PAYMENT HISTORY
+// ============================================================
+
+export async function getMemberPaymentHistory(
+  memberId: string,
+  gymId: string
+): Promise<{
+  success: boolean;
+  data?: {
+    id: string;
+    payment_date: string;
+    amount: number;
+    currency: string;
+    type: string;
+    status: string;
+    payment_method: string;
+    description: string | null;
+    period_start: string | null;
+    period_end: string | null;
+  }[];
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('payments')
+      .select(
+        'id, payment_date, amount, currency, type, status, payment_method, description, period_start, period_end'
+      )
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .order('payment_date', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Get member payment history error:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}

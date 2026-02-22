@@ -1,19 +1,25 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Member, CheckIn } from '@/types/database'
+import Link from 'next/link'
+import { Member, CheckIn, Payment } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Heart } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Heart, IndianRupee, MessageCircle, Ban, CreditCard, Clock } from 'lucide-react'
+import { blacklistMember, unblacklistMember } from '@/lib/actions/blacklist'
 
 interface MemberDetailViewProps {
   member: Member
   checkIns: CheckIn[]
+  payments: Payment[]
 }
 
-export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
+export function MemberDetailView({ member, checkIns, payments }: MemberDetailViewProps) {
   const router = useRouter()
+  const [blacklistLoading, setBlacklistLoading] = useState(false)
+  const [isBlacklisted, setIsBlacklisted] = useState(member.is_blacklisted ?? false)
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
@@ -34,8 +40,58 @@ export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
     return '—'
   }
 
+  const getWhatsAppUrl = (phone: string) => {
+    const digits = phone.replace(/\D/g, '')
+    return `https://wa.me/${digits}`
+  }
+
+  const handleBlacklistToggle = async () => {
+    setBlacklistLoading(true)
+    try {
+      if (isBlacklisted) {
+        const result = await unblacklistMember(member.id)
+        if (result.success) setIsBlacklisted(false)
+        else alert('Failed: ' + result.error)
+      } else {
+        const reason = prompt('Enter reason for blacklisting this member:')
+        if (!reason) { setBlacklistLoading(false); return }
+        const result = await blacklistMember(member.id, reason)
+        if (result.success) setIsBlacklisted(true)
+        else alert('Failed: ' + result.error)
+      }
+    } catch {
+      alert('An error occurred')
+    } finally {
+      setBlacklistLoading(false)
+    }
+  }
+
+  const formatPlanLabel = (plan: string | null) => {
+    const labels: Record<string, string> = {
+      '1_month': '1 Month',
+      '3_months': '3 Months',
+      '6_months': '6 Months',
+      '1_year': '1 Year',
+      'custom': 'Custom',
+    }
+    return plan ? labels[plan] || plan : '—'
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Blacklist Warning Banner */}
+      {isBlacklisted && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 flex items-center gap-3">
+          <Ban className="h-5 w-5 text-red-400 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-400">This member is blacklisted</p>
+            {member.blacklist_reason && (
+              <p className="text-xs text-red-400/80 mt-0.5">Reason: {member.blacklist_reason}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
@@ -48,6 +104,73 @@ export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
           {member.membership_status}
         </Badge>
       </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href="/dashboard/payments">
+            <IndianRupee className="mr-2 h-4 w-4" />
+            Record Payment
+          </Link>
+        </Button>
+
+        {member.phone && (
+          <Button variant="outline" asChild className="border-green-500/30 text-green-400 hover:bg-green-500/10 hover:text-green-300">
+            <a href={getWhatsAppUrl(member.phone)} target="_blank" rel="noopener noreferrer">
+              <MessageCircle className="mr-2 h-4 w-4" />
+              WhatsApp
+            </a>
+          </Button>
+        )}
+
+        <Button
+          variant={isBlacklisted ? 'outline' : 'destructive'}
+          onClick={handleBlacklistToggle}
+          disabled={blacklistLoading}
+          className={isBlacklisted ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 hover:text-yellow-300' : ''}
+        >
+          <Ban className="mr-2 h-4 w-4" />
+          {blacklistLoading ? 'Processing...' : isBlacklisted ? 'Remove from Blacklist' : 'Blacklist Member'}
+        </Button>
+      </div>
+
+      {/* Subscription Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Subscription Info
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Plan</p>
+              <p className="text-sm font-semibold text-foreground">
+                {member.metadata?.plan_name || formatPlanLabel(member.subscription_plan)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              <Badge className={getStatusBadge(member.membership_status)}>
+                {member.membership_status}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Start Date</p>
+              <p className="text-sm font-medium text-foreground">
+                {member.subscription_start_date ? new Date(member.subscription_start_date).toLocaleDateString() : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">End Date</p>
+              <p className="text-sm font-medium text-foreground">
+                {member.subscription_end_date ? new Date(member.subscription_end_date).toLocaleDateString() : '—'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Member Profile */}
       <Card>
@@ -90,6 +213,62 @@ export function MemberDetailView({ member, checkIns }: MemberDetailViewProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Payment History */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <IndianRupee className="h-5 w-5" />
+            Recent Payments
+          </CardTitle>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/payments">View All</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No payments recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Method</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-card divide-y divide-border">
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-muted">
+                      <td className="px-4 py-3 text-sm text-foreground">
+                        {new Date(payment.payment_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-foreground">
+                        {payment.currency === 'INR' ? '₹' : payment.currency} {payment.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground capitalize">
+                        {payment.payment_method?.replace(/_/g, ' ') || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Badge className={
+                          payment.status === 'completed' ? 'bg-green-500/10 text-green-400' :
+                          payment.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                          payment.status === 'failed' ? 'bg-red-500/10 text-red-400' :
+                          'bg-muted text-muted-foreground'
+                        }>
+                          {payment.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Check-in History */}
       <Card>

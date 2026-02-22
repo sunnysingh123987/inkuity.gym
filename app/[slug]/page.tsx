@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getGymBySlug } from '@/lib/actions/gyms'
+import { getPublicGymReviews } from '@/lib/actions/reviews'
 import { GymLandingPage } from '@/components/landing/gym-landing-page'
 
 interface GymPageProps {
@@ -7,8 +8,7 @@ interface GymPageProps {
     slug: string
   }
   searchParams: {
-    scan_id?: string
-    qr_code?: string
+    ref?: string
   }
 }
 
@@ -34,11 +34,7 @@ export default async function GymPage({ params, searchParams }: GymPageProps) {
     notFound()
   }
 
-  return (
-    <GymLandingPage
-      gym={gym}
-      scanId={searchParams.scan_id}
-      qrCode={searchParams.qr_code}
-    />
-  )
+  const { data: reviews } = await getPublicGymReviews(gym.id)
+
+  return <GymLandingPage gym={gym} referralCode={searchParams.ref} reviews={reviews || []} />
 }

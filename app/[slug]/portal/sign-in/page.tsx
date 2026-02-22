@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { requestPortalAccess, signInWithPIN, checkMemberPINStatus, getGymBySlug } from '@/lib/actions/pin-auth';
+import { requestPortalAccess, signInWithPIN, checkMemberPINStatus, getGymBySlug, getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { toast } from 'sonner';
 import { Building2, Loader2, Mail, Lock } from 'lucide-react';
 
@@ -19,6 +19,7 @@ interface SignInPageProps {
     checkin?: string;
     scan_id?: string;
     qr_code?: string;
+    ref?: string;
   };
 }
 
@@ -35,6 +36,27 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
     name: string;
     logo_url: string | null;
   } | null>(null);
+
+  // Check if returning member with valid session (skip sign-in for QR check-in)
+  useEffect(() => {
+    if (searchParams.checkin !== 'true') return;
+
+    async function checkExistingSession() {
+      try {
+        const authResult = await getAuthenticatedMember(params.slug);
+        if (authResult.success && authResult.data) {
+          const redirectParams = new URLSearchParams();
+          if (searchParams.scan_id) redirectParams.set('scan_id', searchParams.scan_id);
+          if (searchParams.qr_code) redirectParams.set('qr_code', searchParams.qr_code);
+          router.replace(`/${params.slug}/portal/quick-check-in?${redirectParams.toString()}`);
+        }
+      } catch (error) {
+        // Session check failed, continue with normal sign-in flow
+      }
+    }
+
+    checkExistingSession();
+  }, [params.slug, searchParams.checkin, searchParams.scan_id, searchParams.qr_code, router]);
 
   // Fetch gym data if not provided in URL params
   useEffect(() => {

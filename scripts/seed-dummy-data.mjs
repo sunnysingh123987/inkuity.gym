@@ -56,6 +56,12 @@ async function clearAllData() {
 
   // Delete in dependency order (children first)
   const tables = [
+    'personal_records',
+    'announcements',
+    'expenses',
+    'staff',
+    'gym_reviews',
+    'payments',
     'meal_plans',
     'diet_plans',
     'exercise_sets',
@@ -154,8 +160,23 @@ async function createOwnerAndGym() {
     phone: '+1 555 000 5678',
     email: OWNER_EMAIL,
     timezone: 'America/New_York',
-    currency: 'USD',
+    currency: 'INR',
     is_active: true,
+    settings: {
+      latitude: 40.7128,
+      longitude: -74.0060,
+      geofence_radius: 500,
+      membership_plans: [
+        { id: crypto.randomUUID(), name: 'Basic (No Cardio)', duration: '1_month', price: 500, description: 'Access to weights and machines only' },
+        { id: crypto.randomUUID(), name: 'Full Access', duration: '1_month', price: 800, description: 'Full gym access including cardio zone' },
+        { id: crypto.randomUUID(), name: 'Basic (No Cardio)', duration: '3_months', price: 1200, description: 'Access to weights and machines only' },
+        { id: crypto.randomUUID(), name: 'Full Access', duration: '3_months', price: 2000, description: 'Full gym access including cardio zone' },
+        { id: crypto.randomUUID(), name: 'Basic (No Cardio)', duration: '6_months', price: 2000, description: 'Access to weights and machines only' },
+        { id: crypto.randomUUID(), name: 'Full Access', duration: '6_months', price: 3500, description: 'Full gym access including cardio and classes' },
+        { id: crypto.randomUUID(), name: 'Standard', duration: '1_year', price: 3500, description: 'Full gym access for the whole year' },
+        { id: crypto.randomUUID(), name: 'Premium', duration: '1_year', price: 6000, description: 'Full access with personal trainer sessions' },
+      ],
+    },
   }).select().single();
 
   if (gymErr) {
@@ -180,6 +201,14 @@ async function createOwnerAndGym() {
 }
 
 // ─── STEP 3: CREATE MEMBERS ───
+
+// Subscription amounts by plan (INR)
+const PLAN_AMOUNTS = {
+  '1_month': 2000,
+  '3_months': 5000,
+  '6_months': 9000,
+  '1_year': 15000,
+};
 
 const MEMBER_DATA = [
   { full_name: 'Alex Johnson', email: 'alex.j@test.com', phone: '+1 555 101 0001', gender: 'male', status: 'active', plan: '3_months', birth_date: '1995-03-15' },
@@ -296,10 +325,10 @@ async function createCheckInsAndScans(gymId, qrCodeId, members) {
       const durationMin = randomInt(30, 120);
       const checkOutTime = new Date(checkInTime.getTime() + durationMin * 60000);
 
-      const tags = [];
-      const possibleTags = ['strength', 'cardio', 'flexibility', 'HIIT', 'yoga', 'crossfit'];
-      tags.push(possibleTags[randomInt(0, possibleTags.length - 1)]);
-      if (Math.random() > 0.5) tags.push(possibleTags[randomInt(0, possibleTags.length - 1)]);
+      const tags = ['qr-scan'];
+      const workoutFocuses = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'cardio', 'full-body'];
+      tags.push(`workout:${workoutFocuses[randomInt(0, workoutFocuses.length - 1)]}`);
+      if (Math.random() > 0.6) tags.push(`workout:${workoutFocuses[randomInt(0, workoutFocuses.length - 1)]}`);
 
       allCheckIns.push({
         gym_id: gymId,
@@ -684,6 +713,308 @@ async function createNotifications(gymId, userId, members) {
   else console.log(`  Created ${notifications.length} notifications\n`);
 }
 
+// ─── STEP 9: PAYMENTS ───
+
+async function createPayments(gymId, members) {
+  console.log('=== CREATING PAYMENTS ===\n');
+
+  const allPayments = [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  for (const m of MEMBER_DATA) {
+    const member = members.find(mem => mem.name === m.full_name);
+    if (!member || !m.plan) continue;
+
+    const amount = PLAN_AMOUNTS[m.plan] || 50;
+
+    if (m.status === 'active') {
+      // Active members: payment at start of subscription + maybe a recent one this month
+      const monthsAgo = randomInt(1, 3);
+
+      for (let mo = monthsAgo; mo >= 0; mo--) {
+        const payDate = new Date(now);
+        payDate.setMonth(payDate.getMonth() - mo);
+        payDate.setDate(randomInt(1, 5));
+        payDate.setHours(randomInt(9, 17), randomInt(0, 59), 0, 0);
+
+        const periodStart = new Date(payDate);
+        const periodEnd = new Date(periodStart);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+        const paymentMethods = ['cash', 'upi', 'paytm', 'phonepe'];
+
+        allPayments.push({
+          gym_id: gymId,
+          member_id: member.id,
+          amount: Math.round(amount / ({ '1_month': 1, '3_months': 3, '6_months': 6, '1_year': 12 }[m.plan] || 1)),
+          currency: 'INR',
+          type: 'subscription',
+          status: 'completed',
+          payment_method: paymentMethods[randomInt(0, paymentMethods.length - 1)],
+          description: `Monthly subscription - ${m.plan.replace('_', ' ')}`,
+          payment_date: payDate.toISOString(),
+          period_start: periodStart.toISOString().split('T')[0],
+          period_end: periodEnd.toISOString().split('T')[0],
+        });
+      }
+
+      // Some active members have a today payment
+      if (Math.random() > 0.5) {
+        const todayPay = new Date(today);
+        todayPay.setHours(randomInt(7, 12), randomInt(0, 59), 0, 0);
+        const paymentMethods = ['cash', 'upi', 'paytm', 'phonepe'];
+
+        allPayments.push({
+          gym_id: gymId,
+          member_id: member.id,
+          amount: randomInt(1500, 5000),
+          currency: 'INR',
+          type: Math.random() > 0.5 ? 'subscription' : 'one_time',
+          status: 'completed',
+          payment_method: paymentMethods[randomInt(0, paymentMethods.length - 1)],
+          description: Math.random() > 0.5 ? 'Personal training session' : 'Monthly fee',
+          payment_date: todayPay.toISOString(),
+          period_start: today.toISOString().split('T')[0],
+          period_end: null,
+        });
+      }
+    } else if (m.status === 'expired') {
+      // Expired: older payments, plus a pending one (due this month)
+      const payDate = new Date(now);
+      payDate.setMonth(payDate.getMonth() - 3);
+      payDate.setDate(randomInt(1, 28));
+      const paymentMethods = ['cash', 'upi', 'paytm', 'phonepe'];
+
+      allPayments.push({
+        gym_id: gymId,
+        member_id: member.id,
+        amount: Math.round(amount / ({ '1_month': 1, '3_months': 3, '6_months': 6, '1_year': 12 }[m.plan] || 1)),
+        currency: 'INR',
+        type: 'subscription',
+        status: 'completed',
+        payment_method: paymentMethods[randomInt(0, paymentMethods.length - 1)],
+        description: `Monthly subscription - ${m.plan.replace('_', ' ')}`,
+        payment_date: payDate.toISOString(),
+        period_start: payDate.toISOString().split('T')[0],
+        period_end: new Date(payDate.getTime() + 30 * 86400000).toISOString().split('T')[0],
+      });
+
+      // Pending payment due this month
+      const dueDate = new Date(now.getFullYear(), now.getMonth(), randomInt(15, 28));
+      allPayments.push({
+        gym_id: gymId,
+        member_id: member.id,
+        amount: Math.round(amount / ({ '1_month': 1, '3_months': 3, '6_months': 6, '1_year': 12 }[m.plan] || 1)),
+        currency: 'INR',
+        type: 'subscription',
+        status: 'pending',
+        payment_method: 'cash',
+        description: 'Renewal payment due',
+        payment_date: dueDate.toISOString(),
+        period_start: dueDate.toISOString().split('T')[0],
+        period_end: new Date(dueDate.getTime() + 30 * 86400000).toISOString().split('T')[0],
+      });
+    } else if (m.status === 'cancelled') {
+      // Cancelled: one old completed payment + one refund
+      const payDate = new Date(now);
+      payDate.setMonth(payDate.getMonth() - 2);
+      const paymentMethods = ['cash', 'upi', 'paytm', 'phonepe'];
+
+      allPayments.push({
+        gym_id: gymId,
+        member_id: member.id,
+        amount: Math.round(amount / ({ '1_month': 1, '3_months': 3, '6_months': 6, '1_year': 12 }[m.plan] || 1)),
+        currency: 'INR',
+        type: 'subscription',
+        status: 'completed',
+        payment_method: paymentMethods[randomInt(0, paymentMethods.length - 1)],
+        description: `Monthly subscription - ${m.plan.replace('_', ' ')}`,
+        payment_date: payDate.toISOString(),
+        period_start: payDate.toISOString().split('T')[0],
+        period_end: new Date(payDate.getTime() + 30 * 86400000).toISOString().split('T')[0],
+      });
+    }
+  }
+
+  // Insert all payments
+  if (allPayments.length > 0) {
+    const { error } = await supabase.from('payments').insert(allPayments);
+    if (error) console.log(`  Payments error: ${error.message}`);
+    else console.log(`  Created ${allPayments.length} payment records`);
+  }
+
+  // Summary
+  const completed = allPayments.filter(p => p.status === 'completed');
+  const pending = allPayments.filter(p => p.status === 'pending');
+  const todayPayments = completed.filter(p => {
+    const d = new Date(p.payment_date);
+    return d.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+  });
+
+  console.log(`  Completed: ${completed.length} ($${completed.reduce((s, p) => s + p.amount, 0).toFixed(2)})`);
+  console.log(`  Today: ${todayPayments.length} ($${todayPayments.reduce((s, p) => s + p.amount, 0).toFixed(2)})`);
+  console.log(`  Pending: ${pending.length} ($${pending.reduce((s, p) => s + p.amount, 0).toFixed(2)})\n`);
+
+  return allPayments;
+}
+
+// ─── STEP 10: REVIEWS ───
+
+async function createReviews(gymId, members) {
+  console.log('=== CREATING REVIEWS ===\n');
+
+  const activeMembers = members.filter(m => m.status === 'active');
+  const reviews = [];
+  const reviewTexts = [
+    { rating: 5, text: 'Amazing gym! Great equipment and friendly staff.' },
+    { rating: 4, text: 'Good facilities. Could use more squat racks.' },
+    { rating: 5, text: 'Best gym in the area. Love the new cardio machines.' },
+    { rating: 3, text: 'Decent gym but gets crowded during peak hours.' },
+    { rating: 4, text: 'Clean and well-maintained. Trainers are helpful.' },
+    { rating: 5, text: 'Worth every rupee. The community here is great!' },
+  ];
+
+  for (let i = 0; i < Math.min(activeMembers.length, reviewTexts.length); i++) {
+    reviews.push({
+      gym_id: gymId,
+      member_id: activeMembers[i].id,
+      rating: reviewTexts[i].rating,
+      review_text: reviewTexts[i].text,
+      is_public: Math.random() > 0.2,
+      created_at: new Date(Date.now() - randomInt(1, 30) * 86400000).toISOString(),
+    });
+  }
+
+  const { error } = await supabase.from('gym_reviews').insert(reviews);
+  if (error) console.log(`  Reviews error: ${error.message}`);
+  else console.log(`  Created ${reviews.length} reviews\n`);
+}
+
+// ─── STEP 11: STAFF ───
+
+async function createStaff(gymId) {
+  console.log('=== CREATING STAFF ===\n');
+
+  const staffData = [
+    { full_name: 'Raj Kumar', role: 'trainer', phone: '+91 98765 43210', email: 'raj@test.com', salary: 25000, salary_frequency: 'monthly' },
+    { full_name: 'Priya Sharma', role: 'receptionist', phone: '+91 98765 43211', email: 'priya@test.com', salary: 15000, salary_frequency: 'monthly' },
+    { full_name: 'Amit Singh', role: 'trainer', phone: '+91 98765 43212', email: 'amit@test.com', salary: 22000, salary_frequency: 'monthly' },
+    { full_name: 'Deepak Verma', role: 'cleaner', phone: '+91 98765 43213', salary: 8000, salary_frequency: 'monthly' },
+  ];
+
+  const staffIds = [];
+  for (const s of staffData) {
+    const { data, error } = await supabase.from('staff').insert({
+      gym_id: gymId, ...s, is_active: true,
+    }).select('id').single();
+    if (data) staffIds.push(data.id);
+    if (error) console.log(`  Staff error (${s.full_name}): ${error.message}`);
+  }
+  console.log(`  Created ${staffIds.length} staff members\n`);
+  return staffIds;
+}
+
+// ─── STEP 12: EXPENSES ───
+
+async function createExpenses(gymId, staffIds) {
+  console.log('=== CREATING EXPENSES ===\n');
+
+  const expenses = [
+    { category: 'rent', description: 'Monthly gym rent', amount: 50000, is_recurring: true, recurrence_frequency: 'monthly' },
+    { category: 'utilities', description: 'Electricity bill', amount: 8000, is_recurring: true, recurrence_frequency: 'monthly' },
+    { category: 'utilities', description: 'Water bill', amount: 2000, is_recurring: true, recurrence_frequency: 'monthly' },
+    { category: 'equipment', description: 'New dumbbells set', amount: 15000, is_recurring: false },
+    { category: 'maintenance', description: 'AC repair', amount: 3500, is_recurring: false },
+    { category: 'marketing', description: 'Social media ads', amount: 5000, is_recurring: true, recurrence_frequency: 'monthly' },
+  ];
+
+  // Add staff salary expenses
+  if (staffIds.length > 0) {
+    expenses.push(
+      { category: 'staff_salary', description: 'Trainer salary - Raj Kumar', amount: 25000, is_recurring: true, recurrence_frequency: 'monthly', staff_id: staffIds[0] },
+      { category: 'staff_salary', description: 'Receptionist salary - Priya Sharma', amount: 15000, is_recurring: true, recurrence_frequency: 'monthly', staff_id: staffIds[1] || null },
+    );
+  }
+
+  const now = new Date();
+  const expenseRecords = expenses.map(e => ({
+    gym_id: gymId,
+    ...e,
+    currency: 'INR',
+    expense_date: new Date(now.getFullYear(), now.getMonth(), randomInt(1, 28)).toISOString().split('T')[0],
+  }));
+
+  const { error } = await supabase.from('expenses').insert(expenseRecords);
+  if (error) console.log(`  Expenses error: ${error.message}`);
+  else console.log(`  Created ${expenseRecords.length} expenses\n`);
+}
+
+// ─── STEP 13: ANNOUNCEMENTS ───
+
+async function createAnnouncements(gymId) {
+  console.log('=== CREATING ANNOUNCEMENTS ===\n');
+
+  const announcements = [
+    { title: 'New Cardio Zone Opening!', message: 'We are excited to announce our new cardio zone with 10 new treadmills and 5 ellipticals. Available from next Monday!', type: 'info', is_active: true },
+    { title: 'Gym Closed - Republic Day', message: 'The gym will be closed on 26th January for Republic Day. Regular hours resume on 27th.', type: 'holiday', is_active: false },
+    { title: 'Maintenance Notice', message: 'The shower area will be under maintenance this Saturday from 2 PM to 5 PM. We apologize for the inconvenience.', type: 'warning', is_active: true },
+  ];
+
+  const records = announcements.map(a => ({
+    gym_id: gymId,
+    ...a,
+    starts_at: new Date().toISOString(),
+    ends_at: a.is_active ? new Date(Date.now() + 7 * 86400000).toISOString() : new Date(Date.now() - 1 * 86400000).toISOString(),
+    notify_members: a.type === 'holiday' || a.type === 'emergency',
+  }));
+
+  const { error } = await supabase.from('announcements').insert(records);
+  if (error) console.log(`  Announcements error: ${error.message}`);
+  else console.log(`  Created ${records.length} announcements\n`);
+}
+
+// ─── STEP 14: PERSONAL RECORDS ───
+
+async function createPersonalRecords(gymId, members) {
+  console.log('=== CREATING PERSONAL RECORDS ===\n');
+
+  const activeMembers = members.filter(m => m.status === 'active').slice(0, 5);
+  const exercises = ['Bench Press', 'Squat', 'Deadlift', 'Overhead Press', 'Barbell Row'];
+  const records = [];
+
+  for (const member of activeMembers) {
+    for (const exercise of exercises) {
+      // Create 3-5 PR entries per exercise showing progression
+      const numEntries = randomInt(3, 5);
+      let baseWeight = randomInt(30, 60);
+
+      for (let i = 0; i < numEntries; i++) {
+        const daysAgo = (numEntries - i) * randomInt(5, 10);
+        baseWeight += randomInt(2, 8);
+
+        records.push({
+          gym_id: gymId,
+          member_id: member.id,
+          exercise_name: exercise,
+          weight: baseWeight,
+          reps: randomInt(1, 5),
+          recorded_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
+          notes: i === numEntries - 1 ? 'New PR!' : null,
+        });
+      }
+    }
+  }
+
+  // Insert in batches
+  for (let i = 0; i < records.length; i += 50) {
+    const batch = records.slice(i, i + 50);
+    const { error } = await supabase.from('personal_records').insert(batch);
+    if (error) console.log(`  PR batch error: ${error.message}`);
+  }
+  console.log(`  Created ${records.length} personal records\n`);
+}
+
 // ─── MAIN ───
 
 async function main() {
@@ -698,7 +1029,13 @@ async function main() {
   await createExercisesAndRoutines(gymId, members);
   await createDietPlans(gymId, members);
   await createDailyAnalytics(gymId);
+  await createPayments(gymId, members);
   await createNotifications(gymId, userId, members);
+  await createReviews(gymId, members);
+  const staffIds = await createStaff(gymId);
+  await createExpenses(gymId, staffIds);
+  await createAnnouncements(gymId);
+  await createPersonalRecords(gymId, members);
 
   console.log('========================================');
   console.log('  SEED COMPLETE!');

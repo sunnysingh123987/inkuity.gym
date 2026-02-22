@@ -8,15 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { updateMember } from '@/lib/actions/gyms'
-import { User, Phone, Mail, Calendar, Target, UserCheck, CreditCard } from 'lucide-react'
+import { User, Phone, Mail, Calendar, Target, UserCheck, CreditCard, Gift } from 'lucide-react'
 
 interface MemberOnboardingFormProps {
   member: Member
   gym: Gym
   onComplete: () => void
+  referralCode?: string
 }
 
-export function MemberOnboardingForm({ member, gym, onComplete }: MemberOnboardingFormProps) {
+export function MemberOnboardingForm({ member, gym, onComplete, referralCode: initialReferralCode }: MemberOnboardingFormProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     full_name: member.full_name || '',
@@ -26,6 +27,7 @@ export function MemberOnboardingForm({ member, gym, onComplete }: MemberOnboardi
     fitness_goal: '',
     trainer: '',
     birth_date: '',
+    referral_code: initialReferralCode || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,6 +45,7 @@ export function MemberOnboardingForm({ member, gym, onComplete }: MemberOnboardi
           member_id: formData.member_id,
           fitness_goal: formData.fitness_goal,
           trainer: formData.trainer,
+          ...(formData.referral_code ? { referred_by: formData.referral_code } : {}),
         },
         is_verified: true,
       })
@@ -195,6 +198,20 @@ export function MemberOnboardingForm({ member, gym, onComplete }: MemberOnboardi
                       onChange={(e) => handleChange('birth_date', e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="referral_code" className="flex items-center gap-2">
+                    <Gift className="h-4 w-4" />
+                    Referral Code
+                  </Label>
+                  <Input
+                    id="referral_code"
+                    value={formData.referral_code}
+                    onChange={(e) => handleChange('referral_code', e.target.value)}
+                    placeholder="Enter referral code (if any)"
+                  />
+                  <p className="text-xs text-gray-500">Got referred by a friend? Enter their referral code here.</p>
                 </div>
               </div>
 

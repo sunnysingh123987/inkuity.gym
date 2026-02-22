@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Users, Search, TrendingUp, Clock, Eye, Loader2 } from 'lucide-react'
+import { Plus, Users, Search, TrendingUp, Clock, Eye, Loader2, MessageCircle, IndianRupee, Mail } from 'lucide-react'
 import { getMembers, calculateMembershipStatus, getMemberStats } from '@/lib/actions/gyms'
+import { sendFeedbackRequest } from '@/lib/actions/reviews'
 
 interface MembersListProps {
   gyms: Gym[]
@@ -28,13 +29,14 @@ interface MemberWithStats extends Omit<Member, 'gym'> {
   };
 }
 
-type TabFilter = 'all' | 'active' | 'inactive' | 'trial'
+type TabFilter = 'all' | 'active' | 'trial' | 'pending' | 'expired' | 'inactive'
 
 export function MembersList({ gyms }: MembersListProps) {
   const [members, setMembers] = useState<MemberWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
+  const [sendingFeedback, setSendingFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     loadMembers()
@@ -73,12 +75,31 @@ export function MembersList({ gyms }: MembersListProps) {
     }
   }
 
-  const inactiveStatuses = ['expired', 'cancelled', 'suspended']
+  const handleSendFeedback = async (member: MemberWithStats) => {
+    if (!member.gym_id) return
+    setSendingFeedback(member.id)
+    try {
+      const result = await sendFeedbackRequest(member.gym_id, [member.id])
+      if (result.success) {
+        alert('Feedback request sent successfully!')
+      } else {
+        alert(result.error || 'Failed to send feedback request')
+      }
+    } catch {
+      alert('Failed to send feedback request')
+    } finally {
+      setSendingFeedback(null)
+    }
+  }
+
+  const inactiveStatuses = ['cancelled', 'suspended']
 
   const tabCounts = {
     all: members.length,
     active: members.filter(m => (m.calculatedStatus || m.membership_status) === 'active').length,
     trial: members.filter(m => (m.calculatedStatus || m.membership_status) === 'trial').length,
+    pending: members.filter(m => (m.calculatedStatus || m.membership_status) === 'pending').length,
+    expired: members.filter(m => (m.calculatedStatus || m.membership_status) === 'expired').length,
     inactive: members.filter(m => inactiveStatuses.includes(m.calculatedStatus || m.membership_status)).length,
   }
 
@@ -89,6 +110,8 @@ export function MembersList({ gyms }: MembersListProps) {
     const status = member.calculatedStatus || member.membership_status
     if (activeTab === 'active') return status === 'active'
     if (activeTab === 'trial') return status === 'trial'
+    if (activeTab === 'pending') return status === 'pending'
+    if (activeTab === 'expired') return status === 'expired'
     if (activeTab === 'inactive') return inactiveStatuses.includes(status)
     return true
   })
@@ -125,7 +148,9 @@ export function MembersList({ gyms }: MembersListProps) {
     { key: 'all', label: 'All', count: tabCounts.all },
     { key: 'active', label: 'Active', count: tabCounts.active },
     { key: 'trial', label: 'Trial', count: tabCounts.trial },
-    { key: 'inactive', label: 'Inactive', count: tabCounts.inactive },
+    { key: 'pending', label: 'Pending', count: tabCounts.pending },
+    { key: 'expired', label: 'Expired', count: tabCounts.expired },
+    { key: 'inactive', label: 'Inactive/Cancelled', count: tabCounts.inactive },
   ]
 
   return (
@@ -290,12 +315,47 @@ export function MembersList({ gyms }: MembersListProps) {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link href={`/members/${member.id}`}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </Button>
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        <Link href={`/members/${member.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                        </Link>
+                        {member.phone && (
+                          <a
+                            href={`https://wa.me/${member.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="WhatsApp"
+                          >
+                            <Button variant="ghost" size="sm" className="text-green-500 hover:text-green-400 hover:bg-green-500/10 px-2">
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        )}
+                        <Link href="/dashboard/payments" title="Payments">
+                          <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 px-2">
+                            <IndianRupee className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        {['expired', 'cancelled', 'suspended'].includes(member.calculatedStatus || member.membership_status) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 px-2"
+                            title="Request Feedback"
+                            disabled={sendingFeedback === member.id}
+                            onClick={() => handleSendFeedback(member)}
+                          >
+                            {sendingFeedback === member.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Mail className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

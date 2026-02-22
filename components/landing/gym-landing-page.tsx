@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
-import { Gym } from '@/types/database'
+import { Gym, GymReviewWithMember } from '@/types/database'
 import {
   Building2,
   MapPin,
@@ -14,6 +14,7 @@ import {
   Shield,
   Dumbbell,
   ArrowRight,
+  Star,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -21,9 +22,11 @@ interface GymLandingPageProps {
   gym: Gym
   scanId?: string
   qrCode?: string
+  referralCode?: string
+  reviews?: GymReviewWithMember[]
 }
 
-export function GymLandingPage({ gym }: GymLandingPageProps) {
+export function GymLandingPage({ gym, referralCode, reviews = [] }: GymLandingPageProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export function GymLandingPage({ gym }: GymLandingPageProps) {
 
   const hasAddress = gym.address || gym.city || gym.state
   const fullAddress = [gym.address, gym.city, gym.state, gym.zip_code].filter(Boolean).join(', ')
+  const joinUrl = `/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}${referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ''}`
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#0B1120] text-white">
@@ -70,7 +74,7 @@ export function GymLandingPage({ gym }: GymLandingPageProps) {
                   <span className="text-sm font-semibold text-white">{gym.name}</span>
                 </div>
                 <Link
-                  href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
+                  href={joinUrl}
                   className="inline-flex items-center gap-1.5 rounded-full bg-brand-cyan-500 hover:bg-brand-cyan-600 px-4 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 shadow-lg shadow-brand-cyan-500/20"
                 >
                   Join the Gym
@@ -240,7 +244,7 @@ export function GymLandingPage({ gym }: GymLandingPageProps) {
             </div>
 
             <Link
-              href={`/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}`}
+              href={joinUrl}
               className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-brand-cyan-500 hover:bg-brand-cyan-600 py-3 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-brand-cyan-500/25"
             >
               Join the Gym
@@ -248,6 +252,83 @@ export function GymLandingPage({ gym }: GymLandingPageProps) {
             </Link>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        {reviews.length > 0 && (
+          <div data-animate className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Member Reviews</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                      return (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= Math.round(avg)
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'fill-transparent text-slate-600'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <span className="text-sm text-slate-400">
+                    {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviews.map((review) => {
+                const firstName = review.member?.full_name?.split(' ')[0] || 'Member'
+                return (
+                  <div
+                    key={review.id}
+                    className="rounded-xl bg-[#111827] border border-white/5 p-5 hover:border-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      {review.member?.avatar_url ? (
+                        <img
+                          src={review.member.avatar_url}
+                          alt={firstName}
+                          className="h-9 w-9 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-cyan-500/10 text-sm font-medium text-brand-cyan-400">
+                          {firstName[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-white">{firstName}</p>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-3 w-3 ${
+                                star <= review.rating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'fill-transparent text-slate-600'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {review.review_text && (
+                      <p className="text-sm text-slate-400 leading-relaxed line-clamp-3">
+                        {review.review_text}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* About Section (if description is long, show expanded) */}
         {gym.description && gym.description.length > 100 && (

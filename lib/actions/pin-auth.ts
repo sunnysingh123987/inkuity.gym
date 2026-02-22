@@ -403,6 +403,61 @@ export async function getAuthenticatedMember(gymSlug: string) {
 }
 
 /**
+ * Get authenticated member info (name + gym name) for quick check-in
+ */
+export async function getAuthenticatedMemberInfo(gymSlug: string) {
+  try {
+    const sessionToken = cookies().get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionToken) {
+      return { success: false as const, error: 'Not authenticated' };
+    }
+
+    const session = verifySessionToken(sessionToken);
+    if (!session) {
+      cookies().delete(SESSION_COOKIE_NAME);
+      return { success: false as const, error: 'Session expired' };
+    }
+
+    const supabase = createAdminSupabaseClient();
+
+    // Fetch gym and member in parallel
+    const [gymResult, memberResult] = await Promise.all([
+      supabase
+        .from('gyms')
+        .select('id, name, slug, logo_url')
+        .eq('id', session.gymId)
+        .eq('slug', gymSlug)
+        .single(),
+      supabase
+        .from('members')
+        .select('id, full_name, email')
+        .eq('id', session.memberId)
+        .single(),
+    ]);
+
+    if (!gymResult.data || !memberResult.data) {
+      return { success: false as const, error: 'Invalid session' };
+    }
+
+    return {
+      success: true as const,
+      data: {
+        memberId: session.memberId,
+        gymId: session.gymId,
+        memberName: memberResult.data.full_name || 'Member',
+        memberEmail: memberResult.data.email,
+        gymName: gymResult.data.name,
+        gymLogoUrl: gymResult.data.logo_url as string | null,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error getting authenticated member info:', error);
+    return { success: false as const, error: 'Authentication error' };
+  }
+}
+
+/**
  * Sign out - clear session cookie
  */
 export async function signOut() {

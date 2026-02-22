@@ -1,8 +1,80 @@
 'use server';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { sendInactiveMemberCheckInNotification } from '@/lib/email/notifications';
+import { checkBlacklistOnScan } from './blacklist';
 import { revalidatePath } from 'next/cache';
+
+/**
+ * Calculate the distance in meters between two lat/lng points using the Haversine formula.
+ */
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Validate that a member's location is within the gym's geofence radius.
+ * If the gym has no location configured, check-in is always allowed.
+ */
+export async function validateCheckInLocation(
+  gymId: string,
+  memberLat: number,
+  memberLng: number
+): Promise<{
+  success: boolean;
+  allowed: boolean;
+  distance?: number;
+  maxDistance?: number;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data: gym, error: gymError } = await supabase
+      .from('gyms')
+      .select('settings')
+      .eq('id', gymId)
+      .single();
+
+    if (gymError || !gym) {
+      return { success: false, allowed: true, error: 'Gym not found' };
+    }
+
+    const settings = (gym.settings || {}) as Record<string, any>;
+    const gymLat = settings.latitude as number | undefined;
+    const gymLng = settings.longitude as number | undefined;
+    const geofenceRadius = (settings.geofence_radius as number) || 200;
+
+    // If no location configured, allow check-in (geofencing not set up)
+    if (gymLat == null || gymLng == null) {
+      return { success: true, allowed: true };
+    }
+
+    const distance = haversineDistance(memberLat, memberLng, gymLat, gymLng);
+    const allowed = distance <= geofenceRadius;
+
+    return {
+      success: true,
+      allowed,
+      distance: Math.round(distance),
+      maxDistance: geofenceRadius,
+    };
+  } catch (error: any) {
+    console.error('Error validating check-in location:', error);
+    // On error, allow check-in (graceful degradation)
+    return { success: false, allowed: true, error: 'Location validation failed' };
+  }
+}
 
 /**
  * Record a check-in after successful PIN login from QR scan.
@@ -27,6 +99,10 @@ export async function recordQRCheckIn(
     if (memberError || !member) {
       return { success: false, error: 'Member not found' };
     }
+
+    // Check blacklist status
+    const blacklistResult = await checkBlacklistOnScan(memberId, gymId);
+    const blacklisted = blacklistResult.isBlacklisted;
 
     // Find the QR code ID if code provided
     let qrCodeId: string | null = null;
@@ -139,6 +215,7 @@ export async function recordQRCheckIn(
 
     return {
       success: true,
+      blacklisted,
       data: {
         checkInId: checkIn.id,
         checkInAt: checkIn.check_in_at,
@@ -146,6 +223,7 @@ export async function recordQRCheckIn(
         membershipStatus: member.membership_status || 'active',
         subscriptionEndDate: member.subscription_end_date,
         subscriptionWarning,
+        blacklisted,
       },
     };
   } catch (error: any) {
@@ -181,5 +259,73 @@ export async function saveWorkoutFocus(
   } catch (error: any) {
     console.error('Error saving workout focus:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get today's live check-ins with member info for the gym owner dashboard.
+ */
+export async function getLiveCheckIns(gymId: string) {
+  try {
+    const supabase = createServerSupabaseClient();
+    const todayStart = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(`
+        id,
+        check_in_at,
+        member:members!member_id (
+          id,
+          full_name,
+          phone,
+          avatar_url,
+          membership_status
+        )
+      `)
+      .eq('gym_id', gymId)
+      .gte('check_in_at', todayStart)
+      .order('check_in_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch live check-ins:', error);
+      return { success: false, data: [], error: error.message };
+    }
+
+    return { success: true, data: data || [], error: null };
+  } catch (error: any) {
+    console.error('Error fetching live check-ins:', error);
+    return { success: false, data: [], error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Count today's unique member check-ins.
+ */
+export async function getCheckInCount(gymId: string) {
+  try {
+    const supabase = createServerSupabaseClient();
+    const todayStart = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select('member_id')
+      .eq('gym_id', gymId)
+      .gte('check_in_at', todayStart);
+
+    if (error) {
+      console.error('Failed to count check-ins:', error);
+      return { success: false, count: 0, error: error.message };
+    }
+
+    // Count unique member IDs
+    const uniqueMembers = new Set(
+      (data || []).map((row) => row.member_id).filter(Boolean)
+    );
+
+    return { success: true, count: uniqueMembers.size, error: null };
+  } catch (error: any) {
+    console.error('Error counting check-ins:', error);
+    return { success: false, count: 0, error: 'An unexpected error occurred' };
   }
 }

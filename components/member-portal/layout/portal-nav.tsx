@@ -9,6 +9,11 @@ import {
   Dumbbell,
   Activity,
   Apple,
+  Trophy,
+  IndianRupee,
+  Star,
+  Gift,
+  MessageSquare,
   Settings,
 } from 'lucide-react';
 
@@ -44,6 +49,31 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
       name: 'Diet Plans',
       href: `/${gymSlug}/portal/diet`,
       icon: Apple,
+    },
+    {
+      name: 'PR Tracker',
+      href: `/${gymSlug}/portal/personal-records`,
+      icon: Trophy,
+    },
+    {
+      name: 'Payments',
+      href: `/${gymSlug}/portal/payments`,
+      icon: IndianRupee,
+    },
+    {
+      name: 'Review',
+      href: `/${gymSlug}/portal/review`,
+      icon: Star,
+    },
+    {
+      name: 'Feedback',
+      href: `/${gymSlug}/portal/feedback`,
+      icon: MessageSquare,
+    },
+    {
+      name: 'Referrals',
+      href: `/${gymSlug}/portal/referrals`,
+      icon: Gift,
     },
     {
       name: 'Settings',

@@ -542,6 +542,13 @@ export async function approveMember(memberId: string): Promise<{ success: boolea
   try {
     const supabase = createServerSupabaseClient();
 
+    // Get member data first to check for referral info
+    const { data: member } = await supabase
+      .from('members')
+      .select('id, gym_id, metadata')
+      .eq('id', memberId)
+      .single();
+
     const { error } = await supabase
       .from('members')
       .update({
@@ -551,6 +558,32 @@ export async function approveMember(memberId: string): Promise<{ success: boolea
       .eq('id', memberId);
 
     if (error) throw error;
+
+    // Process referral if member was referred
+    if (member?.metadata?.referred_by) {
+      const referralCode = member.metadata.referred_by;
+
+      // Find the referrer by matching first 8 chars of member ID or phone
+      const { data: referrer } = await supabase
+        .from('members')
+        .select('id')
+        .eq('gym_id', member.gym_id)
+        .or(`id.like.${referralCode}%,phone.eq.${referralCode}`)
+        .limit(1)
+        .single();
+
+      if (referrer) {
+        // Create referral record as converted since the member is being approved
+        await supabase
+          .from('referrals')
+          .insert({
+            gym_id: member.gym_id,
+            referrer_member_id: referrer.id,
+            referred_member_id: memberId,
+            status: 'converted',
+          });
+      }
+    }
 
     revalidatePath('/members');
     return { success: true };
@@ -574,6 +607,71 @@ export async function rejectMember(memberId: string): Promise<{ success: boolean
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+export async function syncMemberStatuses(gymId: string): Promise<{ success: boolean; updated: number; error?: string }> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Get all members for this gym
+    const { data: members, error: fetchError } = await supabase
+      .from('members')
+      .select('id, membership_status, subscription_plan, subscription_start_date, subscription_end_date, member_since')
+      .eq('gym_id', gymId);
+
+    if (fetchError) throw fetchError;
+    if (!members || members.length === 0) return { success: true, updated: 0 };
+
+    const now = new Date();
+    let updated = 0;
+
+    for (const member of members) {
+      // Skip members with manually managed statuses
+      if (member.membership_status === 'cancelled' || member.membership_status === 'suspended') {
+        continue;
+      }
+
+      // Skip pending members with no subscription info
+      if (member.membership_status === 'pending' && !member.subscription_plan && !member.subscription_end_date) {
+        continue;
+      }
+
+      // Skip trial members (they stay trial until manually changed or subscription is set)
+      if (member.membership_status === 'trial') {
+        continue;
+      }
+
+      let newStatus: string | null = null;
+
+      if (member.subscription_end_date) {
+        const endDate = new Date(member.subscription_end_date);
+
+        if (endDate < now && member.membership_status === 'active') {
+          // Subscription expired but still marked active -> set to expired
+          newStatus = 'expired';
+        } else if (endDate >= now && member.membership_status === 'expired') {
+          // Subscription renewed (end date in future) but still marked expired -> set to active
+          newStatus = 'active';
+        }
+      }
+
+      if (newStatus && newStatus !== member.membership_status) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ membership_status: newStatus })
+          .eq('id', member.id);
+
+        if (!updateError) {
+          updated++;
+        }
+      }
+    }
+
+    return { success: true, updated };
+  } catch (error: any) {
+    console.error('Error syncing member statuses:', error);
+    return { success: false, updated: 0, error: error.message };
   }
 }
 
