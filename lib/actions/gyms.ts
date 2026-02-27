@@ -3,75 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
-import { generateQRCodeIdentifier, generateGymSlug } from '@/lib/utils/qr';
 import { sendWelcomeEmail, sendCheckInConfirmation } from '@/lib/email/notifications';
 import type { Gym, QRCode, Member } from '@/types/database';
 
 // ============================================================
 // GYM ACTIONS
 // ============================================================
-
-export async function createGym(formData: {
-  name: string;
-  description?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  phone?: string;
-  email?: string;
-}): Promise<{ success: boolean; data?: Gym; error?: string }> {
-  try {
-    const supabase = createServerSupabaseClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Generate unique slug
-    let slug = generateGymSlug(formData.name);
-    let counter = 1;
-
-    // Check if slug exists and append number if needed
-    while (true) {
-      const { data: existing } = await supabase
-        .from('gyms')
-        .select('id')
-        .eq('slug', slug)
-        .single();
-
-      if (!existing) break;
-      slug = `${generateGymSlug(formData.name)}-${counter}`;
-      counter++;
-    }
-
-    const { data: gym, error } = await supabase
-      .from('gyms')
-      .insert({
-        owner_id: user.id,
-        name: formData.name,
-        slug,
-        description: formData.description,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zip_code: formData.zip_code,
-        phone: formData.phone,
-        email: formData.email,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    revalidatePath('/gyms');
-    return { success: true, data: gym };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
 
 export async function updateGym(
   gymId: string,
@@ -150,50 +87,52 @@ export async function getGymBySlug(slug: string): Promise<{ data?: Gym; error?: 
 }
 
 // ============================================================
-// QR CODE ACTIONS
+// DASHBOARD SETTINGS
 // ============================================================
 
-export async function createQRCode(formData: {
-  gym_id: string;
-  name: string;
-  label?: string;
-  type: 'check-in' | 'equipment' | 'class' | 'promotion' | 'custom';
-  redirect_url?: string;
-  primary_color?: string;
-  background_color?: string;
-  frame_style?: string;
-}): Promise<{ success: boolean; data?: QRCode; error?: string }> {
+import type { DashboardWidgetSettings } from '@/lib/dashboard-settings';
+export type { DashboardWidgetSettings };
+
+export async function updateDashboardSettings(
+  gymId: string,
+  widgets: DashboardWidgetSettings
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = createServerSupabaseClient();
 
-    const code = generateQRCodeIdentifier();
-
-    const { data: qrCode, error } = await supabase
-      .from('qr_codes')
-      .insert({
-        gym_id: formData.gym_id,
-        code,
-        name: formData.name,
-        label: formData.label,
-        type: formData.type,
-        redirect_url: formData.redirect_url,
-        design_settings: {
-          primaryColor: formData.primary_color || '#000000',
-          backgroundColor: formData.background_color || '#FFFFFF',
-          frameStyle: formData.frame_style || 'square',
-        },
-      })
-      .select()
+    // Get existing settings to merge
+    const { data: gym, error: fetchError } = await supabase
+      .from('gyms')
+      .select('settings')
+      .eq('id', gymId)
       .single();
+
+    if (fetchError) throw fetchError;
+
+    const existingSettings = (gym?.settings || {}) as Record<string, any>;
+    const updatedSettings = {
+      ...existingSettings,
+      dashboard_widgets: widgets,
+    };
+
+    const { error } = await supabase
+      .from('gyms')
+      .update({ settings: updatedSettings })
+      .eq('id', gymId);
 
     if (error) throw error;
 
-    revalidatePath('/dashboard/qr-codes');
-    return { success: true, data: qrCode };
+    revalidatePath('/dashboard');
+    revalidatePath('/settings');
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
+
+// ============================================================
+// QR CODE ACTIONS
+// ============================================================
 
 export async function getQRCodes(gymId?: string): Promise<{ data: QRCode[]; error?: string }> {
   try {
@@ -231,47 +170,6 @@ export async function getQRCodeByCode(code: string): Promise<{ data?: QRCode; er
     return { data };
   } catch (error: any) {
     return { error: error.message };
-  }
-}
-
-export async function updateQRCode(
-  qrId: string,
-  updates: Partial<QRCode>
-): Promise<{ success: boolean; data?: QRCode; error?: string }> {
-  try {
-    const supabase = createServerSupabaseClient();
-
-    const { data, error } = await supabase
-      .from('qr_codes')
-      .update(updates)
-      .eq('id', qrId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    revalidatePath('/dashboard/qr-codes');
-    return { success: true, data };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function deleteQRCode(qrId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const supabase = createServerSupabaseClient();
-
-    const { error } = await supabase
-      .from('qr_codes')
-      .delete()
-      .eq('id', qrId);
-
-    if (error) throw error;
-
-    revalidatePath('/dashboard/qr-codes');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
   }
 }
 
@@ -427,27 +325,24 @@ export async function checkInMember(formData: {
       member = newMember;
     }
 
-    // 3. CHECK DAILY LIMIT (unless admin override or new member)
+    // 3. CHECK DAILY LIMIT — only 1 check-in per member per date
     if (!isNewMember && !formData.adminOverride) {
-      const { data: limitCheck, error: limitError } = await supabase
-        .rpc('check_daily_checkin_limit', {
-          p_member_id: member.id,
-          p_gym_id: formData.gymId,
-        });
+      const todayDate = new Date().toISOString().split('T')[0];
+      const { data: existingCheckIn } = await supabase
+        .from('check_ins')
+        .select('id, check_in_at')
+        .eq('member_id', member.id)
+        .eq('gym_id', formData.gymId)
+        .gte('check_in_at', todayDate)
+        .limit(1)
+        .maybeSingle();
 
-      if (limitError) {
-        console.error('Error checking daily limit:', limitError);
-        // Continue anyway - don't block check-in on limit check failure
-      } else if (limitCheck && limitCheck.length > 0) {
-        const { can_check_in, last_checkin_at } = limitCheck[0];
-
-        if (!can_check_in) {
-          return {
-            success: false,
-            error: 'DAILY_LIMIT_REACHED',
-            lastCheckIn: last_checkin_at,
-          };
-        }
+      if (existingCheckIn) {
+        return {
+          success: false,
+          error: 'DAILY_LIMIT_REACHED',
+          lastCheckIn: existingCheckIn.check_in_at,
+        };
       }
     }
 

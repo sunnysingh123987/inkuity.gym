@@ -1,9 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getQRCode } from '@/lib/actions/qr-codes'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { QrCode, ArrowLeft, Building2, Scan } from 'lucide-react'
+import { QrCode, Building2, Scan } from 'lucide-react'
 import { QRCodeDisplay } from '@/components/dashboard/qr-code/qr-code-display'
 
 export const metadata = {
@@ -26,20 +25,11 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href="/qr-codes"
-            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to QR Codes
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">{qrCode.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {qrCode.label || qrCode.code}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">{qrCode.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {qrCode.label || qrCode.code}
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -94,12 +84,7 @@ export default async function QRCodeDetailPage({ params }: QRCodeDetailPageProps
           </CardHeader>
           <CardContent>
             {gym ? (
-              <Link
-                href={`/gyms/${gym.id}`}
-                className="text-indigo-600 hover:underline font-medium"
-              >
-                {gym.name}
-              </Link>
+              <p className="font-medium">{gym.name}</p>
             ) : (
               <p className="text-sm text-muted-foreground">—</p>
             )}

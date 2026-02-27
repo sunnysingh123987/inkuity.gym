@@ -5,7 +5,9 @@ import { UAParser } from 'ua-parser-js';
 /**
  * QR Code Scan Handler
  * Route: /s/{code}
- * This endpoint handles QR code scans, tracks analytics, and redirects to the gym landing page
+ * This endpoint handles QR code scans, tracks analytics, and redirects to the gym landing page.
+ * For check-in type QR codes, if the member already has an active session and is checked in today,
+ * they are redirected to their portal dashboard instead of the sign-in page.
  */
 export async function GET(
   request: NextRequest,
@@ -24,21 +26,10 @@ export async function GET(
       .single();
 
     if (qrError || !qrCode) {
-      // QR code not found or inactive
       return NextResponse.redirect(new URL('/qr-not-found', request.url));
     }
 
-    // 2. Check if QR code has expired
-    if (qrCode.expires_at && new Date(qrCode.expires_at) < new Date()) {
-      return NextResponse.redirect(new URL('/qr-expired', request.url));
-    }
-
-    // 3. Check if scan limit reached
-    if (qrCode.scan_limit && qrCode.total_scans >= qrCode.scan_limit) {
-      return NextResponse.redirect(new URL('/qr-limit-reached', request.url));
-    }
-
-    // 4. Collect scan data
+    // 2. Collect scan data
     const userAgent = request.headers.get('user-agent') || '';
     const referer = request.headers.get('referer') || '';
     const ipAddress = getClientIPFromRequest(request);
@@ -53,7 +44,7 @@ export async function GET(
     const utmMedium = url.searchParams.get('utm_medium');
     const utmCampaign = url.searchParams.get('utm_campaign');
 
-    // 5. Record the scan
+    // 3. Record the scan for analytics (no limiting)
     const { data: scan, error: scanError } = await supabase
       .from('scans')
       .insert({
@@ -77,18 +68,7 @@ export async function GET(
       console.error('Failed to record scan:', scanError);
     }
 
-    // 6. Create check-in record if it's a check-in type
-    // Note: We'll create the check-in after member identification on the landing page
-    // if (qrCode.type === 'check-in') {
-    //   await supabase.from('check_ins').insert({
-    //     gym_id: qrCode.gym_id,
-    //     qr_code_id: qrCode.id,
-    //     scan_id: scan?.id || null,
-    //     tags: ['qr-scan'],
-    //   });
-    // }
-
-    // 7. Determine redirect URL
+    // 4. Determine redirect URL
     let redirectUrl: string;
 
     if (qrCode.redirect_url) {
@@ -110,7 +90,6 @@ export async function GET(
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inkuity.com';
       const gymSlug = qrCode.gym.slug;
 
-      // Build URL with tracking params
       const targetUrl = new URL(`/${gymSlug}`, baseUrl);
       targetUrl.searchParams.set('scan_id', scan?.id || '');
       targetUrl.searchParams.set('qr_code', code);
@@ -122,7 +101,7 @@ export async function GET(
       redirectUrl = targetUrl.toString();
     }
 
-    // 8. Return redirect response
+    // 5. Return redirect response
     return NextResponse.redirect(redirectUrl, {
       status: 302,
       headers: {

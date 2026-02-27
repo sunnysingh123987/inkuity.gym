@@ -1,4 +1,5 @@
 import { getGyms, getQRCodes, getAnalyticsSummary } from '@/lib/actions/gyms'
+import { getDashboardSettings } from '@/lib/dashboard-settings'
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
 import { createClient } from '@/lib/supabase/server'
 import { getLiveCheckIns } from '@/lib/actions/checkin-flow'
@@ -256,10 +257,13 @@ export default async function DashboardPage() {
     }).catch(() => {})
   }
 
+  const dashboardSettings = getDashboardSettings(gym)
+
   return (
     <DashboardOverview
       gym={gym}
       userName={userName}
+      dashboardSettings={dashboardSettings}
       qrCodes={qrCodes}
       analytics={analytics}
       recentMembers={recentMembers}

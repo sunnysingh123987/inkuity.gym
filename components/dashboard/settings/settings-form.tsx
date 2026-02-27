@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, MapPin, LocateFixed } from 'lucide-react'
+import { Loader2, MapPin, LocateFixed, LayoutDashboard } from 'lucide-react'
+import Link from 'next/link'
 import { updateProfile } from '@/lib/actions/profile'
 import { updateGym } from '@/lib/actions/gyms'
 import { QRCodeCard } from '@/components/dashboard/qr-code-card'
@@ -409,6 +410,31 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
       {/* QR Code Card */}
       {checkInQRCode && gym && (
         <QRCodeCard qrCode={checkInQRCode} gymSlug={gym.slug} />
+      )}
+
+      {/* Customize Dashboard */}
+      {gym && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LayoutDashboard className="h-5 w-5" />
+              Dashboard
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">Customize Dashboard</p>
+                <p className="text-sm text-muted-foreground">
+                  Choose which widgets and sections appear on your dashboard.
+                </p>
+              </div>
+              <Link href="/settings/dashboard">
+                <Button variant="outline">Customize</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Subscription */}

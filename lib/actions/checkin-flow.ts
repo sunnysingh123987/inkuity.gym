@@ -100,6 +100,33 @@ export async function recordQRCheckIn(
       return { success: false, error: 'Member not found' };
     }
 
+    // Check if member already checked in today (1 check-in per date)
+    const todayDate = new Date().toISOString().split('T')[0];
+    const { data: existingCheckIn } = await supabase
+      .from('check_ins')
+      .select('id, check_in_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('check_in_at', todayDate)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingCheckIn) {
+      return {
+        success: true,
+        alreadyCheckedIn: true,
+        data: {
+          checkInId: existingCheckIn.id,
+          checkInAt: existingCheckIn.check_in_at,
+          memberName: member.full_name || 'Member',
+          membershipStatus: member.membership_status || 'active',
+          subscriptionEndDate: member.subscription_end_date,
+          subscriptionWarning: false,
+          blacklisted: false,
+        },
+      };
+    }
+
     // Check blacklist status
     const blacklistResult = await checkBlacklistOnScan(memberId, gymId);
     const blacklisted = blacklistResult.isBlacklisted;
@@ -131,23 +158,6 @@ export async function recordQRCheckIn(
     if (checkInError) {
       console.error('Failed to record check-in:', checkInError);
       return { success: false, error: 'Failed to record check-in' };
-    }
-
-    // Update QR code total scans
-    if (qrCodeId) {
-      const { data: qrData } = await supabase
-        .from('qr_codes')
-        .select('total_scans')
-        .eq('id', qrCodeId)
-        .single();
-      if (qrData) {
-        try {
-          await supabase
-            .from('qr_codes')
-            .update({ total_scans: (qrData.total_scans || 0) + 1 })
-            .eq('id', qrCodeId);
-        } catch { /* Non-critical */ }
-      }
     }
 
     // If trial member, create notification for gym owner

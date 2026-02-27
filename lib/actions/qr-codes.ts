@@ -4,28 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import {
-  generateQRCodeIdentifier,
   generateQRCodeDataURL,
   generateQRCodeBuffer,
   generateQRCodeSVG,
 } from '@/lib/utils/qr';
 import type { QRCode, QRCodeWithGym } from '@/types/database';
-
-interface CreateQRCodeInput {
-  gymId: string;
-  name: string;
-  label?: string;
-  type: 'check-in' | 'equipment' | 'class' | 'promotion' | 'custom';
-  redirectUrl?: string;
-  designSettings?: {
-    primaryColor?: string;
-    backgroundColor?: string;
-    logoEnabled?: boolean;
-    frameStyle?: string;
-  };
-  scanLimit?: number;
-  expiresAt?: string;
-}
 
 interface UpdateQRCodeInput {
   name?: string;
@@ -38,70 +21,6 @@ interface UpdateQRCodeInput {
     frameStyle?: string;
   };
   isActive?: boolean;
-  scanLimit?: number;
-  expiresAt?: string | null;
-}
-
-/**
- * Create a new QR code
- */
-export async function createQRCode(input: CreateQRCodeInput): Promise<{
-  success: boolean;
-  data?: QRCode;
-  error?: string;
-}> {
-  const supabase = createServerSupabaseClient();
-
-  try {
-    // Verify user is owner of the gym
-    const { data: gym, error: gymError } = await supabase
-      .from('gyms')
-      .select('id, owner_id')
-      .eq('id', input.gymId)
-      .single();
-
-    if (gymError || !gym) {
-      return { success: false, error: 'Gym not found' };
-    }
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.id !== gym.owner_id) {
-      return { success: false, error: 'Unauthorized' };
-    }
-
-    // Generate unique code
-    const code = generateQRCodeIdentifier();
-
-    // Create QR code record
-    const { data: qrCode, error } = await supabase
-      .from('qr_codes')
-      .insert({
-        gym_id: input.gymId,
-        code,
-        name: input.name,
-        label: input.label || null,
-        type: input.type,
-        redirect_url: input.redirectUrl || null,
-        design_settings: input.designSettings || {},
-        scan_limit: input.scanLimit || null,
-        expires_at: input.expiresAt || null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    revalidatePath(`/dashboard/gyms/${input.gymId}`);
-    revalidatePath('/dashboard/qr-codes');
-
-    return { success: true, data: qrCode };
-  } catch (error: any) {
-    console.error('Failed to create QR code:', error);
-    return { success: false, error: error.message || 'Failed to create QR code' };
-  }
 }
 
 /**
@@ -180,8 +99,6 @@ export async function updateQRCode(
         redirect_url: input.redirectUrl,
         design_settings: input.designSettings,
         is_active: input.isActive,
-        scan_limit: input.scanLimit,
-        expires_at: input.expiresAt,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -196,31 +113,6 @@ export async function updateQRCode(
     return { success: true, data };
   } catch (error: any) {
     console.error('Failed to update QR code:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Delete a QR code
- */
-export async function deleteQRCode(
-  id: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = createServerSupabaseClient();
-
-  try {
-    const { error } = await supabase
-      .from('qr_codes')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-
-    revalidatePath('/dashboard/qr-codes');
-
-    return { success: true };
-  } catch (error: any) {
-    console.error('Failed to delete QR code:', error);
     return { success: false, error: error.message };
   }
 }

@@ -22,6 +22,7 @@ import {
   Star,
 } from 'lucide-react'
 import { FeedbackResponses } from '@/components/dashboard/feedback/feedback-responses'
+import { type DashboardWidgetSettings } from '@/lib/dashboard-settings'
 
 interface DashboardOverviewProps {
   gym: Gym | null
@@ -66,6 +67,7 @@ interface DashboardOverviewProps {
   }[]
   recentReviews?: GymReviewWithMember[]
   feedbackRequests?: FeedbackRequestWithMember[]
+  dashboardSettings?: DashboardWidgetSettings
 }
 
 export function DashboardOverview({
@@ -88,7 +90,17 @@ export function DashboardOverview({
   liveCheckIns,
   recentReviews = [],
   feedbackRequests = [],
+  dashboardSettings,
 }: DashboardOverviewProps) {
+  const widgets = dashboardSettings || {
+    statsCards: true,
+    liveCheckIns: true,
+    recentMembers: true,
+    paymentSummary: true,
+    workoutSessions: true,
+    reviews: true,
+    feedback: true,
+  }
   const firstName = userName.split(' ')[0]
 
   if (!gym) {
@@ -127,29 +139,35 @@ export function DashboardOverview({
       </div>
 
       {/* Stats Grid - 4 cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <MembersPieStatCard
-          totalMembers={totalMembers}
-          breakdown={memberStatusBreakdown}
-        />
-        <CollectionCard
-          todayCollection={todayCollection}
-          monthCollection={monthCollection}
-          lastMonthCollection={lastMonthCollection}
-          paymentsDue={paymentsDue}
-          currency={currency}
-        />
-        <WorkoutSessionsCard sessions={workoutSessions} todayCheckIns={todayCheckIns} />
-        <CheckInMetricsCard
-          todayCheckIns={todayCheckIns}
-          weekCheckIns={weekCheckIns}
-          monthCheckIns={monthCheckIns}
-          totalCheckIns={analytics.totalScans}
-        />
-      </div>
+      {widgets.statsCards && (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <MembersPieStatCard
+            totalMembers={totalMembers}
+            breakdown={memberStatusBreakdown}
+          />
+          {widgets.paymentSummary && (
+            <CollectionCard
+              todayCollection={todayCollection}
+              monthCollection={monthCollection}
+              lastMonthCollection={lastMonthCollection}
+              paymentsDue={paymentsDue}
+              currency={currency}
+            />
+          )}
+          {widgets.workoutSessions && (
+            <WorkoutSessionsCard sessions={workoutSessions} todayCheckIns={todayCheckIns} />
+          )}
+          <CheckInMetricsCard
+            todayCheckIns={todayCheckIns}
+            weekCheckIns={weekCheckIns}
+            monthCheckIns={monthCheckIns}
+            totalCheckIns={analytics.totalScans}
+          />
+        </div>
+      )}
 
       {/* Today's Live Check-ins */}
-      <Card>
+      {widgets.liveCheckIns && <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Today&apos;s Check-ins</CardTitle>
@@ -231,10 +249,10 @@ export function DashboardOverview({
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Recent Members */}
-      <Card>
+      {widgets.recentMembers && <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle className="text-base font-semibold">Recent Members</CardTitle>
           <Link href="/members">
@@ -282,15 +300,15 @@ export function DashboardOverview({
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Feedback Responses */}
-      {feedbackRequests.length > 0 && (
+      {widgets.feedback && feedbackRequests.length > 0 && (
         <FeedbackResponses feedbackRequests={feedbackRequests} />
       )}
 
       {/* Recent Reviews */}
-      {recentReviews.length > 0 && (
+      {widgets.reviews && recentReviews.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2">

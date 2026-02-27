@@ -138,7 +138,8 @@ export async function getGymBySlug(slug: string) {
 }
 
 /**
- * Check if member has existing PIN
+ * Check if member exists and has a PIN
+ * Returns { exists: boolean, hasPin: boolean } — does NOT error for non-existent members
  */
 export async function checkMemberPINStatus(email: string, gymId: string) {
   try {
@@ -149,28 +150,234 @@ export async function checkMemberPINStatus(email: string, gymId: string) {
       .select('id, portal_pin')
       .eq('email', email.toLowerCase().trim())
       .eq('gym_id', gymId)
-      .single();
+      .maybeSingle();
 
-    if (memberError || !member) {
+    if (memberError) {
+      console.error('Error checking PIN status:', memberError);
+      return { success: false, error: 'An unexpected error occurred.' };
+    }
+
+    if (!member) {
       return {
-        success: false,
-        error: 'No member found with this email. Please check in at the gym first.',
+        success: true,
+        data: {
+          exists: false,
+          hasPin: false,
+          memberId: null,
+        },
       };
     }
 
     return {
       success: true,
       data: {
+        exists: true,
         hasPin: !!member.portal_pin,
         memberId: member.id,
       },
     };
   } catch (error: any) {
     console.error('Error checking PIN status:', error);
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
+}
+
+/**
+ * Send a verification code to a new member's email for self-registration
+ */
+export async function sendVerificationCode(email: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const encryptedCode = encryptPIN(code);
+
+    // Store verification code temporarily in a metadata approach:
+    // We'll use a simple approach — store in a temp record or use the members table
+    // For simplicity, we store it in a verification_codes approach using supabase
+    // But since we don't have a separate table, we'll use Supabase's built-in OTP or
+    // store the code in memory. For now, we'll create a pending member record with the code.
+
+    // Check if there's already a pending verification for this email
+    const { data: existing } = await supabase
+      .from('members')
+      .select('id, last_pin_sent_at')
+      .eq('email', email.toLowerCase().trim())
+      .eq('gym_id', gymId)
+      .maybeSingle();
+
+    if (existing) {
+      // Member already exists — they should use the normal PIN flow
+      return { success: false, error: 'An account with this email already exists. Please enter your PIN.' };
+    }
+
+    // Rate limiting check using a simple approach
+    // Store verification code in a temporary way — we'll create the member record
+    // with 'pending' status and store the code in metadata
+    const { data: pendingMember, error: createError } = await supabase
+      .from('members')
+      .insert({
+        gym_id: gymId,
+        email: email.toLowerCase().trim(),
+        membership_status: 'pending',
+        metadata: {
+          verification_code: encryptedCode,
+          verification_sent_at: new Date().toISOString(),
+        },
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Error creating pending member:', createError);
+      return { success: false, error: 'Failed to send verification code. Please try again.' };
+    }
+
+    // Get gym details for email
+    const { data: gym } = await supabase
+      .from('gyms')
+      .select('name, slug, logo_url')
+      .eq('id', gymId)
+      .single();
+
+    // Send verification code via email
+    await sendPINEmail({
+      to: email,
+      pin: code,
+      memberName: 'New Member',
+      gymName: gym?.name || 'Gym',
+      isNewPIN: true,
+    });
+
     return {
-      success: false,
-      error: 'An unexpected error occurred.',
+      success: true,
+      message: 'Verification code sent to your email!',
+      memberId: pendingMember.id,
     };
+  } catch (error: any) {
+    console.error('Error sending verification code:', error);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+/**
+ * Verify the code sent during self-registration
+ */
+export async function verifyCode(email: string, code: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('id, metadata')
+      .eq('email', email.toLowerCase().trim())
+      .eq('gym_id', gymId)
+      .eq('membership_status', 'pending')
+      .maybeSingle();
+
+    if (memberError || !member) {
+      return { success: false, error: 'No pending verification found. Please try again.' };
+    }
+
+    const metadata = member.metadata as Record<string, any> | null;
+    const encryptedCode = metadata?.verification_code;
+
+    if (!encryptedCode) {
+      return { success: false, error: 'No verification code found. Please request a new one.' };
+    }
+
+    // Check if code has expired (10 minutes)
+    const sentAt = metadata?.verification_sent_at;
+    if (sentAt) {
+      const elapsed = (Date.now() - new Date(sentAt).getTime()) / 1000 / 60;
+      if (elapsed > 10) {
+        return { success: false, error: 'Verification code has expired. Please request a new one.' };
+      }
+    }
+
+    // Decrypt and compare
+    const decryptedCode = decryptPIN(encryptedCode);
+    if (decryptedCode !== code.trim()) {
+      return { success: false, error: 'Invalid verification code.' };
+    }
+
+    return { success: true, memberId: member.id };
+  } catch (error: any) {
+    console.error('Error verifying code:', error);
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
+}
+
+/**
+ * Complete registration for a new member after verification:
+ * set their PIN, upgrade to trial status, and create a session
+ */
+export async function registerNewMember(
+  memberId: string,
+  pin: string,
+  gymSlug: string
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      return { success: false, error: 'PIN must be exactly 4 digits.' };
+    }
+
+    const encryptedPIN = encryptPIN(pin);
+
+    // Get gym id from slug
+    const { data: gym } = await supabase
+      .from('gyms')
+      .select('id')
+      .eq('slug', gymSlug)
+      .single();
+
+    if (!gym) {
+      return { success: false, error: 'Gym not found.' };
+    }
+
+    // Update member: set PIN, upgrade to trial, clear verification metadata
+    const { data: member, error: updateError } = await supabase
+      .from('members')
+      .update({
+        portal_pin: encryptedPIN,
+        pin_created_at: new Date().toISOString(),
+        membership_status: 'trial',
+        member_since: new Date().toISOString().split('T')[0],
+        metadata: {},
+      })
+      .eq('id', memberId)
+      .select()
+      .single();
+
+    if (updateError || !member) {
+      console.error('Error registering member:', updateError);
+      return { success: false, error: 'Failed to complete registration.' };
+    }
+
+    // Create session
+    const sessionToken = createSessionToken(member.id, gym.id);
+
+    cookies().set(SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: SESSION_DURATION / 1000,
+      path: '/',
+    });
+
+    return {
+      success: true,
+      data: {
+        memberId: member.id,
+        gymId: gym.id,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error registering new member:', error);
+    return { success: false, error: 'An unexpected error occurred.' };
   }
 }
 
