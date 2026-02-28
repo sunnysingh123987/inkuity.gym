@@ -6,6 +6,27 @@ import { Notification } from '@/types/database'
 import { markAsRead, markAllAsRead } from '@/lib/actions/notifications'
 import { useRouter } from 'next/navigation'
 
+/**
+ * Determine the target URL for a notification based on its type and metadata.
+ * - trial_checkin / member_checkin / subscription_expiry -> member profile page
+ * - fallback -> notification detail page
+ */
+function getNotificationHref(notification: Notification): string {
+  const meta = notification.metadata || {}
+  const memberId = meta.member_id as string | undefined
+
+  switch (notification.type) {
+    case 'trial_checkin':
+    case 'member_checkin':
+    case 'subscription_expiry':
+      if (memberId) return `/members/${memberId}`
+      break
+  }
+
+  // Default fallback: notification detail page
+  return `/notifications/${notification.id}`
+}
+
 interface NotificationsDropdownProps {
   notifications: Notification[]
   unreadCount: number
@@ -44,12 +65,16 @@ export function NotificationsDropdown({ notifications, unreadCount, userId }: No
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleMarkAsRead = async (notificationId: string) => {
-    await markAsRead(notificationId)
-    setLocalNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
-    )
-    setLocalUnread((prev) => Math.max(0, prev - 1))
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.is_read) {
+      await markAsRead(notification.id)
+      setLocalNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+      )
+      setLocalUnread((prev) => Math.max(0, prev - 1))
+    }
+    setIsOpen(false)
+    router.push(getNotificationHref(notification))
   }
 
   const handleMarkAllAsRead = async () => {
@@ -101,11 +126,7 @@ export function NotificationsDropdown({ notifications, unreadCount, userId }: No
                   className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-muted/50 transition-colors ${
                     !notification.is_read ? 'bg-brand-cyan-500/5' : ''
                   }`}
-                  onClick={() => {
-                    if (!notification.is_read) {
-                      handleMarkAsRead(notification.id)
-                    }
-                  }}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-2">
                     {!notification.is_read && (

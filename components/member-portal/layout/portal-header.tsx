@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings } from 'lucide-react';
 import { signOut } from '@/lib/actions/pin-auth';
 import { toast } from 'sonner';
 
@@ -33,7 +32,6 @@ interface PortalHeaderProps {
 
 export function PortalHeader({ gym, member }: PortalHeaderProps) {
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -52,13 +50,6 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo and Gym Name */}
           <div className="flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden mr-3 p-2 rounded-md text-slate-300 hover:bg-slate-800"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-
             <div className="flex items-center space-x-3">
               {gym.logo_url && (
                 <div className="relative h-10 w-10 rounded-lg overflow-hidden">

@@ -89,6 +89,23 @@ export async function markAllAsRead(userId: string): Promise<{ success: boolean;
   }
 }
 
+export async function getNotificationById(notificationId: string): Promise<{ data: Notification | null; error?: string }> {
+  try {
+    const supabase = createServerSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('id', notificationId)
+      .single();
+
+    if (error) throw error;
+    return { data };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+}
+
 export async function getUnreadCount(userId: string): Promise<number> {
   try {
     const supabase = createServerSupabaseClient();

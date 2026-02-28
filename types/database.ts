@@ -241,7 +241,7 @@ export interface Staff {
   phone: string | null;
   email: string | null;
   salary: number;
-  salary_frequency: 'monthly' | 'weekly' | 'daily';
+  salary_frequency: 'monthly' | 'weekly' | 'daily' | 'per_visit';
   hire_date: string;
   is_active: boolean;
   metadata: Record<string, any>;

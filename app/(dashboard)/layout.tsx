@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Header } from '@/components/dashboard/header'
+import { RouteLoadingBar } from '@/components/ui/route-loading-bar'
 import { createClient } from '@/lib/supabase/server'
 import { getNotifications, getUnreadCount } from '@/lib/actions/notifications'
 
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <RouteLoadingBar />
       {/* Desktop Sidebar - Fixed on left */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <Sidebar />
@@ -38,7 +40,7 @@ export default async function DashboardLayout({
           unreadCount={unreadCount}
           userId={userId}
         />
-        <main className="py-10">
+        <main className="py-10 pb-24 lg:pb-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children}
           </div>

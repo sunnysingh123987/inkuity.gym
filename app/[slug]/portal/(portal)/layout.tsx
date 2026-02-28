@@ -48,7 +48,7 @@ export default async function PortalLayout({
       <div className="flex">
         <PortalNav gymSlug={params.slug} />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 ml-0 md:ml-64">
+        <main className="flex-1 p-4 pb-24 md:pb-6 md:p-6 lg:p-8 ml-0 md:ml-64">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

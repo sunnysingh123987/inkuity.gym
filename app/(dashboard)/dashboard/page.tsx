@@ -4,6 +4,7 @@ import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
 import { createClient } from '@/lib/supabase/server'
 import { getLiveCheckIns } from '@/lib/actions/checkin-flow'
 import { getGymReviews, getFeedbackRequests } from '@/lib/actions/reviews'
+import { getFinancialSummary } from '@/lib/actions/staff-expenses'
 
 export const metadata = {
   title: 'Dashboard - Inkuity',
@@ -225,11 +226,103 @@ export default async function DashboardPage() {
     }
   }
 
-  // Fetch today's live check-ins with member details
+  // Fetch expense/financial summary
+  let financeSummary = { totalRevenue: 0, totalExpenses: 0, netProfit: 0, staffSalaryTotal: 0 }
+  let lastMonthFinanceSummary = { totalRevenue: 0, totalExpenses: 0, netProfit: 0, staffSalaryTotal: 0 }
+  if (gym) {
+    const now = new Date()
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
+
+    const [currentResult, lastResult] = await Promise.all([
+      getFinancialSummary(gym.id, currentMonth),
+      getFinancialSummary(gym.id, lastMonthStr),
+    ])
+    if (currentResult.success && currentResult.data) financeSummary = currentResult.data
+    if (lastResult.success && lastResult.data) lastMonthFinanceSummary = lastResult.data
+
+    // Get top expenses this month
+  }
+
+  // Fetch today's live check-ins with member details (enhanced with subscription data)
   let liveCheckIns: any[] = []
   if (gym) {
     const { data: checkInData } = await getLiveCheckIns(gym.id)
-    liveCheckIns = checkInData || []
+    if (checkInData) {
+      // Enhance with subscription_end_date and streak from members table
+      const memberIds = checkInData.map((ci: any) => ci.member?.id).filter(Boolean)
+      if (memberIds.length > 0) {
+        const { data: memberDetails } = await supabase
+          .from('members')
+          .select('id, subscription_end_date, membership_status')
+          .in('id', memberIds)
+
+        // Get check-in counts for streak calculation
+        const { data: recentCheckIns } = await supabase
+          .from('check_ins')
+          .select('member_id, check_in_at')
+          .eq('gym_id', gym.id)
+          .in('member_id', memberIds)
+          .order('check_in_at', { ascending: false })
+          .limit(memberIds.length * 30)
+
+        const memberMap = new Map<string, any>()
+        memberDetails?.forEach((m: any) => memberMap.set(m.id, m))
+
+        // Calculate streaks
+        const streakMap = new Map<string, number>()
+        if (recentCheckIns) {
+          const byMember = new Map<string, string[]>()
+          for (const ci of recentCheckIns) {
+            if (!ci.member_id) continue
+            const dates = byMember.get(ci.member_id) || []
+            const dateStr = new Date(ci.check_in_at).toISOString().split('T')[0]
+            if (!dates.includes(dateStr)) dates.push(dateStr)
+            byMember.set(ci.member_id, dates)
+          }
+          for (const [memberId, dates] of Array.from(byMember)) {
+            dates.sort((a, b) => b.localeCompare(a))
+            let streak = 0
+            const todayStr = new Date().toISOString().split('T')[0]
+            let checkDate = todayStr
+            for (const d of dates) {
+              if (d === checkDate) {
+                streak++
+                const prev = new Date(checkDate)
+                prev.setDate(prev.getDate() - 1)
+                checkDate = prev.toISOString().split('T')[0]
+              } else if (d < checkDate) {
+                break
+              }
+            }
+            streakMap.set(memberId, streak)
+          }
+        }
+
+        liveCheckIns = checkInData.map((ci: any) => {
+          const details = ci.member?.id ? memberMap.get(ci.member.id) : null
+          const streak = ci.member?.id ? (streakMap.get(ci.member.id) || 0) : 0
+          let daysLeft: number | null = null
+          if (details?.subscription_end_date) {
+            const end = new Date(details.subscription_end_date)
+            const now = new Date()
+            daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          }
+          return {
+            ...ci,
+            member: ci.member ? {
+              ...ci.member,
+              subscription_end_date: details?.subscription_end_date || null,
+            } : null,
+            streak,
+            daysLeft,
+          }
+        })
+      } else {
+        liveCheckIns = checkInData || []
+      }
+    }
   }
 
   // Fetch recent reviews
@@ -280,6 +373,8 @@ export default async function DashboardPage() {
       paymentsDue={paymentsDue}
       currency={gym?.currency || 'INR'}
       liveCheckIns={liveCheckIns}
+      financeSummary={financeSummary}
+      lastMonthFinanceSummary={lastMonthFinanceSummary}
       recentReviews={recentReviews}
       feedbackRequests={feedbackRequests}
     />

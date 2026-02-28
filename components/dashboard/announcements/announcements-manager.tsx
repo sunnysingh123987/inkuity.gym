@@ -26,13 +26,16 @@ import {
   DoorClosed,
   Info,
   Bell,
+  Tags,
 } from 'lucide-react'
 import {
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement,
+  type MemberStatusTag,
 } from '@/lib/actions/announcements'
 import { toast } from 'sonner'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface AnnouncementsManagerProps {
   announcements: Announcement[]
@@ -78,6 +81,13 @@ const TYPE_OPTIONS: { value: Announcement['type']; label: string }[] = [
   { value: 'closure', label: 'Closure' },
 ]
 
+const MEMBER_TAG_OPTIONS: { value: MemberStatusTag; label: string; color: string }[] = [
+  { value: 'active', label: 'Active', color: 'bg-green-500/10 text-green-400 ring-green-500/20' },
+  { value: 'trial', label: 'Trial', color: 'bg-blue-500/10 text-blue-400 ring-blue-500/20' },
+  { value: 'expired', label: 'Expired', color: 'bg-red-500/10 text-red-400 ring-red-500/20' },
+  { value: 'pending', label: 'Pending', color: 'bg-amber-500/10 text-amber-400 ring-amber-500/20' },
+]
+
 type FormState = {
   title: string
   message: string
@@ -85,6 +95,7 @@ type FormState = {
   starts_at: string
   ends_at: string
   notify_members: boolean
+  selected_tags: MemberStatusTag[]
 }
 
 const defaultForm: FormState = {
@@ -94,6 +105,7 @@ const defaultForm: FormState = {
   starts_at: new Date().toISOString().slice(0, 16),
   ends_at: '',
   notify_members: false,
+  selected_tags: ['active', 'trial'],
 }
 
 export function AnnouncementsManager({
@@ -126,6 +138,7 @@ export function AnnouncementsManager({
       starts_at: a.starts_at ? a.starts_at.slice(0, 16) : '',
       ends_at: a.ends_at ? a.ends_at.slice(0, 16) : '',
       notify_members: a.notify_members,
+      selected_tags: ['active', 'trial'],
     })
     setShowForm(true)
   }
@@ -142,17 +155,26 @@ export function AnnouncementsManager({
       return
     }
 
+    if (form.notify_members && form.selected_tags.length === 0) {
+      toast.error('Select at least one member status to send emails')
+      return
+    }
+
     setSaving(true)
     try {
       if (editingId) {
-        const result = await updateAnnouncement(editingId, {
-          title: form.title,
-          message: form.message,
-          type: form.type,
-          starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
-          ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-          notify_members: form.notify_members,
-        })
+        const result = await updateAnnouncement(
+          editingId,
+          {
+            title: form.title,
+            message: form.message,
+            type: form.type,
+            starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
+            ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+            notify_members: form.notify_members,
+          },
+          form.notify_members ? { selected_tags: form.selected_tags } : undefined
+        )
         if (!result.success) throw new Error(result.error)
         setAnnouncements((prev) =>
           prev.map((a) => (a.id === editingId ? result.data! : a))
@@ -167,6 +189,7 @@ export function AnnouncementsManager({
           starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : undefined,
           ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : undefined,
           notify_members: form.notify_members,
+          selected_tags: form.notify_members ? form.selected_tags : undefined,
         })
         if (!result.success) throw new Error(result.error)
         setAnnouncements((prev) => [result.data!, ...prev])
@@ -365,43 +388,89 @@ export function AnnouncementsManager({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="ann-start">Start Date</Label>
-                <Input
+                <DatePicker
                   id="ann-start"
                   type="datetime-local"
                   value={form.starts_at}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, starts_at: e.target.value }))
+                  onChange={(val) =>
+                    setForm((f) => ({ ...f, starts_at: val }))
                   }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ann-end">End Date (optional)</Label>
-                <Input
+                <DatePicker
                   id="ann-end"
                   type="datetime-local"
                   value={form.ends_at}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, ends_at: e.target.value }))
+                  onChange={(val) =>
+                    setForm((f) => ({ ...f, ends_at: val }))
                   }
+                  placeholder="No end date"
                 />
               </div>
             </div>
 
             {/* Notify Members */}
-            <div className="flex items-center gap-3">
-              <input
-                id="ann-notify"
-                type="checkbox"
-                className="h-4 w-4 rounded border-input text-brand-cyan-500 focus:ring-brand-cyan-500"
-                checked={form.notify_members}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, notify_members: e.target.checked }))
-                }
-              />
-              <Label htmlFor="ann-notify" className="cursor-pointer flex items-center gap-2">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                Notify members
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  id="ann-notify"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input text-brand-cyan-500 focus:ring-brand-cyan-500"
+                  checked={form.notify_members}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, notify_members: e.target.checked }))
+                  }
+                />
+                <Label htmlFor="ann-notify" className="cursor-pointer flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                  Notify members via email
+                </Label>
+              </div>
+
+              {/* Member Tag Selection - shown when notify is checked */}
+              {form.notify_members && (
+                <div className="ml-7 space-y-2 rounded-md border border-border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Tags className="h-3.5 w-3.5" />
+                    Send to members with status:
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {MEMBER_TAG_OPTIONS.map((tag) => (
+                      <label
+                        key={tag.value}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 rounded border-input text-brand-cyan-500 focus:ring-brand-cyan-500"
+                          checked={form.selected_tags.includes(tag.value)}
+                          onChange={(e) => {
+                            setForm((f) => ({
+                              ...f,
+                              selected_tags: e.target.checked
+                                ? [...f.selected_tags, tag.value]
+                                : f.selected_tags.filter((t) => t !== tag.value),
+                            }))
+                          }}
+                        />
+                        <Badge
+                          variant="outline"
+                          className={`text-[11px] px-1.5 py-0 ring-1 ring-inset ${tag.color}`}
+                        >
+                          {tag.label}
+                        </Badge>
+                      </label>
+                    ))}
+                  </div>
+                  {form.selected_tags.length === 0 && (
+                    <p className="text-xs text-red-400">
+                      Select at least one member status to send emails.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

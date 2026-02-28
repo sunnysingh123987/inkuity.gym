@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getMemberById } from '@/lib/actions/gyms'
+import { getMemberById, getGyms } from '@/lib/actions/gyms'
 import { MemberDetailView } from '@/components/dashboard/members/member-detail-view'
 import { createClient } from '@/lib/supabase/server'
 
@@ -20,6 +20,10 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   if (!member) {
     notFound()
   }
+
+  // Fetch gym for membership plans
+  const { data: gyms } = await getGyms()
+  const gym = gyms.find(g => g.id === member.gym_id) || gyms[0] || null
 
   // Fetch check-ins for this member
   const supabase = createClient()
@@ -47,7 +51,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
         </p>
       </div>
 
-      <MemberDetailView member={member} checkIns={checkIns || []} payments={payments || []} />
+      <MemberDetailView member={member} checkIns={checkIns || []} payments={payments || []} gym={gym} />
     </div>
   )
 }

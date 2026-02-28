@@ -3,23 +3,112 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Member, CheckIn, Payment } from '@/types/database'
+import { Member, CheckIn, Payment, Gym, MembershipPlan } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Heart, IndianRupee, MessageCircle, Ban, CreditCard, Clock } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Heart, IndianRupee, MessageCircle, Ban, CreditCard, Clock, Pencil, Save, Loader2, X } from 'lucide-react'
 import { blacklistMember, unblacklistMember } from '@/lib/actions/blacklist'
+import { updateMember } from '@/lib/actions/gyms'
+import { DatePicker } from '@/components/ui/date-picker'
+import { toast } from 'sonner'
+
+const PLAN_MONTHS: Record<string, number> = {
+  '1_month': 1,
+  '3_months': 3,
+  '6_months': 6,
+  '1_year': 12,
+}
+
+const DURATION_LABELS: Record<string, string> = {
+  '1_month': '1 Month',
+  '3_months': '3 Months',
+  '6_months': '6 Months',
+  '1_year': '1 Year',
+}
 
 interface MemberDetailViewProps {
   member: Member
   checkIns: CheckIn[]
   payments: Payment[]
+  gym: Gym | null
 }
 
-export function MemberDetailView({ member, checkIns, payments }: MemberDetailViewProps) {
+export function MemberDetailView({ member: initialMember, checkIns, payments, gym }: MemberDetailViewProps) {
   const router = useRouter()
+  const [member, setMember] = useState(initialMember)
   const [blacklistLoading, setBlacklistLoading] = useState(false)
   const [isBlacklisted, setIsBlacklisted] = useState(member.is_blacklisted ?? false)
+
+  // Membership editing
+  const [editingMembership, setEditingMembership] = useState(false)
+  const [membershipSaving, setMembershipSaving] = useState(false)
+  const [editPlan, setEditPlan] = useState(member.subscription_plan || '')
+  const [editStartDate, setEditStartDate] = useState(() => {
+    const d = member.subscription_start_date
+    return d ? new Date(d).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  })
+  const [editPlanName, setEditPlanName] = useState(member.metadata?.plan_name || '')
+
+  const membershipPlans: MembershipPlan[] = (gym?.settings?.membership_plans as MembershipPlan[]) || []
+
+  const getPlansForDuration = (duration: string) =>
+    membershipPlans.filter((p) => p.duration === duration)
+
+  const calculateEndDate = (startDate: string, plan: string): string => {
+    if (!startDate || !plan || !PLAN_MONTHS[plan]) return ''
+    const start = new Date(startDate)
+    start.setMonth(start.getMonth() + PLAN_MONTHS[plan])
+    return start.toISOString().split('T')[0]
+  }
+
+  const handleSaveMembership = async () => {
+    if (!editPlan || !editStartDate) {
+      toast.error('Please select a plan and start date')
+      return
+    }
+
+    setMembershipSaving(true)
+    const endDate = calculateEndDate(editStartDate, editPlan)
+    const updatedMetadata = { ...(member.metadata || {}), plan_name: editPlanName || null }
+
+    const result = await updateMember(member.id, {
+      subscription_plan: editPlan as any,
+      subscription_start_date: editStartDate,
+      subscription_end_date: endDate,
+      membership_status: 'active',
+      metadata: updatedMetadata,
+    })
+
+    if (result.success) {
+      setMember({
+        ...member,
+        subscription_plan: editPlan as any,
+        subscription_start_date: editStartDate,
+        subscription_end_date: endDate,
+        membership_status: 'active',
+        metadata: updatedMetadata,
+      })
+      setEditingMembership(false)
+      toast.success('Membership updated to active')
+      router.refresh()
+    } else {
+      toast.error('Failed to update membership: ' + (result.error || 'Unknown error'))
+    }
+    setMembershipSaving(false)
+  }
+
+  const startEditMembership = () => {
+    setEditPlan(member.subscription_plan || '')
+    setEditStartDate(
+      member.subscription_start_date
+        ? new Date(member.subscription_start_date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0]
+    )
+    setEditPlanName(member.metadata?.plan_name || '')
+    setEditingMembership(true)
+  }
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
@@ -51,31 +140,31 @@ export function MemberDetailView({ member, checkIns, payments }: MemberDetailVie
       if (isBlacklisted) {
         const result = await unblacklistMember(member.id)
         if (result.success) setIsBlacklisted(false)
-        else alert('Failed: ' + result.error)
+        else toast.error('Failed: ' + result.error)
       } else {
         const reason = prompt('Enter reason for blacklisting this member:')
         if (!reason) { setBlacklistLoading(false); return }
         const result = await blacklistMember(member.id, reason)
         if (result.success) setIsBlacklisted(true)
-        else alert('Failed: ' + result.error)
+        else toast.error('Failed: ' + result.error)
       }
     } catch {
-      alert('An error occurred')
+      toast.error('An error occurred')
     } finally {
       setBlacklistLoading(false)
     }
   }
 
   const formatPlanLabel = (plan: string | null) => {
-    const labels: Record<string, string> = {
-      '1_month': '1 Month',
-      '3_months': '3 Months',
-      '6_months': '6 Months',
-      '1_year': '1 Year',
-      'custom': 'Custom',
-    }
-    return plan ? labels[plan] || plan : '—'
+    return plan ? DURATION_LABELS[plan] || plan : '—'
   }
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  }
+
+  const editEndDate = editPlan && editStartDate ? calculateEndDate(editStartDate, editPlan) : ''
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -107,13 +196,6 @@ export function MemberDetailView({ member, checkIns, payments }: MemberDetailVie
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link href="/dashboard/payments">
-            <IndianRupee className="mr-2 h-4 w-4" />
-            Record Payment
-          </Link>
-        </Button>
-
         {member.phone && (
           <Button variant="outline" asChild className="border-green-500/30 text-green-400 hover:bg-green-500/10 hover:text-green-300">
             <a href={getWhatsAppUrl(member.phone)} target="_blank" rel="noopener noreferrer">
@@ -134,41 +216,117 @@ export function MemberDetailView({ member, checkIns, payments }: MemberDetailVie
         </Button>
       </div>
 
-      {/* Subscription Info */}
+      {/* Subscription Info — Editable */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Subscription Info
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Membership
+            </CardTitle>
+            {!editingMembership && (
+              <Button variant="outline" size="sm" onClick={startEditMembership} className="gap-1.5">
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Plan</p>
-              <p className="text-sm font-semibold text-foreground">
-                {member.metadata?.plan_name || formatPlanLabel(member.subscription_plan)}
-              </p>
+          {editingMembership ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">Duration</Label>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    value={editPlan}
+                    onChange={(e) => { setEditPlan(e.target.value); setEditPlanName('') }}
+                  >
+                    <option value="">Select duration</option>
+                    {Object.entries(DURATION_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {editPlan && getPlansForDuration(editPlan).length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Plan Variant</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      value={editPlanName}
+                      onChange={(e) => setEditPlanName(e.target.value)}
+                    >
+                      <option value="">No specific plan</option>
+                      {getPlansForDuration(editPlan).map((p) => (
+                        <option key={p.id} value={p.name}>
+                          ₹{p.price.toLocaleString('en-IN')} — {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">Start Date</Label>
+                  <DatePicker
+                    value={editStartDate}
+                    onChange={(val) => setEditStartDate(val)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">End Date (auto-calculated)</Label>
+                  <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
+                    {editEndDate ? formatDate(editEndDate) : '—'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleSaveMembership} disabled={membershipSaving || !editPlan || !editStartDate} className="gap-1.5">
+                  {membershipSaving ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving...</>
+                  ) : (
+                    <><Save className="h-3.5 w-3.5" />Save & Activate</>
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={() => setEditingMembership(false)} className="gap-1.5">
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </Button>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <Badge className={getStatusBadge(member.membership_status)}>
-                {member.membership_status}
-              </Badge>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Plan</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {member.metadata?.plan_name || formatPlanLabel(member.subscription_plan)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <Badge className={getStatusBadge(member.membership_status)}>
+                  {member.membership_status}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Start Date</p>
+                <p className="text-sm font-medium text-foreground">
+                  {formatDate(member.subscription_start_date)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">End Date</p>
+                <p className="text-sm font-medium text-foreground">
+                  {formatDate(member.subscription_end_date || member.metadata?.subscription_end_date)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Start Date</p>
-              <p className="text-sm font-medium text-foreground">
-                {member.subscription_start_date ? new Date(member.subscription_start_date).toLocaleDateString() : '—'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">End Date</p>
-              <p className="text-sm font-medium text-foreground">
-                {member.subscription_end_date ? new Date(member.subscription_end_date).toLocaleDateString() : '—'}
-              </p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -222,7 +380,7 @@ export function MemberDetailView({ member, checkIns, payments }: MemberDetailVie
             Recent Payments
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/payments">View All</Link>
+            <Link href="/payments">View All</Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -243,7 +401,8 @@ export function MemberDetailView({ member, checkIns, payments }: MemberDetailVie
                   {payments.map((payment) => (
                     <tr key={payment.id} className="hover:bg-muted">
                       <td className="px-4 py-3 text-sm text-foreground">
-                        {new Date(payment.payment_date).toLocaleDateString()}
+                        <div>{new Date(payment.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}</div>
+                        <div className="text-xs text-muted-foreground">{new Date(payment.payment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-foreground">
                         {payment.currency === 'INR' ? '₹' : payment.currency} {payment.amount.toLocaleString()}

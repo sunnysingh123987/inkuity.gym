@@ -41,7 +41,7 @@ export async function createStaff(data: {
   phone?: string;
   email?: string;
   salary: number;
-  salary_frequency: 'monthly' | 'weekly' | 'daily';
+  salary_frequency: 'monthly' | 'weekly' | 'daily' | 'per_visit';
   hire_date: string;
 }): Promise<{ success: boolean; data?: Staff; error?: string }> {
   try {
@@ -331,9 +331,30 @@ export async function getFinancialSummary(
     // Get staff salary total (active staff)
     const { data: staffList } = await supabase
       .from('staff')
-      .select('salary, salary_frequency')
+      .select('id, salary, salary_frequency')
       .eq('gym_id', gymId)
       .eq('is_active', true);
+
+    // For per_visit staff, count check-ins in the selected month
+    const perVisitStaff = (staffList || []).filter((s) => s.salary_frequency === 'per_visit');
+    const perVisitCounts: Record<string, number> = {};
+
+    if (perVisitStaff.length > 0 && startDate && endDate) {
+      // Query check_ins for this gym in the date range, grouped by staff
+      // Staff don't have member_id linkage in check_ins, so we use metadata.staff_id
+      // However, check_ins track member visits. For per_visit staff (e.g. trainers),
+      // we count total gym check-ins in the month as their visit count.
+      for (const staff of perVisitStaff) {
+        const { count } = await supabase
+          .from('check_ins')
+          .select('*', { count: 'exact', head: true })
+          .eq('gym_id', gymId)
+          .gte('check_in_at', startDate)
+          .lte('check_in_at', `${endDate}T23:59:59`);
+
+        perVisitCounts[staff.id] = count || 0;
+      }
+    }
 
     let staffSalaryTotal = 0;
     (staffList || []).forEach((s) => {
@@ -344,6 +365,9 @@ export async function getFinancialSummary(
           break;
         case 'weekly':
           staffSalaryTotal += s.salary * 4;
+          break;
+        case 'per_visit':
+          staffSalaryTotal += s.salary * (perVisitCounts[s.id] || 0);
           break;
         case 'monthly':
         default:

@@ -33,10 +33,12 @@ import {
   Pencil,
   Trash2,
   X,
+  Loader2,
 } from 'lucide-react'
 import { updateMember } from '@/lib/actions/gyms'
 import { createPayment, uploadPaymentQR, savePaymentQRUrl, saveMembershipPlans } from '@/lib/actions/payments'
 import { toast } from 'sonner'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface PaymentsManagerProps {
   members: Member[]
@@ -44,11 +46,11 @@ interface PaymentsManagerProps {
   gym: Gym | null
 }
 
-const PLAN_DURATIONS: Record<string, number> = {
-  '1_month': 30,
-  '3_months': 90,
-  '6_months': 180,
-  '1_year': 365,
+const PLAN_MONTHS: Record<string, number> = {
+  '1_month': 1,
+  '3_months': 3,
+  '6_months': 6,
+  '1_year': 12,
 }
 
 const DURATION_LABELS: Record<string, string> = {
@@ -91,8 +93,15 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
   const [recordMethod, setRecordMethod] = useState<PaymentMethod>('cash')
   const [recordType, setRecordType] = useState<'subscription' | 'one_time' | 'penalty'>('subscription')
   const [recordDate, setRecordDate] = useState(new Date().toISOString().split('T')[0])
+  const [recordTime, setRecordTime] = useState(() => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  })
   const [recordDescription, setRecordDescription] = useState('')
   const [recordSubmitting, setRecordSubmitting] = useState(false)
+  const [recordPlan, setRecordPlan] = useState('')
+  const [recordStartDate, setRecordStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [recordPlanName, setRecordPlanName] = useState('')
 
   // QR upload
   const [qrUploading, setQrUploading] = useState(false)
@@ -271,9 +280,9 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
   }
 
   const calculateEndDate = (startDate: string, plan: string): string => {
-    if (!startDate || !plan || !PLAN_DURATIONS[plan]) return ''
+    if (!startDate || !plan || !PLAN_MONTHS[plan]) return ''
     const start = new Date(startDate)
-    start.setDate(start.getDate() + PLAN_DURATIONS[plan])
+    start.setMonth(start.getMonth() + PLAN_MONTHS[plan])
     return start.toISOString().split('T')[0]
   }
 
@@ -325,7 +334,19 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
     setRecordMethod('cash')
     setRecordType('subscription')
     setRecordDate(new Date().toISOString().split('T')[0])
+    const now = new Date()
+    setRecordTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)
     setRecordDescription('')
+
+    // Pre-populate subscription details from member's existing data
+    const member = memberId ? members.find((m) => m.id === memberId) : null
+    setRecordPlan(member?.subscription_plan || '')
+    // Extract YYYY-MM-DD from ISO timestamp (e.g. "2025-10-22T19:12:57.081+00:00" → "2025-10-22")
+    const startDate = member?.subscription_start_date
+      ? new Date(member.subscription_start_date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+    setRecordStartDate(startDate)
+    setRecordPlanName(member?.metadata?.plan_name || '')
     setRecordOpen(true)
   }
 
@@ -333,6 +354,10 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
     if (!gym || !recordMemberId || !recordAmount) return
 
     setRecordSubmitting(true)
+
+    // Combine date + time into ISO string
+    const paymentDateTime = new Date(`${recordDate}T${recordTime || '00:00'}:00`).toISOString()
+
     const result = await createPayment({
       gym_id: gym.id,
       member_id: recordMemberId,
@@ -341,11 +366,45 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
       type: recordType,
       payment_method: recordMethod,
       description: recordDescription || undefined,
-      payment_date: new Date(recordDate).toISOString(),
+      payment_date: paymentDateTime,
     })
 
     if (result.success && result.data) {
-      toast.success('Payment recorded successfully')
+      // Auto-update member status for subscription payments BEFORE closing dialog
+      if (recordType === 'subscription' && recordPlan && recordStartDate) {
+        const endDate = calculateEndDate(recordStartDate, recordPlan)
+        const member = members.find((m) => m.id === recordMemberId)
+        const updatedMetadata = { ...(member?.metadata || {}), plan_name: recordPlanName || null }
+        const updateResult = await updateMember(recordMemberId, {
+          subscription_plan: recordPlan as any,
+          subscription_start_date: recordStartDate,
+          subscription_end_date: endDate,
+          membership_status: 'active',
+          metadata: updatedMetadata,
+        })
+        if (updateResult.success) {
+          setMembers((prev) =>
+            prev.map((m) =>
+              m.id === recordMemberId
+                ? {
+                    ...m,
+                    subscription_plan: recordPlan as any,
+                    subscription_start_date: recordStartDate,
+                    subscription_end_date: endDate,
+                    membership_status: 'active',
+                    metadata: updatedMetadata,
+                  }
+                : m
+            )
+          )
+          toast.success('Payment recorded & membership updated')
+        } else {
+          toast.error('Payment recorded but failed to update membership: ' + (updateResult.error || 'Unknown error'))
+        }
+      } else {
+        toast.success('Payment recorded successfully')
+      }
+
       setPayments((prev) => [result.data as PaymentWithMember, ...prev])
       setRecordOpen(false)
 
@@ -501,8 +560,8 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-sm text-muted-foreground">
-                                {member.subscription_end_date
-                                  ? new Date(member.subscription_end_date).toLocaleDateString()
+                                {(member.subscription_end_date || member.metadata?.subscription_end_date)
+                                  ? new Date(member.subscription_end_date || member.metadata?.subscription_end_date).toLocaleDateString()
                                   : '—'}
                               </td>
                               <td className="px-6 py-4">
@@ -516,113 +575,7 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
                                     <IndianRupee className="h-3.5 w-3.5" />
                                     Record
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => toggleExpand(member.id)}
-                                  >
-                                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    <span className="ml-1">Plan</span>
-                                  </Button>
                                 </div>
-
-                                {/* Expandable section */}
-                                {isExpanded && (
-                                  <div className="mt-3 space-y-3">
-                                    {/* Plan update */}
-                                    {memberPlan && (
-                                      <div className="p-3 rounded-lg border border-border bg-muted/50 space-y-3">
-                                        <div className="space-y-2">
-                                          <Label className="text-xs">Duration</Label>
-                                          <select
-                                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                            value={memberPlan.plan}
-                                            onChange={(e) =>
-                                              setPlanData((prev) => ({
-                                                ...prev,
-                                                [member.id]: { ...prev[member.id], plan: e.target.value, planName: '' },
-                                              }))
-                                            }
-                                          >
-                                            <option value="">Select duration</option>
-                                            <option value="1_month">1 Month</option>
-                                            <option value="3_months">3 Months</option>
-                                            <option value="6_months">6 Months</option>
-                                            <option value="1_year">1 Year</option>
-                                          </select>
-                                        </div>
-
-                                        {/* Plan variant selector */}
-                                        {memberPlan.plan && getPlansForDuration(memberPlan.plan).length > 0 && (
-                                          <div className="space-y-2">
-                                            <Label className="text-xs">Plan Variant</Label>
-                                            <select
-                                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                              value={memberPlan.planName}
-                                              onChange={(e) =>
-                                                setPlanData((prev) => ({
-                                                  ...prev,
-                                                  [member.id]: { ...prev[member.id], planName: e.target.value },
-                                                }))
-                                              }
-                                            >
-                                              <option value="">No specific plan</option>
-                                              {getPlansForDuration(memberPlan.plan).map((p) => (
-                                                <option key={p.id} value={p.name}>
-                                                  ₹{p.price.toLocaleString('en-IN')} — {p.name}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </div>
-                                        )}
-
-                                        <div className="space-y-2">
-                                          <Label className="text-xs">Start Date</Label>
-                                          <Input
-                                            type="date"
-                                            className="h-9"
-                                            value={memberPlan.startDate}
-                                            onChange={(e) =>
-                                              setPlanData((prev) => ({
-                                                ...prev,
-                                                [member.id]: { ...prev[member.id], startDate: e.target.value },
-                                              }))
-                                            }
-                                          />
-                                        </div>
-                                        {memberPlan.plan && memberPlan.startDate && (
-                                          <p className="text-xs text-muted-foreground">
-                                            End date: {calculateEndDate(memberPlan.startDate, memberPlan.plan)}
-                                          </p>
-                                        )}
-                                        <Button
-                                          size="sm"
-                                          onClick={() => handleSavePlan(member.id)}
-                                          disabled={!memberPlan.plan || !memberPlan.startDate || saving === member.id}
-                                        >
-                                          {saving === member.id ? 'Saving...' : 'Save Plan'}
-                                        </Button>
-                                      </div>
-                                    )}
-
-                                    {/* Recent payments */}
-                                    {recentPayments.length > 0 && (
-                                      <div className="p-3 rounded-lg border border-border bg-muted/50 space-y-2">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Recent Payments</p>
-                                        {recentPayments.map((p) => (
-                                          <div key={p.id} className="flex items-center justify-between text-xs">
-                                            <span className="text-foreground">
-                                              {formatCurrency(p.amount)} via {formatMethodLabel(p.payment_method)}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                              {new Date(p.payment_date).toLocaleDateString('en-IN')}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
                               </td>
                             </tr>
                           )
@@ -684,7 +637,8 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
                           return (
                             <tr key={payment.id} className="hover:bg-muted/50">
                               <td className="px-6 py-4 text-sm text-foreground">
-                                {new Date(payment.payment_date).toLocaleDateString('en-IN')}
+                                <div>{new Date(payment.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' })}</div>
+                                <div className="text-xs text-muted-foreground">{new Date(payment.payment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
                               </td>
                               <td className="px-6 py-4 text-sm font-medium text-foreground">
                                 {payment.member?.full_name || '—'}
@@ -843,8 +797,8 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
                                   />
                                 </div>
                                 <div className="flex gap-2">
-                                  <Button size="sm" onClick={handleSaveMembershipPlan} disabled={plansSaving || !planForm.name || !planForm.price}>
-                                    {plansSaving ? 'Saving...' : 'Save'}
+                                  <Button size="sm" onClick={handleSaveMembershipPlan} disabled={plansSaving || !planForm.name || !planForm.price} className="gap-1.5">
+                                    {plansSaving ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving...</> : 'Save'}
                                   </Button>
                                   <Button size="sm" variant="ghost" onClick={cancelPlanForm}>
                                     <X className="h-3.5 w-3.5 mr-1" />
@@ -913,8 +867,8 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
                                 />
                               </div>
                               <div className="flex gap-2">
-                                <Button size="sm" onClick={handleSaveMembershipPlan} disabled={plansSaving || !planForm.name || !planForm.price}>
-                                  {plansSaving ? 'Saving...' : 'Add Plan'}
+                                <Button size="sm" onClick={handleSaveMembershipPlan} disabled={plansSaving || !planForm.name || !planForm.price} className="gap-1.5">
+                                  {plansSaving ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving...</> : 'Add Plan'}
                                 </Button>
                                 <Button size="sm" variant="ghost" onClick={cancelPlanForm}>
                                   <X className="h-3.5 w-3.5 mr-1" />
@@ -1010,13 +964,85 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={recordDate}
-                onChange={(e) => setRecordDate(e.target.value)}
-              />
+            {/* Subscription plan fields */}
+            {recordType === 'subscription' && (
+              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Subscription Details</p>
+                <div className="space-y-2">
+                  <Label className="text-xs">Duration</Label>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    value={recordPlan}
+                    onChange={(e) => { setRecordPlan(e.target.value); setRecordPlanName('') }}
+                  >
+                    <option value="">Select duration</option>
+                    <option value="1_month">1 Month</option>
+                    <option value="3_months">3 Months</option>
+                    <option value="6_months">6 Months</option>
+                    <option value="1_year">1 Year</option>
+                  </select>
+                </div>
+
+                {recordPlan && getPlansForDuration(recordPlan).length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Plan Variant</Label>
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      value={recordPlanName}
+                      onChange={(e) => {
+                        setRecordPlanName(e.target.value)
+                        const plan = getPlansForDuration(recordPlan).find(p => p.name === e.target.value)
+                        if (plan) setRecordAmount(String(plan.price))
+                      }}
+                    >
+                      <option value="">No specific plan</option>
+                      {getPlansForDuration(recordPlan).map((p) => (
+                        <option key={p.id} value={p.name}>
+                          ₹{p.price.toLocaleString('en-IN')} — {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Start Date</Label>
+                  <DatePicker
+                    value={recordStartDate}
+                    onChange={(val) => setRecordStartDate(val)}
+                  />
+                </div>
+
+                {recordPlan && recordStartDate && (() => {
+                  const endStr = calculateEndDate(recordStartDate, recordPlan)
+                  if (!endStr) return null
+                  const endFormatted = new Date(endStr + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      End date: <strong>{endFormatted}</strong>
+                    </p>
+                  )
+                })()}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <DatePicker
+                  value={recordDate}
+                  onChange={(val) => setRecordDate(val)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Time</Label>
+                <Input
+                  type="time"
+                  value={recordTime}
+                  onChange={(e) => setRecordTime(e.target.value)}
+                  className="h-10"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1037,8 +1063,13 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
             <Button
               onClick={handleRecordPayment}
               disabled={!recordMemberId || !recordAmount || recordSubmitting}
+              className="gap-1.5"
             >
-              {recordSubmitting ? 'Recording...' : 'Record Payment'}
+              {recordSubmitting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />Recording...</>
+              ) : (
+                'Record Payment'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

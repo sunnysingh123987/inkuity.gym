@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getGyms, getQRCodes } from '@/lib/actions/gyms'
+import { getGymRoles } from '@/lib/actions/gym-roles'
 import { SettingsForm } from '@/components/dashboard/settings/settings-form'
+import { TeamManager } from '@/components/dashboard/team/team-manager'
 
 export const metadata = {
   title: 'Settings - Inkuity',
@@ -27,9 +29,12 @@ export default async function SettingsPage() {
   const gym = gyms[0] || null
 
   let checkInQRCode = null
+  let roles: any[] = []
   if (gym) {
     const { data: qrCodes } = await getQRCodes(gym.id)
     checkInQRCode = qrCodes?.find((qr: any) => qr.type === 'check-in') || qrCodes?.[0] || null
+    const rolesResult = await getGymRoles(gym.id)
+    roles = rolesResult.data || []
   }
 
   return (
@@ -42,6 +47,16 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsForm profile={profile} gym={gym} checkInQRCode={checkInQRCode} />
+
+      {gym && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-foreground mb-1">Team</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Manage team members, assign roles, and configure permissions.
+          </p>
+          <TeamManager roles={roles} gym={gym} />
+        </div>
+      )}
     </div>
   )
 }

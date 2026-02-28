@@ -53,7 +53,7 @@ export async function validateCheckInLocation(
     const settings = (gym.settings || {}) as Record<string, any>;
     const gymLat = settings.latitude as number | undefined;
     const gymLng = settings.longitude as number | undefined;
-    const geofenceRadius = (settings.geofence_radius as number) || 200;
+    const geofenceRadius = (settings.geofence_radius as number) || 6;
 
     // If no location configured, allow check-in (geofencing not set up)
     if (gymLat == null || gymLng == null) {

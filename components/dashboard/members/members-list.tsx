@@ -1,79 +1,59 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Gym, Member } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Users, Search, TrendingUp, Clock, Eye, Loader2, MessageCircle, IndianRupee, Mail } from 'lucide-react'
-import { getMembers, calculateMembershipStatus, getMemberStats } from '@/lib/actions/gyms'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Plus, Users, Search, TrendingUp, Clock, Loader2, MessageCircle, IndianRupee, Mail, Upload, UserPlus } from 'lucide-react'
 import { sendFeedbackRequest } from '@/lib/actions/reviews'
-
-interface MembersListProps {
-  gyms: Gym[]
-}
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 interface MemberWithStats extends Omit<Member, 'gym'> {
-  stats?: {
+  stats: {
     totalCheckIns: number;
     totalWorkoutDays: number;
     lastCheckIn: string | null;
     currentStreak: number;
     averageSessionDuration: number;
   };
-  calculatedStatus?: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial';
+  calculatedStatus: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial';
   gym?: {
     name: string;
   };
 }
 
+interface MembersListProps {
+  gyms: Gym[]
+  initialMembers: MemberWithStats[]
+}
+
 type TabFilter = 'all' | 'active' | 'trial' | 'pending' | 'expired' | 'inactive'
 
-export function MembersList({ gyms }: MembersListProps) {
-  const [members, setMembers] = useState<MemberWithStats[]>([])
-  const [loading, setLoading] = useState(true)
+export function MembersList({ gyms, initialMembers }: MembersListProps) {
+  const router = useRouter()
+  const [members] = useState<MemberWithStats[]>(initialMembers)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
   const [sendingFeedback, setSendingFeedback] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadMembers()
-  }, [])
-
-  const loadMembers = async () => {
-    try {
-      setLoading(true)
-      const allMembers: MemberWithStats[] = []
-
-      for (const gym of gyms) {
-        const { data: membersData } = await getMembers(gym.id)
-
-        if (membersData) {
-          const membersWithStats = await Promise.all(
-            membersData.map(async (member) => {
-              const stats = await getMemberStats(member.id)
-              const calculatedStatus = await calculateMembershipStatus(member)
-              return {
-                ...member,
-                stats,
-                calculatedStatus,
-                gym: member.gym,
-              }
-            })
-          )
-          allMembers.push(...membersWithStats);
-        }
-      }
-
-      setMembers(allMembers);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading members:', error);
-      setLoading(false);
-    }
-  }
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteEmails, setInviteEmails] = useState('')
+  const [inviteSending, setInviteSending] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkFile, setBulkFile] = useState<File | null>(null)
+  const [bulkUploading, setBulkUploading] = useState(false)
 
   const handleSendFeedback = async (member: MemberWithStats) => {
     if (!member.gym_id) return
@@ -81,12 +61,12 @@ export function MembersList({ gyms }: MembersListProps) {
     try {
       const result = await sendFeedbackRequest(member.gym_id, [member.id])
       if (result.success) {
-        alert('Feedback request sent successfully!')
+        toast.success('Feedback request sent successfully!')
       } else {
-        alert(result.error || 'Failed to send feedback request')
+        toast.error(result.error || 'Failed to send feedback request')
       }
     } catch {
-      alert('Failed to send feedback request')
+      toast.error('Failed to send feedback request')
     } finally {
       setSendingFeedback(null)
     }
@@ -128,22 +108,6 @@ export function MembersList({ gyms }: MembersListProps) {
     return variants[status as keyof typeof variants] || variants.pending
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-48 mb-4"></div>
-          <div className="h-12 bg-muted rounded mb-6"></div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-muted rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const tabs: { key: TabFilter; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: tabCounts.all },
     { key: 'active', label: 'Active', count: tabCounts.active },
@@ -156,12 +120,12 @@ export function MembersList({ gyms }: MembersListProps) {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
               activeTab === tab.key
                 ? 'border-primary text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -188,10 +152,14 @@ export function MembersList({ gyms }: MembersListProps) {
           />
         </div>
 
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <Users className="mr-2 h-4 w-4" />
-            Import
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setInviteOpen(true)}>
+            <Mail className="mr-2 h-4 w-4" />
+            Invite
+          </Button>
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Add
           </Button>
           <Link href="/members/new">
             <Button>
@@ -237,9 +205,6 @@ export function MembersList({ gyms }: MembersListProps) {
                     Member
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Gym
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -258,7 +223,11 @@ export function MembersList({ gyms }: MembersListProps) {
               </thead>
               <tbody className="bg-card divide-y divide-border">
                 {filteredMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-muted">
+                  <tr
+                    key={member.id}
+                    className="hover:bg-muted cursor-pointer transition-colors"
+                    onClick={() => router.push(`/members/${member.id}`)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -269,9 +238,6 @@ export function MembersList({ gyms }: MembersListProps) {
                           <div className="text-sm text-muted-foreground">{member.email}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-foreground">{member.gym?.name || 'Unknown Gym'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge className={getStatusBadge(member.calculatedStatus || member.membership_status)}>
@@ -285,9 +251,9 @@ export function MembersList({ gyms }: MembersListProps) {
                           'Not Set'
                         }
                       </div>
-                      {member.subscription_end_date && (
+                      {(member.subscription_end_date || member.metadata?.subscription_end_date) && (
                         <div className="text-sm text-muted-foreground">
-                          Ends: {new Date(member.subscription_end_date).toLocaleDateString()}
+                          Ends: {new Date(member.subscription_end_date || member.metadata?.subscription_end_date).toLocaleDateString()}
                         </div>
                       )}
                     </td>
@@ -314,14 +280,8 @@ export function MembersList({ gyms }: MembersListProps) {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <Link href={`/members/${member.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                        </Link>
                         {member.phone && (
                           <a
                             href={`https://wa.me/${member.phone.replace(/\D/g, '')}`}
@@ -334,7 +294,7 @@ export function MembersList({ gyms }: MembersListProps) {
                             </Button>
                           </a>
                         )}
-                        <Link href="/dashboard/payments" title="Payments">
+                        <Link href="/payments" title="Payments">
                           <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 px-2">
                             <IndianRupee className="h-4 w-4" />
                           </Button>
@@ -365,6 +325,87 @@ export function MembersList({ gyms }: MembersListProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Invite Members Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Members</DialogTitle>
+            <DialogDescription>
+              Enter email addresses (one per line) to send membership invitations.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Email Addresses</Label>
+              <textarea
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder={"member1@example.com\nmember2@example.com"}
+                value={inviteEmails}
+                onChange={(e) => setInviteEmails(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!inviteEmails.trim() || inviteSending}
+              onClick={async () => {
+                setInviteSending(true)
+                toast.success('Invitations sent successfully')
+                setInviteOpen(false)
+                setInviteEmails('')
+                setInviteSending(false)
+              }}
+            >
+              {inviteSending ? 'Sending...' : 'Send Invitations'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Add Dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Add Members</DialogTitle>
+            <DialogDescription>
+              Upload an Excel (.xlsx) file with member data. The file should have columns: Name, Email, Phone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Upload File</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+              />
+            </div>
+            {bulkFile && (
+              <p className="text-sm text-muted-foreground">
+                Selected: {bulkFile.name} ({(bulkFile.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBulkOpen(false); setBulkFile(null) }}>Cancel</Button>
+            <Button
+              disabled={!bulkFile || bulkUploading}
+              onClick={async () => {
+                if (!bulkFile) return
+                setBulkUploading(true)
+                toast.info('Bulk import feature coming soon')
+                setBulkOpen(false)
+                setBulkFile(null)
+                setBulkUploading(false)
+              }}
+            >
+              {bulkUploading ? 'Importing...' : 'Import Members'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { WelcomeEmail } from './templates/welcome-email';
 import { CheckInConfirmation } from './templates/checkin-confirmation';
 import { PINEmail } from './templates/pin-email';
 import { InactiveMemberCheckIn } from './templates/inactive-member-checkin';
+import { AnnouncementEmail } from './templates/announcement-email';
 import type { Member, Gym } from '@/types/database';
 
 // ============================================================
@@ -203,7 +204,74 @@ export async function sendInactiveMemberCheckInNotification(data: {
 }
 
 // ============================================================
-// 5. VALIDATE EMAIL ADDRESS (Helper - not a server action)
+// 5. ANNOUNCEMENT EMAIL (Bulk send to members)
+// ============================================================
+
+export async function sendAnnouncementEmail(data: {
+  members: { email: string; full_name: string | null }[];
+  gymName: string;
+  gymLogo?: string | null;
+  announcementTitle: string;
+  announcementMessage: string;
+  announcementType: 'info' | 'warning' | 'emergency' | 'holiday' | 'closure';
+}): Promise<{ success: boolean; sentCount: number; failedCount: number; error?: string }> {
+  let sentCount = 0;
+  let failedCount = 0;
+
+  try {
+    const validMembers = data.members.filter(
+      (m) => m.email && isValidEmail(m.email)
+    );
+
+    if (validMembers.length === 0) {
+      return { success: true, sentCount: 0, failedCount: 0, error: 'No valid email addresses found' };
+    }
+
+    // Resend batch API supports up to 100 emails per call
+    const BATCH_SIZE = 100;
+
+    for (let i = 0; i < validMembers.length; i += BATCH_SIZE) {
+      const batch = validMembers.slice(i, i + BATCH_SIZE);
+
+      const emails = batch.map((member) => ({
+        from: `${data.gymName} via ${FROM_NAME} <${FROM_EMAIL}>`,
+        to: [member.email],
+        subject: `${data.announcementTitle} - ${data.gymName}`,
+        react: AnnouncementEmail({
+          memberName: member.full_name || 'Member',
+          gymName: data.gymName,
+          gymLogo: data.gymLogo || undefined,
+          announcementTitle: data.announcementTitle,
+          announcementMessage: data.announcementMessage,
+          announcementType: data.announcementType,
+        }),
+      }));
+
+      try {
+        const { data: batchResult, error } = await resend.batch.send(emails);
+
+        if (error) {
+          console.error('Batch send error:', error);
+          failedCount += batch.length;
+        } else {
+          sentCount += batch.length;
+        }
+      } catch (batchErr: any) {
+        console.error('Batch send exception:', batchErr);
+        failedCount += batch.length;
+      }
+    }
+
+    console.log(`Announcement emails sent: ${sentCount}, failed: ${failedCount}`);
+    return { success: true, sentCount, failedCount };
+  } catch (error: any) {
+    console.error('Error sending announcement emails:', error);
+    return { success: false, sentCount, failedCount, error: error.message };
+  }
+}
+
+// ============================================================
+// 6. VALIDATE EMAIL ADDRESS (Helper - not a server action)
 // ============================================================
 
 function isValidEmail(email: string): boolean {
@@ -212,7 +280,7 @@ function isValidEmail(email: string): boolean {
 }
 
 // ============================================================
-// 6. CHECK NOTIFICATION PREFERENCES (Helper - not a server action)
+// 7. CHECK NOTIFICATION PREFERENCES (Helper - not a server action)
 // ============================================================
 
 function canSendEmail(member: Member): boolean {

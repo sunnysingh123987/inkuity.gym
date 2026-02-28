@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Gym } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,11 +12,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
+  Legend,
+  Area,
+  AreaChart,
 } from 'recharts'
 import {
   BarChart3,
@@ -26,22 +26,22 @@ import {
   Download,
   Calendar,
   Loader2,
+  Clock,
+  UserPlus,
 } from 'lucide-react'
 import {
   getCheckInTrends,
   getMemberGrowth,
   getPeakHours,
-  getDeviceBreakdown,
   getTopMembers,
   getAnalyticsSummary,
   getRetentionMetrics,
 } from '@/lib/actions/analytics'
-import { transformCheckInTrends, transformPeakHours } from '@/lib/utils/analytics-data'
+import { transformCheckInTrends, transformMemberGrowth, transformPeakHours } from '@/lib/utils/analytics-data'
 import {
   exportToCSV,
   formatCheckInsForExport,
   formatPeakHoursForExport,
-  formatDeviceBreakdownForExport,
   formatTopMembersForExport,
 } from '@/lib/utils/export'
 
@@ -49,7 +49,20 @@ interface AnalyticsDashboardProps {
   gyms: Gym[]
 }
 
-const COLORS = ['#4f46e5', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b']
+// Custom tooltip styling for dark theme
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <p key={i} className="text-sm font-semibold" style={{ color: entry.color }}>
+          {entry.name}: {entry.value.toLocaleString()}
+        </p>
+      ))}
+    </div>
+  )
+}
 
 export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
   const [dateRange, setDateRange] = useState('30')
@@ -71,9 +84,25 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
     totalMembers: 0,
   })
   const [checkInTrends, setCheckInTrends] = useState<any[]>([])
+  const [memberGrowth, setMemberGrowth] = useState<any[]>([])
   const [peakHours, setPeakHours] = useState<any[]>([])
-  const [deviceBreakdown, setDeviceBreakdown] = useState<any[]>([])
   const [topMembers, setTopMembers] = useState<any[]>([])
+
+  // Compute average daily check-ins from trends
+  const avgDailyCheckIns = useMemo(() => {
+    if (checkInTrends.length === 0) return 0
+    const total = checkInTrends.reduce((sum: number, d: any) => sum + d.checkIns, 0)
+    return Math.round(total / checkInTrends.length)
+  }, [checkInTrends])
+
+  // Find peak hour from peak hours data
+  const peakHourLabel = useMemo(() => {
+    if (peakHours.length === 0) return '--'
+    const peak = peakHours.reduce((max: any, cur: any) =>
+      cur.checkIns > max.checkIns ? cur : max
+    , peakHours[0])
+    return peak.hour
+  }, [peakHours])
 
   // Fetch analytics data
   useEffect(() => {
@@ -84,22 +113,21 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
       try {
         const days = parseInt(dateRange)
 
-        // Fetch all analytics data in parallel
-        const [summaryData, retentionData, trendsData, hoursData, devicesData, membersData] =
+        const [summaryData, retentionData, trendsData, growthData, hoursData, membersData] =
           await Promise.all([
             getAnalyticsSummary(selectedGym, days),
             getRetentionMetrics(selectedGym),
             getCheckInTrends(selectedGym, days),
+            getMemberGrowth(selectedGym, days),
             getPeakHours(selectedGym, days),
-            getDeviceBreakdown(selectedGym, days),
             getTopMembers(selectedGym, 5),
           ])
 
         setSummary(summaryData)
         setRetention(retentionData.data)
         setCheckInTrends(transformCheckInTrends(trendsData.data))
+        setMemberGrowth(transformMemberGrowth(growthData.data))
         setPeakHours(transformPeakHours(hoursData.data))
-        setDeviceBreakdown(devicesData.data)
         setTopMembers(membersData.data)
       } catch (error) {
         console.error('Failed to fetch analytics:', error)
@@ -115,7 +143,6 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
     const gymName = gyms.find((g) => g.id === selectedGym)?.name || 'All'
     const date = new Date().toISOString().split('T')[0]
 
-    // Export check-in trends
     exportToCSV(
       formatCheckInsForExport(
         checkInTrends.map((d) => ({ date: d.date, count: d.checkIns }))
@@ -128,7 +155,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
     {
       title: 'Total Check-Ins',
       value: summary.totalCheckIns.toLocaleString(),
-      change: `${summary.growthPercentage >= 0 ? '+' : ''}${summary.growthPercentage}%`,
+      change: `${summary.growthPercentage >= 0 ? '+' : ''}${summary.growthPercentage}% vs last week`,
       icon: BarChart3,
       color: 'text-blue-400',
       bgColor: 'bg-blue-500/10',
@@ -142,20 +169,36 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
       bgColor: 'bg-green-500/10',
     },
     {
-      title: 'This Week',
-      value: summary.weekCheckIns.toLocaleString(),
+      title: 'Retention Rate',
+      value: `${retention.retentionRate}%`,
+      change: `${retention.activeMembers} of ${retention.totalMembers} members`,
+      icon: Activity,
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-500/10',
+    },
+    {
+      title: 'Avg Daily Check-Ins',
+      value: avgDailyCheckIns.toLocaleString(),
       change: `${summary.todayCheckIns} today`,
       icon: TrendingUp,
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/10',
     },
     {
-      title: 'Retention Rate',
-      value: `${retention.retentionRate}%`,
-      change: 'Last 30 days',
-      icon: Activity,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/10',
+      title: 'This Week',
+      value: summary.weekCheckIns.toLocaleString(),
+      change: `${summary.todayCheckIns} today`,
+      icon: Calendar,
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/10',
+    },
+    {
+      title: 'Peak Hour',
+      value: peakHourLabel,
+      change: 'Busiest time of day',
+      icon: Clock,
+      color: 'text-pink-400',
+      bgColor: 'bg-pink-500/10',
     },
   ]
 
@@ -217,7 +260,7 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
       </Card>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-6">
@@ -242,29 +285,49 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
         ))}
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1: Check-In Trends + Member Growth */}
       <div className="grid gap-6 md:grid-cols-2">
+        {/* Check-In Trends */}
         <Card>
           <CardHeader>
-            <CardTitle>Check-In Trends</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-400" />
+              Check-In Trends
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {checkInTrends.length > 0 ? (
               <div className="h-[200px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={checkInTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
+                  <AreaChart data={checkInTrends}>
+                    <defs>
+                      <linearGradient id="checkInGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                    />
+                    <YAxis
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
                       type="monotone"
                       dataKey="checkIns"
+                      name="Check-Ins"
                       stroke="#4f46e5"
                       strokeWidth={2}
-                      dot={{ fill: '#4f46e5' }}
+                      fill="url(#checkInGradient)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             ) : (
@@ -275,71 +338,99 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
           </CardContent>
         </Card>
 
+        {/* Member Growth */}
         <Card>
           <CardHeader>
-            <CardTitle>Device Breakdown</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-green-400" />
+              Member Growth
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {deviceBreakdown.length > 0 ? (
-              <>
-                <div className="h-[200px] sm:h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={deviceBreakdown}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {deviceBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
-                  {deviceBreakdown.map((item, index) => (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {item.name} ({item.percentage}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+            {memberGrowth.length > 0 ? (
+              <div className="h-[200px] sm:h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={memberGrowth}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                    />
+                    <YAxis
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend
+                      wrapperStyle={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Bar
+                      dataKey="newMembers"
+                      name="New Members"
+                      fill="#22c55e"
+                      radius={[4, 4, 0, 0]}
+                      stackId="members"
+                    />
+                    <Bar
+                      dataKey="returningMembers"
+                      name="Returning"
+                      fill="#8b5cf6"
+                      radius={[4, 4, 0, 0]}
+                      stackId="members"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
               <div className="h-[200px] sm:h-[300px] flex items-center justify-center text-muted-foreground">
-                No device data available
+                No member growth data available
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Peak Hours */}
+      {/* Peak Hours - Full Width */}
       <Card>
         <CardHeader>
-          <CardTitle>Peak Hours</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-cyan-400" />
+            Peak Hours
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {peakHours.length > 0 ? (
             <div className="h-[200px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={peakHours}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="checkIns" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="peakGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.3} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="hour"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="checkIns"
+                    name="Check-Ins"
+                    fill="url(#peakGradient)"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -355,7 +446,10 @@ export function AnalyticsDashboard({ gyms }: AnalyticsDashboardProps) {
       {topMembers.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Top Members</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-violet-400" />
+              Top Members
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

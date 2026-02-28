@@ -11,18 +11,18 @@ import {
   UserPlus,
   TrendingUp,
   TrendingDown,
-  Dumbbell,
-  Activity,
   Calendar,
   Users,
   Zap,
   Clock,
   MessageCircle,
-  MessageSquare,
   Star,
 } from 'lucide-react'
 import { FeedbackResponses } from '@/components/dashboard/feedback/feedback-responses'
 import { type DashboardWidgetSettings } from '@/lib/dashboard-settings'
+import { Badge } from '@/components/ui/badge'
+import { updateMember } from '@/lib/actions/gyms'
+import { toast } from 'sonner'
 
 interface DashboardOverviewProps {
   gym: Gym | null
@@ -48,7 +48,7 @@ interface DashboardOverviewProps {
   monthCheckIns: number
   weekCheckIns: number
   newMembersThisMonth: number
-  workoutSessions: { focus: string; count: number }[]
+  workoutSessions?: { focus: string; count: number }[]
   todayCollection: number
   monthCollection: number
   lastMonthCollection: number
@@ -63,8 +63,23 @@ interface DashboardOverviewProps {
       phone: string | null
       avatar_url: string | null
       membership_status: string
+      subscription_end_date?: string | null
     } | null
+    streak?: number
+    daysLeft?: number | null
   }[]
+  financeSummary?: {
+    totalRevenue: number
+    totalExpenses: number
+    netProfit: number
+    staffSalaryTotal: number
+  }
+  lastMonthFinanceSummary?: {
+    totalRevenue: number
+    totalExpenses: number
+    netProfit: number
+    staffSalaryTotal: number
+  }
   recentReviews?: GymReviewWithMember[]
   feedbackRequests?: FeedbackRequestWithMember[]
   dashboardSettings?: DashboardWidgetSettings
@@ -88,6 +103,8 @@ export function DashboardOverview({
   paymentsDue,
   currency,
   liveCheckIns,
+  financeSummary,
+  lastMonthFinanceSummary,
   recentReviews = [],
   feedbackRequests = [],
   dashboardSettings,
@@ -154,8 +171,12 @@ export function DashboardOverview({
               currency={currency}
             />
           )}
-          {widgets.workoutSessions && (
-            <WorkoutSessionsCard sessions={workoutSessions} todayCheckIns={todayCheckIns} />
+          {financeSummary && (
+            <FinanceMetricsCard
+              financeSummary={financeSummary}
+              lastMonthFinanceSummary={lastMonthFinanceSummary}
+              currency={currency}
+            />
           )}
           <CheckInMetricsCard
             todayCheckIns={todayCheckIns}
@@ -188,7 +209,7 @@ export function DashboardOverview({
               </p>
             </div>
           ) : (
-            <div className="max-h-80 overflow-y-auto divide-y divide-border pr-1">
+            <div className="max-h-96 overflow-y-auto divide-y divide-border pr-1">
               {liveCheckIns.map((checkIn) => {
                 const member = checkIn.member
                 const name = member?.full_name || 'Unknown Member'
@@ -201,35 +222,53 @@ export function DashboardOverview({
                 const whatsappLink = phone
                   ? `https://wa.me/${phone.replace(/[^0-9]/g, '')}`
                   : null
+                const streak = checkIn.streak || 0
+                const daysLeft = checkIn.daysLeft
 
                 return (
                   <div
                     key={checkIn.id}
-                    className="flex items-center justify-between py-3"
+                    className="flex items-center justify-between py-3 gap-3"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {member?.avatar_url ? (
                         <img
                           src={member.avatar_url}
                           alt={name}
-                          className="h-9 w-9 rounded-full object-cover"
+                          className="h-9 w-9 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-cyan-500/10 text-sm font-medium text-brand-cyan-400">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-cyan-500/10 text-sm font-medium text-brand-cyan-400 shrink-0">
                           {initial}
                         </div>
                       )}
-                      <div>
-                        <p className="text-sm font-medium">{name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {time}
-                        </p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {time}
+                          </span>
+                          {streak > 0 && (
+                            <span className="flex items-center gap-1 text-amber-400">
+                              <Zap className="h-3 w-3" />
+                              {streak}d streak
+                            </span>
+                          )}
+                          {daysLeft != null && (
+                            <span className={`${daysLeft <= 3 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-muted-foreground'}`}>
+                              {daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? 'Expires today' : 'Expired'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       {member && (
                         <StatusBadge status={member.membership_status} />
+                      )}
+                      {member?.membership_status === 'trial' && (
+                        <TrialStatusButton memberId={member.id} memberName={name} />
                       )}
                       {whatsappLink && (
                         <a
@@ -631,82 +670,115 @@ function CollectionCard({
   )
 }
 
-/* ─── Today's Workout Sessions Card ─────────────────────────────────── */
+/* ─── Finance Metrics Card ──────────────────────────────────────────── */
 
-const WORKOUT_COLORS: Record<string, string> = {
-  chest: '#ef4444',
-  back: '#3b82f6',
-  shoulders: '#f59e0b',
-  arms: '#8b5cf6',
-  legs: '#22c55e',
-  core: '#ec4899',
-  cardio: '#f97316',
-  'full-body': '#06b6d4',
-}
-
-const WORKOUT_ICONS: Record<string, typeof Dumbbell> = {
-  chest: Dumbbell,
-  back: Activity,
-  shoulders: Dumbbell,
-  arms: Dumbbell,
-  legs: Zap,
-  core: Activity,
-  cardio: Activity,
-  'full-body': Dumbbell,
-}
-
-function WorkoutSessionsCard({
-  sessions,
-  todayCheckIns,
+function FinanceMetricsCard({
+  financeSummary,
+  lastMonthFinanceSummary,
+  currency,
 }: {
-  sessions: { focus: string; count: number }[]
-  todayCheckIns: number
+  financeSummary: {
+    totalRevenue: number
+    totalExpenses: number
+    netProfit: number
+    staffSalaryTotal: number
+  }
+  lastMonthFinanceSummary?: {
+    totalRevenue: number
+    totalExpenses: number
+    netProfit: number
+    staffSalaryTotal: number
+  }
+  currency: string
 }) {
-  const maxCount = sessions.length > 0 ? Math.max(...sessions.map((s) => s.count)) : 1
+  const lastPnl = lastMonthFinanceSummary?.netProfit || 0
+  const pnlChange = lastPnl !== 0
+    ? ((financeSummary.netProfit - lastPnl) / Math.abs(lastPnl)) * 100
+    : 0
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300">
-      <CardContent className="pt-5 pb-4 px-5 h-full flex flex-col">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
-          Today&apos;s Workout Sessions
+      <CardContent className="pt-5 pb-4 px-5 flex flex-col justify-center h-full space-y-4">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Monthly P&amp;L
         </p>
 
-        {sessions.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
-            <Dumbbell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-            <p className="text-xs text-muted-foreground">No workout data yet today</p>
+        {/* Net Profit */}
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">Net Profit</p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <span className={`text-2xl font-bold tabular-nums ${financeSummary.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatAmount(financeSummary.netProfit, currency)}
+            </span>
+            {pnlChange !== 0 && (
+              <span className={`text-xs font-medium flex items-center gap-0.5 ${pnlChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {pnlChange > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {pnlChange > 0 ? '+' : ''}{pnlChange.toFixed(0)}%
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="flex-1 space-y-3">
-            {sessions.map((session) => {
-              const Icon = WORKOUT_ICONS[session.focus] || Dumbbell
-              const color = WORKOUT_COLORS[session.focus] || '#6b7280'
-              const barWidth = (session.count / maxCount) * 100
+        </div>
 
-              return (
-                <div key={session.focus} className="flex items-center gap-2.5">
-                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="h-6 rounded-md flex items-center px-2 text-xs font-medium text-white transition-all duration-500"
-                      style={{
-                        width: `${Math.max(barWidth, 20)}%`,
-                        backgroundColor: color,
-                      }}
-                    >
-                      {session.focus}
-                    </div>
-                  </div>
-                  <span className="text-xs tabular-nums text-muted-foreground shrink-0 w-5 text-right">
-                    {session.count}
-                  </span>
-                </div>
-              )
-            })}
+        <div className="border-t border-border" />
+
+        {/* Revenue vs Expenses */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground">Revenue</p>
+            <p className="text-sm font-bold text-green-400 tabular-nums">
+              {formatAmount(financeSummary.totalRevenue, currency)}
+            </p>
           </div>
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground">Expenses</p>
+            <p className="text-sm font-bold text-red-400 tabular-nums">
+              {formatAmount(financeSummary.totalExpenses, currency)}
+            </p>
+          </div>
+        </div>
+
+        {financeSummary.staffSalaryTotal > 0 && (
+          <>
+            <div className="border-t border-border" />
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">Staff Salaries</p>
+              <p className="text-sm font-bold text-amber-400 tabular-nums">
+                {formatAmount(financeSummary.staffSalaryTotal, currency)}
+              </p>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/* ─── Trial Status Button ──────────────────────────────────────────── */
+
+function TrialStatusButton({ memberId, memberName }: { memberId: string; memberName: string }) {
+  const [updating, setUpdating] = useState(false)
+
+  const handleActivate = async () => {
+    setUpdating(true)
+    const result = await updateMember(memberId, { membership_status: 'active' })
+    if (result.success) {
+      toast.success(`${memberName} activated`)
+    } else {
+      toast.error(result.error || 'Failed to update status')
+    }
+    setUpdating(false)
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-7 text-xs gap-1 text-brand-cyan-400 border-brand-cyan-500/30 hover:bg-brand-cyan-500/10"
+      onClick={handleActivate}
+      disabled={updating}
+    >
+      {updating ? '...' : 'Activate'}
+    </Button>
   )
 }
 

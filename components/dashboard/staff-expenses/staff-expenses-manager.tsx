@@ -43,6 +43,7 @@ import {
   getExpenses,
 } from '@/lib/actions/staff-expenses'
 import { toast } from 'sonner'
+import { DatePicker } from '@/components/ui/date-picker'
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ const SALARY_FREQUENCIES = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'daily', label: 'Daily' },
+  { value: 'per_visit', label: 'Per Visit' },
 ]
 
 const EXPENSE_CATEGORIES = [
@@ -110,7 +112,7 @@ export function StaffExpensesManager({
     phone: '',
     email: '',
     salary: '',
-    salary_frequency: 'monthly' as 'monthly' | 'weekly' | 'daily',
+    salary_frequency: 'monthly' as 'monthly' | 'weekly' | 'daily' | 'per_visit',
     hire_date: new Date().toISOString().split('T')[0],
   })
 
@@ -182,7 +184,7 @@ export function StaffExpensesManager({
   }
 
   const handleStaffSubmit = async () => {
-    if (!gym || !staffForm.full_name || !staffForm.salary) return
+    if (!gym || !staffForm.full_name || !staffForm.salary || !staffForm.phone) return
 
     setStaffSubmitting(true)
 
@@ -432,7 +434,7 @@ export function StaffExpensesManager({
                             <td className="px-6 py-4 text-sm text-muted-foreground">{s.phone || '--'}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">{s.email || '--'}</td>
                             <td className="px-6 py-4 text-sm font-medium text-foreground">{formatCurrency(s.salary)}</td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground capitalize">{s.salary_frequency}</td>
+                            <td className="px-6 py-4 text-sm text-muted-foreground capitalize">{s.salary_frequency.replace('_', ' ')}</td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                               {new Date(s.hire_date).toLocaleDateString('en-IN')}
                             </td>
@@ -493,21 +495,18 @@ export function StaffExpensesManager({
               </div>
 
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="date"
-                  className="h-9 w-auto"
+                <DatePicker
                   value={expenseStartDate}
-                  onChange={(e) => setExpenseStartDate(e.target.value)}
+                  onChange={(val) => setExpenseStartDate(val)}
                   placeholder="From"
+                  className="w-auto"
                 />
                 <span className="text-xs text-muted-foreground">to</span>
-                <Input
-                  type="date"
-                  className="h-9 w-auto"
+                <DatePicker
                   value={expenseEndDate}
-                  onChange={(e) => setExpenseEndDate(e.target.value)}
+                  onChange={(val) => setExpenseEndDate(val)}
                   placeholder="To"
+                  className="w-auto"
                 />
               </div>
 
@@ -603,11 +602,11 @@ export function StaffExpensesManager({
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Label className="text-sm">Month</Label>
-              <Input
+              <DatePicker
                 type="month"
-                className="h-9 w-auto"
                 value={summaryMonth}
-                onChange={(e) => handleMonthChange(e.target.value)}
+                onChange={(val) => handleMonthChange(val)}
+                className="w-auto"
               />
               {summaryLoading && (
                 <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
@@ -754,11 +753,12 @@ export function StaffExpensesManager({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label>Phone *</Label>
                 <Input
                   value={staffForm.phone}
                   onChange={(e) => setStaffForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+91 98765 43210"
+                  required
                 />
               </div>
               <div className="space-y-2">
@@ -803,10 +803,9 @@ export function StaffExpensesManager({
 
             <div className="space-y-2">
               <Label>Hire Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={staffForm.hire_date}
-                onChange={(e) => setStaffForm((f) => ({ ...f, hire_date: e.target.value }))}
+                onChange={(val) => setStaffForm((f) => ({ ...f, hire_date: val }))}
               />
             </div>
           </div>
@@ -817,7 +816,7 @@ export function StaffExpensesManager({
             </Button>
             <Button
               onClick={handleStaffSubmit}
-              disabled={!staffForm.full_name || !staffForm.salary || staffSubmitting}
+              disabled={!staffForm.full_name || !staffForm.salary || !staffForm.phone || staffSubmitting}
             >
               {staffSubmitting ? 'Saving...' : editingStaff ? 'Update' : 'Add Staff'}
             </Button>
@@ -876,10 +875,9 @@ export function StaffExpensesManager({
               </div>
               <div className="space-y-2">
                 <Label>Date</Label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={expenseForm.expense_date}
-                  onChange={(e) => setExpenseForm((f) => ({ ...f, expense_date: e.target.value }))}
+                  onChange={(val) => setExpenseForm((f) => ({ ...f, expense_date: val }))}
                 />
               </div>
             </div>

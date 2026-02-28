@@ -1,4 +1,4 @@
-import { getGyms } from '@/lib/actions/gyms'
+import { getGyms, getMembersWithStats } from '@/lib/actions/gyms'
 import { MembersList } from '@/components/dashboard/members/members-list'
 
 export const metadata = {
@@ -9,6 +9,13 @@ export const metadata = {
 export default async function MembersPage() {
   const { data: gyms } = await getGyms()
 
+  // Fetch members with stats server-side in a single batch query
+  const allMembers = []
+  for (const gym of gyms) {
+    const { data } = await getMembersWithStats(gym.id)
+    allMembers.push(...data)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,7 +25,7 @@ export default async function MembersPage() {
         </p>
       </div>
 
-      <MembersList gyms={gyms} />
+      <MembersList gyms={gyms} initialMembers={allMembers} />
     </div>
   )
 }

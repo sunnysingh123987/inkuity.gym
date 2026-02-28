@@ -221,7 +221,7 @@ export async function createMember(formData: {
   metadata?: Record<string, any>;
 }): Promise<{ success: boolean; data?: Member; error?: string }> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     const { data: member, error } = await supabase
       .from('members')
@@ -235,7 +235,8 @@ export async function createMember(formData: {
 
     if (error) throw error;
 
-    revalidatePath(`/dashboard/members`);
+    revalidatePath(`/members`);
+    revalidatePath(`/payments`);
     return { success: true, data: member };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -247,18 +248,41 @@ export async function updateMember(
   updates: Partial<Member>
 ): Promise<{ success: boolean; data?: Member; error?: string }> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
-    const { data: member, error } = await supabase
+    // Store subscription_end_date in metadata as well, in case the column doesn't exist yet
+    const endDate = updates.subscription_end_date;
+    if (endDate) {
+      const currentMeta = updates.metadata || {};
+      updates.metadata = { ...currentMeta, subscription_end_date: endDate };
+    }
+
+    // Try update with subscription_end_date column first
+    let { data: member, error } = await supabase
       .from('members')
       .update(updates)
       .eq('id', memberId)
       .select()
       .single();
 
+    // If subscription_end_date column doesn't exist, retry without it
+    if (error && error.message?.includes('subscription_end_date')) {
+      const { subscription_end_date, ...updatesWithoutEndDate } = updates;
+      const retry = await supabase
+        .from('members')
+        .update(updatesWithoutEndDate)
+        .eq('id', memberId)
+        .select()
+        .single();
+      member = retry.data;
+      error = retry.error;
+    }
+
     if (error) throw error;
 
-    revalidatePath(`/dashboard/members`);
+    revalidatePath(`/members`);
+    revalidatePath(`/members/${memberId}`);
+    revalidatePath(`/payments`);
     return { success: true, data: member };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -512,7 +536,7 @@ export async function syncMemberStatuses(gymId: string): Promise<{ success: bool
     // Get all members for this gym
     const { data: members, error: fetchError } = await supabase
       .from('members')
-      .select('id, membership_status, subscription_plan, subscription_start_date, subscription_end_date, member_since')
+      .select('id, membership_status, subscription_plan, subscription_start_date, member_since, metadata')
       .eq('gym_id', gymId);
 
     if (fetchError) throw fetchError;
@@ -522,13 +546,16 @@ export async function syncMemberStatuses(gymId: string): Promise<{ success: bool
     let updated = 0;
 
     for (const member of members) {
+      // Use metadata fallback for subscription_end_date
+      const subEndDate = (member as any).subscription_end_date || member.metadata?.subscription_end_date;
+
       // Skip members with manually managed statuses
       if (member.membership_status === 'cancelled' || member.membership_status === 'suspended') {
         continue;
       }
 
       // Skip pending members with no subscription info
-      if (member.membership_status === 'pending' && !member.subscription_plan && !member.subscription_end_date) {
+      if (member.membership_status === 'pending' && !member.subscription_plan && !subEndDate) {
         continue;
       }
 
@@ -539,8 +566,8 @@ export async function syncMemberStatuses(gymId: string): Promise<{ success: bool
 
       let newStatus: string | null = null;
 
-      if (member.subscription_end_date) {
-        const endDate = new Date(member.subscription_end_date);
+      if (subEndDate) {
+        const endDate = new Date(subEndDate);
 
         if (endDate < now && member.membership_status === 'active') {
           // Subscription expired but still marked active -> set to expired
@@ -591,8 +618,10 @@ export async function calculateMembershipStatus(member: Member): Promise<'active
     return member.membership_status;
   }
 
-  // Calculate if subscription has expired
-  const endDate = new Date(member.subscription_end_date!);
+  // Calculate if subscription has expired (use metadata fallback for end date)
+  const endDateStr = member.subscription_end_date || member.metadata?.subscription_end_date;
+  if (!endDateStr) return member.membership_status;
+  const endDate = new Date(endDateStr);
   const now = new Date();
 
   if (endDate < now) {
@@ -600,6 +629,98 @@ export async function calculateMembershipStatus(member: Member): Promise<'active
   }
 
   return 'active';
+}
+
+export async function getMembersWithStats(gymId: string): Promise<{
+  data: Array<Member & {
+    stats: {
+      totalCheckIns: number;
+      totalWorkoutDays: number;
+      lastCheckIn: string | null;
+      currentStreak: number;
+      averageSessionDuration: number;
+    };
+    calculatedStatus: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial';
+  }>;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Fetch all members
+    const { data: membersData, error: membersError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('gym_id', gymId)
+      .order('created_at', { ascending: false });
+
+    if (membersError) throw membersError;
+    if (!membersData || membersData.length === 0) return { data: [] };
+
+    const memberIds = membersData.map((m) => m.id);
+
+    // Fetch ALL check-ins for these members in a single query
+    const { data: allCheckIns, error: checkInsError } = await supabase
+      .from('check_ins')
+      .select('member_id, check_in_at, check_out_at, duration_minutes')
+      .in('member_id', memberIds)
+      .order('check_in_at', { ascending: false });
+
+    if (checkInsError) throw checkInsError;
+
+    // Group check-ins by member
+    const checkInsByMember = new Map<string, typeof allCheckIns>();
+    for (const ci of allCheckIns || []) {
+      const existing = checkInsByMember.get(ci.member_id) || [];
+      existing.push(ci);
+      checkInsByMember.set(ci.member_id, existing);
+    }
+
+    // Compute stats per member
+    const result = membersData.map((member) => {
+      const checkIns = checkInsByMember.get(member.id) || [];
+      const totalCheckIns = checkIns.length;
+
+      const workoutDays = new Set(
+        checkIns.map((ci) => new Date(ci.check_in_at).toDateString())
+      );
+      const totalWorkoutDays = workoutDays.size;
+      const lastCheckIn = checkIns[0]?.check_in_at || null;
+
+      let currentStreak = 0;
+      if (checkIns.length > 0) {
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        if (workoutDays.has(today) || workoutDays.has(yesterday)) {
+          currentStreak = 1;
+        }
+      }
+
+      const totalDuration = checkIns.reduce((sum, ci) => sum + (ci.duration_minutes || 0), 0);
+      const averageSessionDuration = totalCheckIns > 0 ? totalDuration / totalCheckIns : 0;
+
+      // Calculate status inline (same logic as calculateMembershipStatus)
+      // Use subscription_end_date from column or metadata fallback
+      const memberEndDate = member.subscription_end_date || member.metadata?.subscription_end_date;
+      let calculatedStatus: 'active' | 'expired' | 'suspended' | 'cancelled' | 'pending' | 'trial' = member.membership_status;
+      if (member.membership_status !== 'suspended' && member.membership_status !== 'cancelled' && member.membership_status !== 'trial') {
+        if (member.subscription_start_date && member.subscription_plan && member.subscription_plan !== 'custom' && memberEndDate) {
+          const endDate = new Date(memberEndDate);
+          calculatedStatus = endDate < new Date() ? 'expired' : 'active';
+        }
+      }
+
+      return {
+        ...member,
+        stats: { totalCheckIns, totalWorkoutDays, lastCheckIn, currentStreak, averageSessionDuration },
+        calculatedStatus,
+      };
+    });
+
+    return { data: result };
+  } catch (error: any) {
+    return { data: [], error: error.message };
+  }
 }
 
 export async function getMemberStats(memberId: string): Promise<{
