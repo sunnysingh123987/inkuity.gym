@@ -14,17 +14,14 @@ export default async function NewRoutinePage({
   }
   const { memberId, gymId } = authResult.data;
 
-  // Fetch exercise library
   const { data: exercises } = await getExerciseLibrary(gymId);
 
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Create Workout Routine
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Build a custom workout plan with exercises from the library
+        <h1 className="text-2xl font-bold text-white">Create Routine</h1>
+        <p className="text-slate-400 mt-1">
+          Build a custom workout with exercises from the library
         </p>
       </div>
 

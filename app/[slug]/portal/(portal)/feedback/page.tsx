@@ -35,8 +35,8 @@ export default async function FeedbackPage({
     <div className="space-y-6">
       <PageEntrance />
       <div data-animate>
-        <h1 className="text-2xl font-bold text-gray-900">Feedback</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-white">Feedback</h1>
+        <p className="text-slate-400 mt-1">
           Your gym has requested your feedback. Help them improve by sharing your thoughts.
         </p>
       </div>

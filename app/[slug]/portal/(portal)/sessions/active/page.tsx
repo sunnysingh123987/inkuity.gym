@@ -20,7 +20,7 @@ export default async function ActiveSessionPage({
   );
 
   if (!activeSession) {
-    redirect(`/${params.slug}/portal/workouts`);
+    redirect(`/${params.slug}/portal/trackers`);
   }
 
   return (

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
@@ -11,6 +11,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Inkuity - Smart Gym Management Platform',
   description: 'QR check-ins, workout tracking, member analytics, and more for modern gyms',
+}
+
+export const viewport: Viewport = {
   themeColor: '#06b6d4',
 }
 

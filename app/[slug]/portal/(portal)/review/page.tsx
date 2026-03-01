@@ -31,10 +31,10 @@ export default async function ReviewPage({
     <div className="space-y-6">
       <PageEntrance />
       <div data-animate>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-white">
           {existingReview ? 'Your Review' : 'Leave a Review'}
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-slate-400 mt-1">
           {existingReview
             ? 'You can update your review below.'
             : 'Share your experience and help others find this gym.'}

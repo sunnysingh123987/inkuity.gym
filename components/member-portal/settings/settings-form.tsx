@@ -54,15 +54,15 @@ export function SettingsForm({
     <div className="space-y-6">
       {/* Email Notifications */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailCheckin"
-              className="font-medium text-gray-900 cursor-pointer"
+              className="font-medium text-white cursor-pointer"
             >
               Check-in Confirmations
             </Label>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Receive email confirmations when you check in to the gym
             </p>
           </div>
@@ -75,15 +75,15 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailWorkout"
-              className="font-medium text-gray-900 cursor-pointer"
+              className="font-medium text-white cursor-pointer"
             >
               Workout Updates
             </Label>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Get notified about workout achievements and milestones
             </p>
           </div>
@@ -96,15 +96,15 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailDiet"
-              className="font-medium text-gray-900 cursor-pointer"
+              className="font-medium text-white cursor-pointer"
             >
               Diet Plan Reminders
             </Label>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Receive reminders about your diet plan and meal logging
             </p>
           </div>
@@ -117,15 +117,15 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailWeeklyReport"
-              className="font-medium text-gray-900 cursor-pointer"
+              className="font-medium text-white cursor-pointer"
             >
               Weekly Progress Reports
             </Label>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Get a weekly summary of your fitness progress and achievements
             </p>
           </div>
@@ -140,7 +140,7 @@ export function SettingsForm({
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end pt-4 border-t">
+      <div className="flex justify-end pt-4 border-t border-slate-700">
         <Button onClick={handleSave} disabled={loading}>
           {loading ? (
             <>

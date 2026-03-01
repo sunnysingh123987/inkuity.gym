@@ -41,7 +41,8 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
     birthDate: '',
     gender: '',
     bloodGroup: '',
-    heightCm: '',
+    heightFeet: '',
+    heightInches: '',
     weightKg: '',
   })
 
@@ -58,7 +59,7 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
       subtitle: "In case we need to reach you",
       field: 'phone' as const,
       type: 'tel',
-      placeholder: '+1 (555) 123-4567',
+      placeholder: '+91 98765 43210',
     },
     {
       question: "When were you born?",
@@ -82,14 +83,14 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
       placeholder: '',
     },
     {
-      question: "How tall are you? (cm)",
+      question: "How tall are you?",
       subtitle: "We'll use this to track your fitness journey",
-      field: 'heightCm' as const,
-      type: 'number',
-      placeholder: '170',
+      field: 'heightFeet' as const,
+      type: 'height',
+      placeholder: '',
     },
     {
-      question: "How light are you? (kg)",
+      question: "What's your weight? (kg)",
       subtitle: "This helps calculate your BMI and track progress",
       field: 'weightKg' as const,
       type: 'number',
@@ -107,8 +108,11 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
     if (isLastStep) {
       setLoading(true)
       try {
-        const bmi = formData.heightCm && formData.weightKg
-          ? parseFloat((parseFloat(formData.weightKg) / Math.pow(parseFloat(formData.heightCm) / 100, 2)).toFixed(1))
+        const heightCm = formData.heightFeet
+          ? parseInt(formData.heightFeet) * 30.48 + (parseInt(formData.heightInches) || 0) * 2.54
+          : null
+        const bmi = heightCm && formData.weightKg
+          ? parseFloat((parseFloat(formData.weightKg) / Math.pow(heightCm / 100, 2)).toFixed(1))
           : null
 
         await updateMemberInfo(memberId, {
@@ -117,7 +121,8 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
           birth_date: formData.birthDate || null,
           gender: formData.gender || null,
           metadata: {
-            height_cm: formData.heightCm ? parseFloat(formData.heightCm) : null,
+            height_feet: formData.heightFeet ? parseInt(formData.heightFeet) : null,
+            height_inches: formData.heightInches ? parseInt(formData.heightInches) : null,
             weight_kg: formData.weightKg ? parseFloat(formData.weightKg) : null,
             blood_group: formData.bloodGroup || null,
             bmi,
@@ -207,6 +212,34 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
                   {option.label}
                 </button>
               ))}
+            </div>
+          ) : currentStep.type === 'height' ? (
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  min="3"
+                  max="7"
+                  value={formData.heightFeet}
+                  onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value })}
+                  placeholder="5"
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 h-12 text-center text-lg"
+                  autoFocus
+                />
+                <span className="text-xs text-slate-400 mt-1 block text-center">feet</span>
+              </div>
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  min="0"
+                  max="11"
+                  value={formData.heightInches}
+                  onChange={(e) => setFormData({ ...formData, heightInches: e.target.value })}
+                  placeholder="8"
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 h-12 text-center text-lg"
+                />
+                <span className="text-xs text-slate-400 mt-1 block text-center">inches</span>
+              </div>
             </div>
           ) : (
             <Input

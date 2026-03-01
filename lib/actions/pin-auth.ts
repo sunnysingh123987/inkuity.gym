@@ -665,6 +665,63 @@ export async function getAuthenticatedMemberInfo(gymSlug: string) {
 }
 
 /**
+ * Change member PIN - validates current PIN, sets new one
+ */
+export async function changeMemberPIN(
+  memberId: string,
+  currentPIN: string,
+  newPIN: string,
+  gymSlug: string
+) {
+  try {
+    if (!/^\d{4}$/.test(newPIN)) {
+      return { success: false, error: 'New PIN must be exactly 4 digits.' };
+    }
+
+    const supabase = createAdminSupabaseClient();
+
+    // Verify gym slug matches session
+    const authResult = await getAuthenticatedMember(gymSlug);
+    if (!authResult.success || authResult.data?.memberId !== memberId) {
+      return { success: false, error: 'Unauthorized.' };
+    }
+
+    // Get current stored PIN
+    const { data: member, error: fetchError } = await supabase
+      .from('members')
+      .select('portal_pin')
+      .eq('id', memberId)
+      .single();
+
+    if (fetchError || !member?.portal_pin) {
+      return { success: false, error: 'No existing PIN found.' };
+    }
+
+    // Verify current PIN
+    const decryptedCurrentPIN = decryptPIN(member.portal_pin);
+    if (decryptedCurrentPIN !== currentPIN.trim()) {
+      return { success: false, error: 'Current PIN is incorrect.' };
+    }
+
+    // Encrypt and save new PIN
+    const encryptedNewPIN = encryptPIN(newPIN);
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ portal_pin: encryptedNewPIN })
+      .eq('id', memberId);
+
+    if (updateError) {
+      return { success: false, error: 'Failed to update PIN.' };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error changing PIN:', error);
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
+}
+
+/**
  * Sign out - clear session cookie
  */
 export async function signOut() {

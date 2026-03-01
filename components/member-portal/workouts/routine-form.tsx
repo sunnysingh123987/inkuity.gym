@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { ExerciseSelector } from './exercise-selector';
 import { createWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
-import { Loader2, Save, X, GripVertical } from 'lucide-react';
+import { Loader2, Save, Plus, X } from 'lucide-react';
+import { getCategorySvg } from '@/lib/svg-icons';
 
 interface RoutineFormProps {
   exercises: any[];
@@ -25,10 +25,9 @@ interface SelectedExercise {
   name: string;
   category: string;
   sets: number;
-  reps?: number;
-  duration_seconds?: number;
+  reps: number;
   rest_seconds: number;
-  notes?: string;
+  notes: string;
 }
 
 export function RoutineForm({
@@ -40,40 +39,41 @@ export function RoutineForm({
 }: RoutineFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [showSelector, setShowSelector] = useState(false);
 
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
 
   const handleAddExercise = (exercise: any) => {
-    // Check if already added
     if (selectedExercises.some((e) => e.exerciseId === exercise.id)) {
-      toast.error('Exercise already added to routine');
+      toast.error('Exercise already added');
       return;
     }
 
-    const newExercise: SelectedExercise = {
-      exerciseId: exercise.id,
-      name: exercise.name,
-      category: exercise.category,
-      sets: 3,
-      reps: 10,
-      rest_seconds: 60,
-    };
-
-    setSelectedExercises([...selectedExercises, newExercise]);
-    toast.success(`${exercise.name} added to routine`);
+    setSelectedExercises((prev) => [
+      ...prev,
+      {
+        exerciseId: exercise.id,
+        name: exercise.name,
+        category: exercise.category,
+        sets: 3,
+        reps: 10,
+        rest_seconds: 60,
+        notes: '',
+      },
+    ]);
+    setShowSelector(false);
+    toast.success(`${exercise.name} added`);
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
-    setSelectedExercises(selectedExercises.filter((e) => e.exerciseId !== exerciseId));
+    setSelectedExercises((prev) => prev.filter((e) => e.exerciseId !== exerciseId));
   };
 
-  const handleUpdateExercise = (exerciseId: string, field: string, value: any) => {
-    setSelectedExercises(
-      selectedExercises.map((e) =>
-        e.exerciseId === exerciseId ? { ...e, [field]: value } : e
-      )
+  const updateExercise = (exerciseId: string, updates: Partial<SelectedExercise>) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) => (e.exerciseId === exerciseId ? { ...e, ...updates } : e))
     );
   };
 
@@ -84,7 +84,6 @@ export function RoutineForm({
       toast.error('Please enter a routine name');
       return;
     }
-
     if (selectedExercises.length === 0) {
       toast.error('Please add at least one exercise');
       return;
@@ -97,12 +96,18 @@ export function RoutineForm({
       gymId,
       name: name.trim(),
       description: description.trim() || undefined,
-      exercises: selectedExercises,
+      exercises: selectedExercises.map((ex) => ({
+        exerciseId: ex.exerciseId,
+        sets: ex.sets,
+        reps: ex.reps,
+        rest_seconds: ex.rest_seconds,
+        notes: ex.notes || undefined,
+      })),
     });
 
     if (result.success) {
-      toast.success('Routine created successfully!');
-      router.push(`/${gymSlug}/portal/workouts`);
+      toast.success('Routine created!');
+      router.push(`/${gymSlug}/portal/trackers`);
     } else {
       toast.error(result.error || 'Failed to create routine');
       setSaving(false);
@@ -111,184 +116,161 @@ export function RoutineForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Routine Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Routine Name *</Label>
-            <Input
-              id="name"
-              placeholder="e.g., Chest Day, Full Body Workout"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+      {/* Name */}
+      <div className="space-y-2">
+        <Label htmlFor="name" className="text-slate-300">
+          Routine Name *
+        </Label>
+        <Input
+          id="name"
+          placeholder="e.g., Chest Day, Full Body Workout"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="bg-slate-900 border-slate-800"
+          required
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="Describe this routine..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Description */}
+      <div className="space-y-2">
+        <Label htmlFor="description" className="text-slate-300">
+          Description (Optional)
+        </Label>
+        <Textarea
+          id="description"
+          placeholder="Describe this routine..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="bg-slate-900 border-slate-800"
+        />
+      </div>
 
-      {/* Exercise Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Exercises</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ExerciseSelector
-            exercises={exercises}
-            onSelectExercise={handleAddExercise}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Selected Exercises */}
+      {/* Selected exercises — simple card per exercise */}
       {selectedExercises.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Selected Exercises ({selectedExercises.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {selectedExercises.map((exercise, index) => (
-                <div
-                  key={exercise.exerciseId}
-                  className="flex items-start gap-4 p-4 border rounded-lg bg-gray-50"
-                >
-                  <div className="flex-shrink-0 mt-2">
-                    <GripVertical className="h-5 w-5 text-gray-400" />
-                  </div>
-
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">
-                          {index + 1}. {exercise.name}
-                        </h4>
-                        <p className="text-sm text-gray-500 capitalize">
-                          {exercise.category}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveExercise(exercise.exerciseId)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div>
-                        <Label className="text-xs">Sets</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={exercise.sets}
-                          onChange={(e) =>
-                            handleUpdateExercise(
-                              exercise.exerciseId,
-                              'sets',
-                              parseInt(e.target.value) || 1
-                            )
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Reps</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={exercise.reps || ''}
-                          onChange={(e) =>
-                            handleUpdateExercise(
-                              exercise.exerciseId,
-                              'reps',
-                              e.target.value ? parseInt(e.target.value) : undefined
-                            )
-                          }
-                          placeholder="10"
-                          className="mt-1"
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Rest (sec)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={exercise.rest_seconds}
-                          onChange={(e) =>
-                            handleUpdateExercise(
-                              exercise.exerciseId,
-                              'rest_seconds',
-                              parseInt(e.target.value) || 60
-                            )
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Duration (sec)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={exercise.duration_seconds || ''}
-                          onChange={(e) =>
-                            handleUpdateExercise(
-                              exercise.exerciseId,
-                              'duration_seconds',
-                              e.target.value ? parseInt(e.target.value) : undefined
-                            )
-                          }
-                          placeholder="Optional"
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-xs">Notes (Optional)</Label>
-                      <Input
-                        placeholder="e.g., Use lighter weight, focus on form"
-                        value={exercise.notes || ''}
-                        onChange={(e) =>
-                          handleUpdateExercise(
-                            exercise.exerciseId,
-                            'notes',
-                            e.target.value
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
+        <div className="space-y-3">
+          {selectedExercises.map((exercise, index) => (
+            <div
+              key={exercise.exerciseId}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3"
+            >
+              {/* Exercise header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={getCategorySvg(exercise.category)}
+                    alt=""
+                    className="h-6 w-6 opacity-70 flex-shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-white truncate">
+                      {index + 1}. {exercise.name}
+                    </h4>
+                    <p className="text-xs text-slate-500 capitalize">{exercise.category}</p>
                   </div>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveExercise(exercise.exerciseId)}
+                  className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors flex-shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Sets / Reps / Rest — inline row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs text-slate-400">Sets</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={20}
+                    value={exercise.sets}
+                    onChange={(e) =>
+                      updateExercise(exercise.exerciseId, {
+                        sets: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="mt-1 bg-slate-800 border-slate-700 text-center"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-400">Reps</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={100}
+                    value={exercise.reps}
+                    onChange={(e) =>
+                      updateExercise(exercise.exerciseId, {
+                        reps: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="mt-1 bg-slate-800 border-slate-700 text-center"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-400">Rest (sec)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={600}
+                    value={exercise.rest_seconds}
+                    onChange={(e) =>
+                      updateExercise(exercise.exerciseId, {
+                        rest_seconds: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="mt-1 bg-slate-800 border-slate-700 text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <Input
+                placeholder="Notes (optional)"
+                value={exercise.notes}
+                onChange={(e) =>
+                  updateExercise(exercise.exerciseId, { notes: e.target.value })
+                }
+                className="bg-slate-800 border-slate-700 text-sm placeholder:text-slate-600"
+              />
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       )}
 
-      {/* Actions */}
+      {/* Add Exercise toggle */}
+      {showSelector ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-white">Select Exercise</h3>
+            <button
+              type="button"
+              onClick={() => setShowSelector(false)}
+              className="text-sm text-slate-400 hover:text-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+          <ExerciseSelector exercises={exercises} onSelectExercise={handleAddExercise} />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowSelector(true)}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-brand-cyan-500/30 text-brand-cyan-400 font-semibold hover:bg-brand-cyan-500/5 transition-colors flex items-center justify-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Exercise
+        </button>
+      )}
+
+      {/* Submit */}
       <div className="flex gap-3">
         <Button type="submit" disabled={saving} className="flex-1 sm:flex-none">
           {saving ? (

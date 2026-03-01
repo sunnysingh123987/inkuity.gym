@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 
 interface SessionTimerProps {
   startTime: string;
@@ -42,9 +42,9 @@ export function SessionTimer({ startTime }: SessionTimerProps) {
   }, [startTime]);
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-lg">
-      <Clock className="h-4 w-4 text-indigo-600" />
-      <span className="font-mono text-lg font-semibold text-indigo-600">
+    <div className="flex items-center gap-2 px-4 py-2 bg-brand-cyan-500/10 rounded-lg">
+      <img src={getUiSvg('timer')} alt="" className="h-4 w-4 opacity-90" />
+      <span className="font-mono text-lg font-semibold text-brand-cyan-400">
         {elapsed}
       </span>
     </div>

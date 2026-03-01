@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 import { signOut } from '@/lib/actions/pin-auth';
 import { toast } from 'sonner';
 
@@ -107,9 +108,9 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+              <DropdownMenuItem onClick={() => router.push(`/${gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-')}/portal/profile`)}>
+                <img src={getUiSvg('profile')} alt="" className="mr-2 h-4 w-4 opacity-70" />
+                Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600">

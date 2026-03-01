@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, MoreVertical, Pencil } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Meal {
   id: string;
@@ -22,12 +28,18 @@ interface MealCalendarProps {
   meals: Meal[];
   onAddMeal: (date: Date, mealType: string) => void;
   onToggleMeal: (mealId: string) => void;
+  onEditMeal?: (meal: Meal) => void;
+  isAiGenerated?: boolean;
+  onWeekChange?: (weekStartDate: Date) => void;
 }
 
 export function MealCalendar({
   meals,
   onAddMeal,
   onToggleMeal,
+  onEditMeal,
+  isAiGenerated = false,
+  onWeekChange,
 }: MealCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date();
@@ -42,23 +54,29 @@ export function MealCalendar({
     return date;
   });
 
+  const updateWeek = (newDate: Date) => {
+    setCurrentWeekStart(newDate);
+    onWeekChange?.(newDate);
+  };
+
   const goToPreviousWeek = () => {
     const newDate = new Date(currentWeekStart);
     newDate.setDate(currentWeekStart.getDate() - 7);
-    setCurrentWeekStart(newDate);
+    updateWeek(newDate);
   };
 
   const goToNextWeek = () => {
     const newDate = new Date(currentWeekStart);
     newDate.setDate(currentWeekStart.getDate() + 7);
-    setCurrentWeekStart(newDate);
+    updateWeek(newDate);
   };
 
   const goToToday = () => {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const diff = today.getDate() - dayOfWeek;
-    setCurrentWeekStart(new Date(today.setDate(diff)));
+    const newDate = new Date(today.setDate(diff));
+    updateWeek(newDate);
   };
 
   const formatDate = (date: Date) => {
@@ -92,16 +110,21 @@ export function MealCalendar({
 
   const getMealTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      breakfast: 'bg-orange-100 text-orange-700',
-      lunch: 'bg-blue-100 text-blue-700',
-      dinner: 'bg-purple-100 text-purple-700',
-      snack: 'bg-green-100 text-green-700',
+      breakfast: 'bg-orange-500/10 text-orange-400',
+      lunch: 'bg-blue-500/10 text-blue-400',
+      dinner: 'bg-purple-500/10 text-purple-400',
+      snack: 'bg-green-500/10 text-green-400',
     };
-    return colors[type] || 'bg-gray-100 text-gray-700';
+    return colors[type] || 'bg-slate-700 text-slate-300';
+  };
+
+  const shouldShowAddButton = (date: Date) => {
+    if (!isAiGenerated) return true; // Manual plans: always show +
+    return isToday(date); // AI plans: only show + for today
   };
 
   return (
-    <Card>
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Weekly Meal Plan</CardTitle>
@@ -123,21 +146,22 @@ export function MealCalendar({
           {weekDays.map((date, index) => {
             const dayMeals = getMealsForDate(date);
             const today = isToday(date);
+            const showAdd = shouldShowAddButton(date);
 
             return (
               <div
                 key={index}
                 className={`border rounded-lg p-3 ${
-                  today ? 'bg-indigo-50 border-indigo-300' : 'bg-white'
+                  today ? 'bg-brand-cyan-500/10 border-brand-cyan-500/30' : 'bg-slate-900 border-slate-700'
                 }`}
               >
                 <div className="text-center mb-3">
-                  <p className="text-xs text-gray-600 uppercase font-medium">
+                  <p className="text-xs text-slate-400 uppercase font-medium">
                     {formatDayName(date)}
                   </p>
                   <p
                     className={`text-lg font-bold ${
-                      today ? 'text-indigo-600' : 'text-gray-900'
+                      today ? 'text-brand-cyan-400' : 'text-white'
                     }`}
                   >
                     {formatDate(date)}
@@ -153,45 +177,68 @@ export function MealCalendar({
                     return (
                       <div key={mealType}>
                         {meal ? (
-                          <div
-                            onClick={() => onToggleMeal(meal.id)}
-                            className="cursor-pointer group"
-                          >
+                          <div className="relative">
                             <div
-                              className={`p-2 rounded-md text-xs ${
-                                meal.completed
-                                  ? 'bg-green-50 border border-green-200'
-                                  : 'bg-gray-50 border border-gray-200'
-                              } hover:shadow-sm transition-shadow`}
+                              onClick={today ? () => onToggleMeal(meal.id) : undefined}
+                              className={today ? 'cursor-pointer group' : ''}
                             >
-                              <div className="flex items-center gap-1 mb-1">
-                                {meal.completed ? (
-                                  <CheckCircle2 className="h-3 w-3 text-green-600" />
-                                ) : (
-                                  <Circle className="h-3 w-3 text-gray-400" />
-                                )}
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${getMealTypeColor(
-                                    meal.meal_type
-                                  )}`}
-                                >
-                                  {meal.meal_type}
-                                </Badge>
+                              <div
+                                className={`p-2 rounded-md text-xs ${
+                                  meal.completed
+                                    ? 'bg-green-500/10 border border-green-500/30'
+                                    : 'bg-slate-800 border border-slate-700'
+                                } ${today ? 'hover:shadow-sm transition-shadow' : 'opacity-80'}`}
+                              >
+                                <div className="flex items-center gap-1 mb-1">
+                                  {meal.completed ? (
+                                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Circle className="h-3 w-3 text-slate-500" />
+                                  )}
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${getMealTypeColor(
+                                      meal.meal_type
+                                    )}`}
+                                  >
+                                    {meal.meal_type}
+                                  </Badge>
+                                </div>
+                                <p className="font-medium text-white mb-1">
+                                  {meal.name}
+                                </p>
+                                <p className="text-slate-400">
+                                  {meal.calories} cal
+                                </p>
+                                <p className="text-slate-500">
+                                  P: {meal.protein}g · C: {meal.carbs}g · F:{' '}
+                                  {meal.fat}g
+                                </p>
                               </div>
-                              <p className="font-medium text-gray-900 mb-1">
-                                {meal.name}
-                              </p>
-                              <p className="text-gray-600">
-                                {meal.calories} cal
-                              </p>
-                              <p className="text-gray-500">
-                                P: {meal.protein}g · C: {meal.carbs}g · F:{' '}
-                                {meal.fat}g
-                              </p>
                             </div>
+                            {today && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    className="absolute top-1 right-1 p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-3 w-3" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                                  <DropdownMenuItem
+                                    className="text-xs cursor-pointer"
+                                    onClick={() => onEditMeal?.(meal)}
+                                  >
+                                    <Pencil className="h-3 w-3 mr-2" />
+                                    Edit meal
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
-                        ) : (
+                        ) : showAdd ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -201,6 +248,10 @@ export function MealCalendar({
                             <Plus className="h-3 w-3 mr-1" />
                             {mealType}
                           </Button>
+                        ) : (
+                          <div className="p-2 text-xs text-slate-600 text-center capitalize">
+                            {mealType}
+                          </div>
                         )}
                       </div>
                     );
@@ -209,14 +260,14 @@ export function MealCalendar({
 
                 {/* Daily Summary */}
                 {dayMeals.length > 0 && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-xs text-gray-600">
+                  <div className="mt-3 pt-3 border-t border-slate-700">
+                    <p className="text-xs text-slate-400">
                       Total:{' '}
                       <span className="font-semibold">
                         {dayMeals.reduce((sum, m) => sum + m.calories, 0)} cal
                       </span>
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-slate-400">
                       {dayMeals.filter((m) => m.completed).length} /{' '}
                       {dayMeals.length} completed
                     </p>

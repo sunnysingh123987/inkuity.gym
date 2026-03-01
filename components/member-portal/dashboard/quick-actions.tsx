@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { Plus, Dumbbell, Apple, Calendar } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 
 interface QuickActionsProps {
   gymSlug: string;
@@ -16,38 +17,34 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
     {
       title: 'Start Workout',
       description: 'Begin a new workout session',
-      icon: Dumbbell,
-      color: 'text-brand-purple-400',
+      svgIcon: getUiSvg('workouts'),
       bgColor: 'bg-slate-800',
       hoverColor: 'hover:bg-slate-700',
-      onClick: () => router.push(`/${gymSlug}/portal/workouts`),
+      onClick: () => router.push(`/${gymSlug}/portal/trackers`),
     },
     {
       title: 'Create Routine',
       description: 'Design a new workout routine',
-      icon: Plus,
-      color: 'text-brand-cyan-400',
+      svgIcon: getUiSvg('workouts'),
       bgColor: 'bg-slate-800',
       hoverColor: 'hover:bg-slate-700',
       onClick: () => router.push(`/${gymSlug}/portal/workouts/new`),
     },
     {
-      title: 'View Diet Plan',
-      description: 'Track your nutrition',
-      icon: Apple,
-      color: 'text-brand-pink-400',
+      title: 'Track Meals',
+      description: 'Log food and track macros',
+      svgIcon: getUiSvg('diet'),
       bgColor: 'bg-slate-800',
       hoverColor: 'hover:bg-slate-700',
-      onClick: () => router.push(`/${gymSlug}/portal/diet`),
+      onClick: () => router.push(`/${gymSlug}/portal/meals`),
     },
     {
-      title: 'Check-in History',
-      description: 'View your attendance',
-      icon: Calendar,
-      color: 'text-brand-blue-400',
+      title: 'PR Tracker',
+      description: 'Track your personal records',
+      svgIcon: getUiSvg('personal-record'),
       bgColor: 'bg-slate-800',
       hoverColor: 'hover:bg-slate-700',
-      onClick: () => router.push(`/${gymSlug}/portal/check-ins`),
+      onClick: () => router.push(`/${gymSlug}/portal/trackers?tab=prs`),
     },
   ];
 
@@ -59,7 +56,6 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       <CardContent>
         <div className="space-y-3">
           {actions.map((action) => {
-            const Icon = action.icon;
             return (
               <button
                 key={action.title}
@@ -67,7 +63,7 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
                 className={`w-full flex items-center p-4 rounded-lg ${action.bgColor} ${action.hoverColor} transition-colors text-left`}
               >
                 <div className="flex-shrink-0">
-                  <Icon className={`h-6 w-6 ${action.color}`} />
+                  <img src={action.svgIcon} alt="" className="h-6 w-6 opacity-80" />
                 </div>
                 <div className="ml-3 flex-1">
                   <h4 className="text-sm font-semibold text-white">

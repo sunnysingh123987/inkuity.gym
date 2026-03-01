@@ -23,38 +23,38 @@ const TYPE_CONFIG: Record<
 > = {
   emergency: {
     icon: AlertCircle,
-    bgClass: 'bg-red-50',
-    borderClass: 'border-red-200',
-    iconClass: 'text-red-500',
-    titleClass: 'text-red-800',
+    bgClass: 'bg-red-500/10',
+    borderClass: 'border-red-500/30',
+    iconClass: 'text-red-400',
+    titleClass: 'text-red-300',
   },
   closure: {
     icon: DoorClosed,
-    bgClass: 'bg-amber-50',
-    borderClass: 'border-amber-200',
-    iconClass: 'text-amber-500',
-    titleClass: 'text-amber-800',
+    bgClass: 'bg-amber-500/10',
+    borderClass: 'border-amber-500/30',
+    iconClass: 'text-amber-400',
+    titleClass: 'text-amber-300',
   },
   warning: {
     icon: AlertTriangle,
-    bgClass: 'bg-amber-50',
-    borderClass: 'border-amber-200',
-    iconClass: 'text-amber-500',
-    titleClass: 'text-amber-800',
+    bgClass: 'bg-amber-500/10',
+    borderClass: 'border-amber-500/30',
+    iconClass: 'text-amber-400',
+    titleClass: 'text-amber-300',
   },
   holiday: {
     icon: PartyPopper,
-    bgClass: 'bg-purple-50',
-    borderClass: 'border-purple-200',
-    iconClass: 'text-purple-500',
-    titleClass: 'text-purple-800',
+    bgClass: 'bg-purple-500/10',
+    borderClass: 'border-purple-500/30',
+    iconClass: 'text-purple-400',
+    titleClass: 'text-purple-300',
   },
   info: {
     icon: Info,
-    bgClass: 'bg-blue-50',
-    borderClass: 'border-blue-200',
-    iconClass: 'text-blue-500',
-    titleClass: 'text-blue-800',
+    bgClass: 'bg-blue-500/10',
+    borderClass: 'border-blue-500/30',
+    iconClass: 'text-blue-400',
+    titleClass: 'text-blue-300',
   },
 };
 
@@ -93,7 +93,7 @@ export function ActiveAnnouncements({ announcements }: ActiveAnnouncementsProps)
                 <h4 className={`text-sm font-semibold ${config.titleClass}`}>
                   {a.title}
                 </h4>
-                <p className="text-sm text-gray-600 mt-1">{a.message}</p>
+                <p className="text-sm text-slate-400 mt-1">{a.message}</p>
               </div>
             </div>
           </div>

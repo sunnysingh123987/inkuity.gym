@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCategorySvg, getExerciseSvg, getEquipmentSvg } from '@/lib/svg-icons';
 
 interface ExerciseSelectorProps {
   exercises: any[];
@@ -37,24 +38,24 @@ export function ExerciseSelector({
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      chest: 'bg-red-100 text-red-700 hover:bg-red-200',
-      back: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
-      legs: 'bg-green-100 text-green-700 hover:bg-green-200',
-      shoulders: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-      arms: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
-      biceps: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
-      triceps: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
-      core: 'bg-orange-100 text-orange-700 hover:bg-orange-200',
-      cardio: 'bg-pink-100 text-pink-700 hover:bg-pink-200',
+      chest: 'bg-red-500/10 text-red-400 hover:bg-red-500/20',
+      back: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20',
+      legs: 'bg-green-500/10 text-green-400 hover:bg-green-500/20',
+      shoulders: 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20',
+      arms: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
+      biceps: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
+      triceps: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
+      core: 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20',
+      cardio: 'bg-pink-500/10 text-pink-400 hover:bg-pink-500/20',
     };
-    return colors[category] || 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+    return colors[category] || 'bg-slate-700 text-slate-300 hover:bg-slate-600';
   };
 
   return (
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
         <Input
           placeholder="Search exercises..."
           value={searchTerm}
@@ -79,21 +80,27 @@ export function ExerciseSelector({
             size="sm"
             onClick={() => setSelectedCategory(category as string)}
             className={cn(
+              'gap-1.5',
               selectedCategory === category
                 ? ''
                 : getCategoryColor(category as string)
             )}
           >
+            <img
+              src={getCategorySvg(category as string)}
+              alt=""
+              className="h-3.5 w-3.5 opacity-80"
+            />
             {category as string}
           </Button>
         ))}
       </div>
 
       {/* Exercise List */}
-      <div className="max-h-96 overflow-y-auto border rounded-lg">
+      <div className="max-h-96 overflow-y-auto border border-slate-700 rounded-lg">
         {filteredExercises.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Dumbbell className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+          <div className="text-center py-8 text-slate-500">
+            <Dumbbell className="h-8 w-8 mx-auto mb-2 text-slate-500" />
             <p className="text-sm">
               {searchTerm || selectedCategory
                 ? 'No exercises found'
@@ -101,16 +108,23 @@ export function ExerciseSelector({
             </p>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-slate-700">
             {filteredExercises.map((exercise) => (
               <div
                 key={exercise.id}
-                className="p-3 hover:bg-gray-50 transition-colors"
+                className="p-3 hover:bg-slate-800 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                  <div className="flex items-center gap-3 flex-1">
+                    <img
+                      src={getExerciseSvg(exercise.name)}
+                      alt=""
+                      className="h-8 w-8 opacity-70 flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium text-white">
                         {exercise.name}
                       </h4>
                       {exercise.category && (
@@ -126,7 +140,7 @@ export function ExerciseSelector({
                       )}
                     </div>
                     {exercise.description && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-slate-400 mt-1">
                         {exercise.description}
                       </p>
                     )}
@@ -136,13 +150,20 @@ export function ExerciseSelector({
                           <Badge
                             key={eq}
                             variant="outline"
-                            className="text-xs"
+                            className="text-xs gap-1"
                           >
+                            <img
+                              src={getEquipmentSvg(eq)}
+                              alt=""
+                              className="h-3 w-3 opacity-60"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
                             {eq}
                           </Badge>
                         ))}
                       </div>
                     )}
+                  </div>
                   </div>
                   <Button
                     size="sm"
@@ -159,7 +180,7 @@ export function ExerciseSelector({
         )}
       </div>
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-slate-500">
         Showing {filteredExercises.length} of {exercises.length} exercises
       </p>
     </div>

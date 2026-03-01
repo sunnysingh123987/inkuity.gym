@@ -21,24 +21,24 @@ export default async function RoutineDetailPage({
   const { data: routine } = await getWorkoutRoutine(params.routineId);
 
   if (!routine) {
-    redirect(`/${params.slug}/portal/workouts`);
+    redirect(`/${params.slug}/portal/trackers`);
   }
 
   const exercises = routine.routine_exercises || [];
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      chest: 'bg-red-100 text-red-700',
-      back: 'bg-blue-100 text-blue-700',
-      legs: 'bg-green-100 text-green-700',
-      shoulders: 'bg-yellow-100 text-yellow-700',
-      arms: 'bg-purple-100 text-purple-700',
-      biceps: 'bg-purple-100 text-purple-700',
-      triceps: 'bg-purple-100 text-purple-700',
-      core: 'bg-orange-100 text-orange-700',
-      cardio: 'bg-pink-100 text-pink-700',
+      chest: 'bg-red-500/10 text-red-400',
+      back: 'bg-blue-500/10 text-blue-400',
+      legs: 'bg-green-500/10 text-green-400',
+      shoulders: 'bg-yellow-500/10 text-yellow-400',
+      arms: 'bg-purple-500/10 text-purple-400',
+      biceps: 'bg-purple-500/10 text-purple-400',
+      triceps: 'bg-purple-500/10 text-purple-400',
+      core: 'bg-orange-500/10 text-orange-400',
+      cardio: 'bg-pink-500/10 text-pink-400',
     };
-    return colors[category] || 'bg-gray-100 text-gray-700';
+    return colors[category] || 'bg-slate-800 text-slate-300';
   };
 
   return (
@@ -46,8 +46,8 @@ export default async function RoutineDetailPage({
       {/* Header */}
       <div>
         <Link
-          href={`/${params.slug}/portal/workouts`}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+          href={`/${params.slug}/portal/trackers`}
+          className="inline-flex items-center text-sm text-slate-400 hover:text-white mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Routines
@@ -56,7 +56,7 @@ export default async function RoutineDetailPage({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-white">
                 {routine.name}
               </h1>
               <Badge variant={routine.is_active ? 'default' : 'secondary'}>
@@ -64,7 +64,7 @@ export default async function RoutineDetailPage({
               </Badge>
             </div>
             {routine.description && (
-              <p className="text-gray-600 mt-2">{routine.description}</p>
+              <p className="text-slate-400 mt-2">{routine.description}</p>
             )}
           </div>
 
@@ -86,7 +86,7 @@ export default async function RoutineDetailPage({
         </CardHeader>
         <CardContent>
           {exercises.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-500">
               <p>No exercises in this routine yet</p>
             </div>
           ) : (
@@ -101,10 +101,10 @@ export default async function RoutineDetailPage({
                   return (
                     <div
                       key={routineExercise.id}
-                      className="flex items-start gap-4 p-4 border rounded-lg bg-gray-50"
+                      className="flex items-start gap-4 p-4 border border-slate-700 rounded-lg bg-slate-800"
                     >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-indigo-600">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-cyan-500/10 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-brand-cyan-400">
                           {index + 1}
                         </span>
                       </div>
@@ -112,7 +112,7 @@ export default async function RoutineDetailPage({
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-semibold text-gray-900">
+                            <h4 className="font-semibold text-white">
                               {exercise?.name || 'Unknown Exercise'}
                             </h4>
                             {exercise?.category && (
@@ -129,7 +129,7 @@ export default async function RoutineDetailPage({
                         </div>
 
                         {exercise?.description && (
-                          <p className="text-sm text-gray-600 mt-2">
+                          <p className="text-sm text-slate-400 mt-2">
                             {exercise.description}
                           </p>
                         )}
@@ -137,7 +137,7 @@ export default async function RoutineDetailPage({
                         {/* Exercise Details */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3 text-sm">
                           <div>
-                            <span className="text-gray-500">Sets:</span>
+                            <span className="text-slate-500">Sets:</span>
                             <span className="ml-1 font-semibold">
                               {routineExercise.sets}
                             </span>
@@ -145,7 +145,7 @@ export default async function RoutineDetailPage({
 
                           {routineExercise.reps && (
                             <div>
-                              <span className="text-gray-500">Reps:</span>
+                              <span className="text-slate-500">Reps:</span>
                               <span className="ml-1 font-semibold">
                                 {routineExercise.reps}
                               </span>
@@ -154,7 +154,7 @@ export default async function RoutineDetailPage({
 
                           {routineExercise.duration_seconds && (
                             <div>
-                              <span className="text-gray-500">Duration:</span>
+                              <span className="text-slate-500">Duration:</span>
                               <span className="ml-1 font-semibold">
                                 {routineExercise.duration_seconds}s
                               </span>
@@ -162,7 +162,7 @@ export default async function RoutineDetailPage({
                           )}
 
                           <div>
-                            <span className="text-gray-500">Rest:</span>
+                            <span className="text-slate-500">Rest:</span>
                             <span className="ml-1 font-semibold">
                               {routineExercise.rest_seconds}s
                             </span>
@@ -171,8 +171,8 @@ export default async function RoutineDetailPage({
 
                         {routineExercise.notes && (
                           <div className="mt-2 text-sm">
-                            <span className="text-gray-500">Notes:</span>
-                            <span className="ml-1 text-gray-700">
+                            <span className="text-slate-500">Notes:</span>
+                            <span className="ml-1 text-slate-300">
                               {routineExercise.notes}
                             </span>
                           </div>

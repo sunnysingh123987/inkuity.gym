@@ -108,16 +108,17 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
   const daysWithCheckIns = Object.keys(calendarData).length;
 
   return (
-    <Card>
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle>Check-in Calendar</CardTitle>
+          <CardTitle className="text-white">Check-in Calendar</CardTitle>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={goToPreviousMonth}
               disabled={loading}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -126,6 +127,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
               size="sm"
               onClick={goToToday}
               disabled={loading}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
             >
               Today
             </Button>
@@ -134,14 +136,15 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
               size="sm"
               onClick={goToNextMonth}
               disabled={loading}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <h3 className="text-lg font-semibold text-gray-900">{monthName}</h3>
-          <div className="text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-white">{monthName}</h3>
+          <div className="text-sm text-slate-400">
             {daysWithCheckIns} {daysWithCheckIns === 1 ? 'day' : 'days'} (
             {totalCheckInsThisMonth} total)
           </div>
@@ -150,7 +153,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-cyan-400" />
           </div>
         ) : (
           <>
@@ -160,7 +163,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
               {weekDays.map((day) => (
                 <div
                   key={day}
-                  className="text-center text-xs font-semibold text-gray-600 py-2"
+                  className="text-center text-xs font-semibold text-slate-500 py-2"
                 >
                   {day}
                 </div>
@@ -178,17 +181,17 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
                     className={cn(
                       'aspect-square flex flex-col items-center justify-center rounded-lg border-2 transition-all relative',
                       dayData.hasCheckIn
-                        ? 'bg-green-50 border-green-300 hover:bg-green-100'
-                        : 'bg-white border-gray-200 hover:bg-gray-50',
-                      dayData.isToday && 'ring-2 ring-indigo-500'
+                        ? 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20'
+                        : 'bg-slate-800 border-slate-700 hover:bg-slate-700',
+                      dayData.isToday && 'ring-2 ring-brand-cyan-500'
                     )}
                   >
                     <span
                       className={cn(
                         'text-sm font-medium',
                         dayData.hasCheckIn
-                          ? 'text-green-900'
-                          : 'text-gray-700',
+                          ? 'text-green-400'
+                          : 'text-slate-300',
                         dayData.isToday && 'font-bold'
                       )}
                     >
@@ -202,7 +205,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
                       </div>
                     )}
                     {dayData.checkInCount > 1 && (
-                      <span className="text-xs text-green-700 font-semibold mt-0.5">
+                      <span className="text-xs text-green-400 font-semibold mt-0.5">
                         {dayData.checkInCount}x
                       </span>
                     )}
@@ -214,18 +217,18 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
             {/* Legend */}
             <div className="mt-6 flex items-center justify-center gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-white border-2 border-gray-200" />
-                <span className="text-gray-600">No check-in</span>
+                <div className="h-6 w-6 rounded-lg bg-slate-800 border-2 border-slate-700" />
+                <span className="text-slate-400">No check-in</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-green-50 border-2 border-green-300 flex items-center justify-center">
-                  <Check className="h-3 w-3 text-green-600" />
+                <div className="h-6 w-6 rounded-lg bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center">
+                  <Check className="h-3 w-3 text-green-400" />
                 </div>
-                <span className="text-gray-600">Check-in</span>
+                <span className="text-slate-400">Check-in</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-white border-2 border-indigo-500" />
-                <span className="text-gray-600">Today</span>
+                <div className="h-6 w-6 rounded-lg bg-slate-800 border-2 border-brand-cyan-500" />
+                <span className="text-slate-400">Today</span>
               </div>
             </div>
           </>

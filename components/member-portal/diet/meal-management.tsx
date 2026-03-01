@@ -1,11 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MealCalendar } from './meal-calendar';
 import { NutritionTracker } from './nutrition-tracker';
 import { MealFormDialog } from './meal-form-dialog';
-import { saveMeal, toggleMealCompletion, getMealsForDate } from '@/lib/actions/members-portal';
+import { MealAddChoice } from './meal-add-choice';
+import { MealPhotoCapture } from './meal-photo-capture';
+import { saveMeal, toggleMealCompletion, getMealsForWeek, checkMealExists } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface MealManagementProps {
   planId: string;
@@ -15,6 +26,7 @@ interface MealManagementProps {
   targetCarbs: number;
   targetFat: number;
   initialMeals: any[];
+  isAiGenerated: boolean;
 }
 
 export function MealManagement({
@@ -25,54 +37,152 @@ export function MealManagement({
   targetCarbs,
   targetFat,
   initialMeals,
+  isAiGenerated,
 }: MealManagementProps) {
   const [meals, setMeals] = useState(initialMeals);
+  const [isChoiceOpen, setIsChoiceOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedMealType, setSelectedMealType] = useState<string>('');
+  const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
   const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Load meals for today
-  useEffect(() => {
-    loadMealsForDate(currentDate);
-  }, [currentDate]);
+  // Week start date for fetching full week data
+  const [weekStartDate, setWeekStartDate] = useState(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const start = new Date(today);
+    start.setDate(today.getDate() - dayOfWeek);
+    return start.toISOString().split('T')[0];
+  });
 
-  const loadMealsForDate = async (date: string) => {
-    const result = await getMealsForDate(planId, date);
+  // Override confirmation dialog state
+  const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false);
+  const [existingMealInfo, setExistingMealInfo] = useState<{ name: string; calories: number } | null>(null);
+  const [pendingMealData, setPendingMealData] = useState<any>(null);
+  const [pendingMealSource, setPendingMealSource] = useState<'manual' | 'photo'>('manual');
+
+  // Edit meal state
+  const [editingMealData, setEditingMealData] = useState<{
+    name: string;
+    description?: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  } | null>(null);
+
+  const loadMealsForWeek = useCallback(async (startDate: string) => {
+    const result = await getMealsForWeek(planId, startDate);
     if (result.success && result.data) {
       setMeals(result.data);
     }
+  }, [planId]);
+
+  // Load meals when week changes
+  useEffect(() => {
+    loadMealsForWeek(weekStartDate);
+  }, [weekStartDate, loadMealsForWeek]);
+
+  const handleWeekChange = (newWeekStartDate: Date) => {
+    setWeekStartDate(newWeekStartDate.toISOString().split('T')[0]);
   };
 
   const handleAddMeal = (date: Date, mealType: string) => {
     setSelectedDate(date);
-    setSelectedMealType(mealType);
+    setSelectedMealType(mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack');
+    setIsChoiceOpen(true);
+  };
+
+  const handleSelectPhoto = () => {
+    setIsChoiceOpen(false);
+    setIsPhotoOpen(true);
+  };
+
+  const handleSelectManual = () => {
+    setIsChoiceOpen(false);
     setIsDialogOpen(true);
   };
 
-  const handleSaveMeal = async (mealData: any) => {
-    if (!selectedDate) return;
-
+  const executeSaveMeal = async (mealData: any, source: 'manual' | 'photo') => {
     const result = await saveMeal({
       ...mealData,
       dietPlanId: planId,
       mealType: selectedMealType,
-      scheduledFor: selectedDate.toISOString(),
+      scheduledFor: selectedDate!.toISOString(),
     });
 
     if (result.success) {
-      toast.success('Meal added successfully!');
-      setIsDialogOpen(false);
-      // Reload meals for the date
-      await loadMealsForDate(selectedDate.toISOString().split('T')[0]);
+      toast.success(source === 'photo' ? 'Meal added from photo!' : 'Meal added successfully!');
+      if (source === 'photo') {
+        setIsPhotoOpen(false);
+      } else {
+        setIsDialogOpen(false);
+      }
+      await loadMealsForWeek(weekStartDate);
     } else {
       toast.error(result.error || 'Failed to add meal');
     }
   };
 
+  const handleSaveMealWithCheck = async (mealData: any, source: 'manual' | 'photo') => {
+    if (!selectedDate) return;
+
+    const scheduledDate = selectedDate.toISOString().split('T')[0];
+    const existing = await checkMealExists(planId, scheduledDate, selectedMealType);
+
+    if (existing.exists && existing.meal) {
+      setPendingMealData(mealData);
+      setPendingMealSource(source);
+      setExistingMealInfo({ name: existing.meal.name, calories: existing.meal.calories });
+      setIsOverrideDialogOpen(true);
+    } else {
+      await executeSaveMeal(mealData, source);
+    }
+  };
+
+  const handleConfirmOverride = async () => {
+    setIsOverrideDialogOpen(false);
+    if (pendingMealData) {
+      await executeSaveMeal(pendingMealData, pendingMealSource);
+    }
+    setPendingMealData(null);
+    setExistingMealInfo(null);
+  };
+
+  const handleCancelOverride = () => {
+    setIsOverrideDialogOpen(false);
+    setPendingMealData(null);
+    setExistingMealInfo(null);
+  };
+
+  const handleSaveMeal = async (mealData: any) => {
+    await handleSaveMealWithCheck(mealData, 'manual');
+  };
+
+  const handlePhotoSave = async (mealData: {
+    name: string;
+    description: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }) => {
+    await handleSaveMealWithCheck(mealData, 'photo');
+  };
+
   const handleToggleMeal = async (mealId: string) => {
     const meal = meals.find((m: any) => m.id === mealId);
-    const result = await toggleMealCompletion(mealId, !meal?.completed);
+    if (!meal) return;
+
+    // Only allow toggling completion for today's meals
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (!meal.scheduled_for.startsWith(todayStr)) {
+      toast.error('You can only mark meals as complete for today');
+      return;
+    }
+
+    const result = await toggleMealCompletion(mealId, !meal.completed);
 
     if (result.success) {
       // Update local state
@@ -86,6 +196,40 @@ export function MealManagement({
       toast.success(
         result.data?.completed ? 'Meal completed!' : 'Meal marked incomplete'
       );
+    } else {
+      toast.error(result.error || 'Failed to update meal');
+    }
+  };
+
+  const handleEditMeal = (meal: any) => {
+    setSelectedDate(new Date(meal.scheduled_for));
+    setSelectedMealType(meal.meal_type as 'breakfast' | 'lunch' | 'dinner' | 'snack');
+    setEditingMealData({
+      name: meal.name,
+      description: meal.description || '',
+      calories: meal.calories,
+      protein: meal.protein,
+      carbs: meal.carbs,
+      fat: meal.fat,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleEditSave = async (mealData: any) => {
+    if (!selectedDate) return;
+
+    const result = await saveMeal({
+      ...mealData,
+      dietPlanId: planId,
+      mealType: selectedMealType,
+      scheduledFor: selectedDate.toISOString(),
+    });
+
+    if (result.success) {
+      toast.success('Meal updated successfully!');
+      setIsDialogOpen(false);
+      setEditingMealData(null);
+      await loadMealsForWeek(weekStartDate);
     } else {
       toast.error(result.error || 'Failed to update meal');
     }
@@ -116,14 +260,18 @@ export function MealManagement({
     <div className="space-y-6">
       {/* Nutrition Tracker */}
       <NutritionTracker
-        targetCalories={targetCalories}
-        targetProtein={targetProtein}
-        targetCarbs={targetCarbs}
-        targetFat={targetFat}
-        consumedCalories={consumedCalories}
-        consumedProtein={consumedProtein}
-        consumedCarbs={consumedCarbs}
-        consumedFat={consumedFat}
+        targets={{
+          calories: targetCalories,
+          protein: targetProtein,
+          carbs: targetCarbs,
+          fat: targetFat,
+        }}
+        consumed={{
+          calories: consumedCalories,
+          protein: consumedProtein,
+          carbs: consumedCarbs,
+          fat: consumedFat,
+        }}
       />
 
       {/* Meal Calendar */}
@@ -131,15 +279,66 @@ export function MealManagement({
         meals={meals}
         onAddMeal={handleAddMeal}
         onToggleMeal={handleToggleMeal}
+        onEditMeal={handleEditMeal}
+        isAiGenerated={isAiGenerated}
+        onWeekChange={handleWeekChange}
       />
 
-      {/* Meal Form Dialog */}
-      <MealFormDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onSave={handleSaveMeal}
+      {/* Meal Add Choice Dialog */}
+      <MealAddChoice
+        isOpen={isChoiceOpen}
+        onClose={() => setIsChoiceOpen(false)}
+        onSelectPhoto={handleSelectPhoto}
+        onSelectManual={handleSelectManual}
         mealType={selectedMealType}
       />
+
+      {/* Manual Meal Form Dialog */}
+      <MealFormDialog
+        isOpen={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setEditingMealData(null);
+        }}
+        onSave={editingMealData ? handleEditSave : handleSaveMeal}
+        mealType={selectedMealType}
+        initialData={editingMealData}
+      />
+
+      {/* Photo Meal Capture Dialog */}
+      <MealPhotoCapture
+        isOpen={isPhotoOpen}
+        onClose={() => setIsPhotoOpen(false)}
+        onSave={handlePhotoSave}
+        mealType={selectedMealType}
+      />
+
+      {/* Override Confirmation Dialog */}
+      <Dialog open={isOverrideDialogOpen} onOpenChange={setIsOverrideDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Replace Existing Meal?</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              This slot already has a meal:{' '}
+              <span className="font-semibold text-white">
+                {existingMealInfo?.name}
+              </span>{' '}
+              ({existingMealInfo?.calories} cal). Do you want to replace it?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelOverride}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmOverride}
+            >
+              Replace Meal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

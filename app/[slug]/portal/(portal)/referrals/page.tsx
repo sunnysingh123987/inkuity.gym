@@ -22,8 +22,8 @@ export default async function ReferralsPage({
       <PageEntrance />
 
       <div data-animate>
-        <h1 className="text-2xl font-bold text-gray-900">Referrals</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-white">Referrals</h1>
+        <p className="text-slate-400 mt-1">
           Invite friends and earn rewards when they join
         </p>
       </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gift, Copy, Check, Share2, Users, Clock, CheckCircle2, Award } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 import type { ReferralWithMembers } from '@/types/database';
 import { toast } from 'sonner';
 
@@ -43,24 +44,24 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
   return (
     <div className="space-y-6">
       {/* Referral Code Card */}
-      <Card>
+      <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Gift className="h-5 w-5 text-brand-cyan-500" />
+            <img src={getUiSvg('referrals')} alt="" className="h-5 w-5 opacity-80" />
             Your Referral Code
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex-1 bg-gray-100 rounded-lg px-4 py-3 font-mono text-lg font-bold text-gray-900 tracking-wider text-center">
+            <div className="flex-1 bg-slate-800 rounded-lg px-4 py-3 font-mono text-lg font-bold text-white tracking-wider text-center">
               {referralCode}
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-2">Share this link with friends:</p>
+          <div className="bg-slate-800 rounded-lg p-3">
+            <p className="text-xs text-slate-500 mb-2">Share this link with friends:</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs bg-white rounded border border-gray-200 px-3 py-2 text-gray-700 truncate">
+              <code className="flex-1 text-xs bg-slate-900 rounded border border-slate-700 px-3 py-2 text-slate-300 truncate">
                 {referralLink}
               </code>
               <Button
@@ -100,44 +101,44 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardContent className="pt-6 text-center">
             <Users className="h-5 w-5 mx-auto text-blue-500 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{referrals.length}</p>
-            <p className="text-xs text-gray-500">Total Referrals</p>
+            <p className="text-2xl font-bold text-white">{referrals.length}</p>
+            <p className="text-xs text-slate-500">Total Referrals</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-5 w-5 mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{convertedCount}</p>
-            <p className="text-xs text-gray-500">Converted</p>
+            <p className="text-2xl font-bold text-white">{convertedCount}</p>
+            <p className="text-xs text-slate-500">Converted</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardContent className="pt-6 text-center">
             <Clock className="h-5 w-5 mx-auto text-amber-500 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
-            <p className="text-xs text-gray-500">Pending</p>
+            <p className="text-2xl font-bold text-white">{pendingCount}</p>
+            <p className="text-xs text-slate-500">Pending</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Referral List */}
-      <Card>
+      <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
           <CardTitle className="text-base">Your Referrals</CardTitle>
         </CardHeader>
         <CardContent>
           {referrals.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Gift className="h-8 w-8 text-gray-400" />
+              <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                <Gift className="h-8 w-8 text-slate-500" />
               </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-1">
+              <h3 className="text-sm font-medium text-white mb-1">
                 No referrals yet
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-slate-500">
                 Share your referral code with friends and track them here.
               </p>
             </div>
@@ -146,13 +147,13 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
               {referrals.map((referral) => (
                 <div
                   key={referral.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-slate-800 rounded-lg"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-white">
                       {referral.referred?.full_name || 'Pending Member'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       {new Date(referral.created_at).toLocaleDateString('en-IN', {
                         day: 'numeric',
                         month: 'short',
@@ -174,23 +175,23 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
 function ReferralStatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     pending: {
-      bg: 'bg-amber-100',
-      text: 'text-amber-700',
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-400',
       icon: <Clock className="h-3 w-3" />,
     },
     converted: {
-      bg: 'bg-green-100',
-      text: 'text-green-700',
+      bg: 'bg-green-500/10',
+      text: 'text-green-400',
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     rewarded: {
-      bg: 'bg-blue-100',
-      text: 'text-blue-700',
+      bg: 'bg-blue-500/10',
+      text: 'text-blue-400',
       icon: <Award className="h-3 w-3" />,
     },
     expired: {
-      bg: 'bg-gray-100',
-      text: 'text-gray-700',
+      bg: 'bg-slate-700',
+      text: 'text-slate-300',
       icon: <Clock className="h-3 w-3" />,
     },
   };

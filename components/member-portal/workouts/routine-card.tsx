@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Play, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { getCategorySvg } from '@/lib/svg-icons';
 import { deleteWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 
@@ -65,17 +66,17 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      chest: 'bg-red-100 text-red-700',
-      back: 'bg-blue-100 text-blue-700',
-      legs: 'bg-green-100 text-green-700',
-      shoulders: 'bg-yellow-100 text-yellow-700',
-      arms: 'bg-purple-100 text-purple-700',
-      biceps: 'bg-purple-100 text-purple-700',
-      triceps: 'bg-purple-100 text-purple-700',
-      core: 'bg-orange-100 text-orange-700',
-      cardio: 'bg-pink-100 text-pink-700',
+      chest: 'bg-red-500/10 text-red-400',
+      back: 'bg-blue-500/10 text-blue-400',
+      legs: 'bg-green-500/10 text-green-400',
+      shoulders: 'bg-yellow-500/10 text-yellow-400',
+      arms: 'bg-purple-500/10 text-purple-400',
+      biceps: 'bg-purple-500/10 text-purple-400',
+      triceps: 'bg-purple-500/10 text-purple-400',
+      core: 'bg-orange-500/10 text-orange-400',
+      cardio: 'bg-pink-500/10 text-pink-400',
     };
-    return colors[category] || 'bg-gray-100 text-gray-700';
+    return colors[category] || 'bg-slate-700 text-slate-300';
   };
 
   // Get unique categories from exercises
@@ -91,10 +92,10 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
   );
 
   return (
-    <Card className={!routine.is_active ? 'opacity-60' : ''}>
+    <Card className={`bg-slate-900 border-slate-800 ${!routine.is_active ? 'opacity-60' : ''}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
-          <CardTitle className="text-lg">{routine.name}</CardTitle>
+          <CardTitle className="text-lg text-white">{routine.name}</CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -139,7 +140,7 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
         </div>
 
         {routine.description && (
-          <p className="text-sm text-gray-600 mt-2">{routine.description}</p>
+          <p className="text-sm text-slate-400 mt-2">{routine.description}</p>
         )}
       </CardHeader>
 
@@ -147,8 +148,8 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
         <div className="space-y-3">
           {/* Exercise Count */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Exercises:</span>
-            <span className="font-semibold">{exerciseCount}</span>
+            <span className="text-slate-400">Exercises:</span>
+            <span className="font-semibold text-white">{exerciseCount}</span>
           </div>
 
           {/* Categories */}
@@ -158,8 +159,13 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
                 <Badge
                   key={category as string}
                   variant="secondary"
-                  className={getCategoryColor(category as string)}
+                  className={`gap-1 ${getCategoryColor(category as string)}`}
                 >
+                  <img
+                    src={getCategorySvg(category as string)}
+                    alt=""
+                    className="h-3 w-3 opacity-70"
+                  />
                   {category as string}
                 </Badge>
               ))}

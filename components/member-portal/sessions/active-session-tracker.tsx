@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Circle, Clock, Trophy } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowLeft, History, MoreVertical, Zap, Plus, Search, X } from 'lucide-react';
 import { ExerciseSetLogger } from './exercise-set-logger';
-import { SessionTimer } from './session-timer';
-import { completeWorkoutSession } from '@/lib/actions/members-portal';
+import {
+  getExerciseLibrary,
+  addSessionExercise,
+} from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 
 interface ActiveSessionTrackerProps {
@@ -17,165 +21,266 @@ interface ActiveSessionTrackerProps {
   gymSlug: string;
 }
 
+function getTodaySets(exerciseSets: any[]): any[] {
+  if (!exerciseSets) return [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return exerciseSets.filter((s: any) => {
+    const created = new Date(s.created_at);
+    return created >= today;
+  });
+}
+
 export function ActiveSessionTracker({
   session,
   gymSlug,
 }: ActiveSessionTrackerProps) {
   const router = useRouter();
-  const [completedExercises, setCompletedExercises] = useState<Set<string>>(
-    new Set()
+  const [exerciseList, setExerciseList] = useState<any[]>(
+    (session.session_exercises || []).sort(
+      (a: any, b: any) => a.order_index - b.order_index
+    )
   );
-  const [completing, setCompleting] = useState(false);
 
-  const exercises = session.session_exercises || [];
-  const totalExercises = exercises.length;
-  const completedCount = completedExercises.size;
-  const progress = totalExercises > 0 ? (completedCount / totalExercises) * 100 : 0;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Initialize sets count from existing data (today only)
+  const [setsCount, setSetsCount] = useState<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    (session.session_exercises || []).forEach((se: any) => {
+      const todaySets = getTodaySets(se.exercise_sets);
+      if (todaySets.length > 0) {
+        counts[se.id] = todaySets.length;
+      }
+    });
+    return counts;
+  });
+
+  // Add exercise picker state
+  const [showPicker, setShowPicker] = useState(false);
+  const [libraryExercises, setLibraryExercises] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [addingExerciseId, setAddingExerciseId] = useState<string | null>(null);
 
   const routineName = Array.isArray(session.workout_routines)
     ? session.workout_routines[0]?.name
     : session.workout_routines?.name;
 
-  const handleExerciseComplete = (exerciseId: string) => {
-    setCompletedExercises((prev) => {
-      const next = new Set(prev);
-      next.add(exerciseId);
-      return next;
-    });
+  const toggleExercise = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleCompleteWorkout = async () => {
-    if (completedCount < totalExercises) {
-      const confirmed = confirm(
-        `You've completed ${completedCount} of ${totalExercises} exercises. Are you sure you want to finish?`
-      );
-      if (!confirmed) return;
+  const handleSetsChange = (exerciseId: string, count: number) => {
+    setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
+  };
+
+  const handleOpenPicker = async () => {
+    setShowPicker(true);
+    if (libraryExercises.length === 0) {
+      setLoadingLibrary(true);
+      const result = await getExerciseLibrary(session.gym_id);
+      if (result.data) {
+        setLibraryExercises(result.data);
+      }
+      setLoadingLibrary(false);
     }
+  };
 
-    setCompleting(true);
-
-    const result = await completeWorkoutSession(session.id);
-
-    if (result.success) {
-      toast.success('Workout completed! Great job! 💪');
-      router.push(`/${gymSlug}/portal/sessions/${session.id}`);
+  const handleAddExercise = async (exerciseId: string) => {
+    setAddingExerciseId(exerciseId);
+    const result = await addSessionExercise(session.id, exerciseId);
+    if (result.success && result.data) {
+      setExerciseList((prev) => [...prev, result.data]);
+      setExpandedId(result.data.id);
+      setShowPicker(false);
+      setSearchQuery('');
+      toast.success('Exercise added');
     } else {
-      toast.error(result.error || 'Failed to complete workout');
-      setCompleting(false);
+      toast.error(result.error || 'Failed to add exercise');
     }
+    setAddingExerciseId(null);
   };
+
+  // Filter exercises already in the session
+  const existingExerciseIds = new Set(
+    exerciseList.map((se: any) => {
+      const ex = Array.isArray(se.exercise_library)
+        ? se.exercise_library[0]
+        : se.exercise_library;
+      return ex?.id;
+    })
+  );
+
+  const filteredLibrary = libraryExercises.filter((ex) => {
+    if (existingExerciseIds.has(ex.id)) return false;
+    if (!searchQuery) return true;
+    return ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Header Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl">
-                {routineName || 'Workout Session'}
-              </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                {totalExercises} exercises
-              </p>
-            </div>
-            <SessionTimer startTime={session.started_at} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Progress</span>
-              <span className="font-semibold">
-                {completedCount} / {totalExercises} exercises
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Exercises */}
-      <div className="space-y-4">
-        {exercises
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((sessionExercise: any, index: number) => {
-            const exercise = Array.isArray(sessionExercise.exercise_library)
-              ? sessionExercise.exercise_library[0]
-              : sessionExercise.exercise_library;
-
-            const isCompleted = completedExercises.has(sessionExercise.id);
-
-            return (
-              <Card
-                key={sessionExercise.id}
-                className={isCompleted ? 'bg-green-50 border-green-200' : ''}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-1">
-                        {isCompleted ? (
-                          <CheckCircle2 className="h-6 w-6 text-green-600" />
-                        ) : (
-                          <Circle className="h-6 w-6 text-gray-400" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {index + 1}. {exercise?.name || 'Exercise'}
-                        </h3>
-                        {exercise?.category && (
-                          <Badge variant="secondary" className="mt-1">
-                            {exercise.category}
-                          </Badge>
-                        )}
-                        {exercise?.description && (
-                          <p className="text-sm text-gray-600 mt-2">
-                            {exercise.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ExerciseSetLogger
-                    sessionExerciseId={sessionExercise.id}
-                    onComplete={() => handleExerciseComplete(sessionExercise.id)}
-                    isCompleted={isCompleted}
-                  />
-                </CardContent>
-              </Card>
-            );
-          })}
+    <div className="space-y-4">
+      {/* Header with back arrow */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => router.push(`/${gymSlug}/portal/trackers`)}
+          className="p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5 text-slate-400" />
+        </button>
+        <h1 className="text-2xl font-bold text-white">
+          {routineName || 'Workout Session'}
+        </h1>
+        <History className="h-5 w-5 text-brand-cyan-400" />
       </div>
 
-      {/* Complete Workout Button */}
-      <Card>
-        <CardContent className="pt-6">
-          <Button
-            onClick={handleCompleteWorkout}
-            disabled={completing}
-            size="lg"
-            className="w-full"
-          >
-            {completing ? (
-              'Completing...'
+      {/* Collapsible exercise accordion */}
+      <div className="space-y-3">
+        {exerciseList.map((sessionExercise: any) => {
+          const exercise = Array.isArray(sessionExercise.exercise_library)
+            ? sessionExercise.exercise_library[0]
+            : sessionExercise.exercise_library;
+
+          const isExpanded = expandedId === sessionExercise.id;
+          const loggedSets = setsCount[sessionExercise.id] || 0;
+
+          return (
+            <div
+              key={sessionExercise.id}
+              className={`rounded-xl border transition-colors ${
+                isExpanded
+                  ? 'bg-slate-900 border-slate-700'
+                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              {/* Exercise header (always visible) */}
+              <button
+                type="button"
+                onClick={() => toggleExercise(sessionExercise.id)}
+                className="w-full flex items-center justify-between p-4 text-left"
+              >
+                <h3 className="font-semibold text-white text-lg">
+                  {exercise?.name || 'Exercise'}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {/* Zap icons for logged sets */}
+                  {loggedSets > 0 && (
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: Math.min(loggedSets, 5) }).map((_, i) => (
+                        <Zap
+                          key={i}
+                          className="h-4 w-4 text-brand-cyan-400 fill-brand-cyan-400"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* 3-dot menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div
+                        role="button"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1 rounded hover:bg-slate-800 transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4 text-slate-400" />
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem disabled>Reorder</DropdownMenuItem>
+                      <DropdownMenuItem disabled>Skip</DropdownMenuItem>
+                      <DropdownMenuItem disabled>Notes</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </button>
+
+              {/* Expanded content */}
+              {isExpanded && (
+                <div className="px-4 pb-4">
+                  <ExerciseSetLogger
+                    sessionExerciseId={sessionExercise.id}
+                    existingSets={getTodaySets(sessionExercise.exercise_sets || [])}
+                    onSetsChange={(count) =>
+                      handleSetsChange(sessionExercise.id, count)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add Exercise picker */}
+      {showPicker && (
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-white">Add Exercise</h3>
+            <button
+              type="button"
+              onClick={() => { setShowPicker(false); setSearchQuery(''); }}
+              className="p-1 rounded hover:bg-slate-800 transition-colors"
+            >
+              <X className="h-4 w-4 text-slate-400" />
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search exercises..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-brand-cyan-500"
+            />
+          </div>
+
+          {/* Exercise list */}
+          <div className="max-h-60 overflow-y-auto space-y-1">
+            {loadingLibrary ? (
+              <p className="text-sm text-slate-500 text-center py-4">Loading...</p>
+            ) : filteredLibrary.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">No exercises found</p>
             ) : (
-              <>
-                <Trophy className="h-5 w-5 mr-2" />
-                Finish Workout
-              </>
+              filteredLibrary.map((ex) => (
+                <button
+                  key={ex.id}
+                  type="button"
+                  disabled={addingExerciseId === ex.id}
+                  onClick={() => handleAddExercise(ex.id)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 transition-colors text-left disabled:opacity-50"
+                >
+                  <div>
+                    <p className="text-white text-sm font-medium">{ex.name}</p>
+                    {ex.category && (
+                      <p className="text-xs text-slate-500">{ex.category}</p>
+                    )}
+                  </div>
+                  <Plus className="h-4 w-4 text-brand-cyan-400 flex-shrink-0" />
+                </button>
+              ))
             )}
-          </Button>
-          {completedCount < totalExercises && (
-            <p className="text-sm text-center text-gray-500 mt-2">
-              {totalExercises - completedCount} exercises remaining
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Add Exercise button */}
+      {!showPicker && (
+        <button
+          type="button"
+          onClick={handleOpenPicker}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-slate-700 text-slate-400 text-sm font-medium flex items-center justify-center gap-1.5 hover:border-slate-600 hover:text-slate-300 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Add Exercise
+        </button>
+      )}
     </div>
   );
 }

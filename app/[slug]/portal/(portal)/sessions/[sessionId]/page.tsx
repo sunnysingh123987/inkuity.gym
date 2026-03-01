@@ -28,7 +28,7 @@ export default async function SessionDetailPage({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-IN', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -38,7 +38,7 @@ export default async function SessionDetailPage({
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -78,10 +78,10 @@ export default async function SessionDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-white">
             {routineName || 'Workout Session'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-slate-400 mt-1">
             {formatDate(workoutSession.started_at)}
           </p>
         </div>
@@ -94,14 +94,14 @@ export default async function SessionDetailPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-indigo-600" />
+            <Trophy className="h-5 w-5 text-brand-cyan-400" />
             Session Summary
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">Status</p>
+              <p className="text-sm text-slate-400">Status</p>
               <Badge
                 variant={
                   workoutSession.status === 'completed'
@@ -115,7 +115,7 @@ export default async function SessionDetailPage({
               </Badge>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-gray-600 flex items-center gap-1">
+              <p className="text-sm text-slate-400 flex items-center gap-1">
                 <Clock className="h-4 w-4" />
                 Start Time
               </p>
@@ -124,7 +124,7 @@ export default async function SessionDetailPage({
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-gray-600 flex items-center gap-1">
+              <p className="text-sm text-slate-400 flex items-center gap-1">
                 <Dumbbell className="h-4 w-4" />
                 Duration
               </p>
@@ -133,22 +133,22 @@ export default async function SessionDetailPage({
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">Total Sets</p>
+              <p className="text-sm text-slate-400">Total Sets</p>
               <p className="font-semibold">{totalSets} sets</p>
             </div>
           </div>
           {totalVolume > 0 && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-gray-600">Total Volume</p>
-              <p className="text-2xl font-bold text-indigo-600">
-                {totalVolume.toLocaleString()} lbs
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <p className="text-sm text-slate-400">Total Volume</p>
+              <p className="text-2xl font-bold text-brand-cyan-400">
+                {totalVolume.toLocaleString()} kg
               </p>
             </div>
           )}
           {workoutSession.notes && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-gray-600 mb-1">Notes</p>
-              <p className="text-gray-900">{workoutSession.notes}</p>
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <p className="text-sm text-slate-400 mb-1">Notes</p>
+              <p className="text-white">{workoutSession.notes}</p>
             </div>
           )}
         </CardContent>
@@ -156,7 +156,7 @@ export default async function SessionDetailPage({
 
       {/* Exercises */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Exercises</h2>
+        <h2 className="text-xl font-semibold text-white">Exercises</h2>
 
         {exercises
           .sort((a: any, b: any) => a.order_index - b.order_index)
@@ -186,7 +186,7 @@ export default async function SessionDetailPage({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-400">
                         {completedSets} {completedSets === 1 ? 'set' : 'sets'}
                       </p>
                     </div>
@@ -198,22 +198,22 @@ export default async function SessionDetailPage({
                       {sets.map((set: any) => (
                         <div
                           key={set.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-3 bg-slate-800 rounded-lg"
                         >
                           <div className="flex items-center gap-3">
                             <Badge variant="outline">Set {set.set_number}</Badge>
                             <div className="flex gap-4 text-sm">
                               {set.weight && (
                                 <span>
-                                  <span className="text-gray-600">Weight:</span>{' '}
+                                  <span className="text-slate-400">Weight:</span>{' '}
                                   <span className="font-semibold">
-                                    {set.weight} lbs
+                                    {set.weight} kg
                                   </span>
                                 </span>
                               )}
                               {set.reps && (
                                 <span>
-                                  <span className="text-gray-600">Reps:</span>{' '}
+                                  <span className="text-slate-400">Reps:</span>{' '}
                                   <span className="font-semibold">
                                     {set.reps}
                                   </span>
@@ -221,7 +221,7 @@ export default async function SessionDetailPage({
                               )}
                               {set.duration_seconds && (
                                 <span>
-                                  <span className="text-gray-600">
+                                  <span className="text-slate-400">
                                     Duration:
                                   </span>{' '}
                                   <span className="font-semibold">
@@ -238,14 +238,14 @@ export default async function SessionDetailPage({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-slate-500 text-center py-4">
                       No sets logged for this exercise
                     </p>
                   )}
                   {sessionExercise.notes && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-sm text-gray-600 mb-1">Notes:</p>
-                      <p className="text-sm text-gray-900">
+                    <div className="mt-3 pt-3 border-t border-slate-700">
+                      <p className="text-sm text-slate-400 mb-1">Notes:</p>
+                      <p className="text-sm text-white">
                         {sessionExercise.notes}
                       </p>
                     </div>
@@ -259,11 +259,11 @@ export default async function SessionDetailPage({
       {exercises.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
-            <Dumbbell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <Dumbbell className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">
               No exercises recorded
             </h3>
-            <p className="text-gray-600">
+            <p className="text-slate-400">
               This session doesn't have any exercises logged
             </p>
           </CardContent>

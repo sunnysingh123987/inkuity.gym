@@ -168,7 +168,10 @@ export async function getMemberStreak(memberId: string, gymId: string) {
           (prevDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
         );
 
-        if (diff === 1) {
+        if (diff === 0) {
+          // Same day duplicate, skip
+          continue;
+        } else if (diff === 1) {
           currentStreak++;
           prevDate = checkInDate;
         } else {
@@ -462,7 +465,7 @@ export async function createWorkoutRoutine(input: CreateRoutineInput) {
       if (exercisesError) throw exercisesError;
     }
 
-    revalidatePath('/portal/workouts');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data: routine };
   } catch (error: any) {
@@ -495,7 +498,7 @@ export async function updateWorkoutRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/workouts');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data };
   } catch (error: any) {
@@ -518,7 +521,7 @@ export async function deleteWorkoutRoutine(routineId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/workouts');
+    revalidatePath('/portal/trackers');
 
     return { success: true };
   } catch (error: any) {
@@ -574,7 +577,7 @@ export async function addExerciseToRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/workouts');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data };
   } catch (error: any) {
@@ -599,7 +602,7 @@ export async function removeExerciseFromRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/workouts');
+    revalidatePath('/portal/trackers');
 
     return { success: true };
   } catch (error: any) {
@@ -706,6 +709,15 @@ export async function getActiveWorkoutSession(memberId: string, gymId: string) {
             name,
             category,
             description
+          ),
+          exercise_sets (
+            id,
+            set_number,
+            weight,
+            reps,
+            duration_seconds,
+            completed,
+            created_at
           )
         )
       `)
@@ -721,6 +733,58 @@ export async function getActiveWorkoutSession(memberId: string, gymId: string) {
     return { success: true, data: data || null };
   } catch (error: any) {
     console.error('Error fetching active session:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
+ * Add an exercise to an active session
+ */
+export async function addSessionExercise(
+  sessionId: string,
+  exerciseId: string
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Get current max order_index for this session
+    const { data: existing } = await supabase
+      .from('session_exercises')
+      .select('order_index')
+      .eq('session_id', sessionId)
+      .order('order_index', { ascending: false })
+      .limit(1);
+
+    const nextOrder = existing && existing.length > 0 ? existing[0].order_index + 1 : 0;
+
+    const { data, error } = await supabase
+      .from('session_exercises')
+      .insert({
+        session_id: sessionId,
+        exercise_id: exerciseId,
+        order_index: nextOrder,
+        completed: false,
+      })
+      .select(`
+        id,
+        order_index,
+        completed,
+        exercise_library (
+          id,
+          name,
+          category,
+          description
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/sessions');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error adding session exercise:', error);
     return { success: false, error: error.message, data: null };
   }
 }
@@ -787,12 +851,48 @@ export async function logExerciseSet(
   try {
     const supabase = createAdminSupabaseClient();
 
+    // Check if this set already exists
+    const { data: existing } = await supabase
+      .from('exercise_sets')
+      .select('id, created_at')
+      .eq('session_exercise_id', sessionExerciseId)
+      .eq('set_number', setData.setNumber)
+      .maybeSingle();
+
+    if (existing) {
+      // Check if set is older than 1.5 hours — if so, it's locked
+      const createdAt = new Date(existing.created_at);
+      const now = new Date();
+      const ageMs = now.getTime() - createdAt.getTime();
+      const LOCK_MS = 1.5 * 60 * 60 * 1000; // 1.5 hours
+      if (ageMs > LOCK_MS) {
+        return { success: false, error: 'Set is locked after 1.5 hours', data: null };
+      }
+
+      // Update existing set
+      const { data, error } = await supabase
+        .from('exercise_sets')
+        .update({
+          weight: setData.weight,
+          reps: setData.reps,
+          duration_seconds: setData.duration,
+          completed: setData.completed,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    }
+
+    // Insert new set
     const { data, error } = await supabase
       .from('exercise_sets')
       .insert({
         session_exercise_id: sessionExerciseId,
         set_number: setData.setNumber,
-        weight_lbs: setData.weight,
+        weight: setData.weight,
         reps: setData.reps,
         duration_seconds: setData.duration,
         completed: setData.completed,
@@ -1025,6 +1125,69 @@ export async function getMealsForDate(
 }
 
 /**
+ * Get meals for a full week (7 days starting from weekStartDate)
+ */
+export async function getMealsForWeek(
+  dietPlanId: string,
+  weekStartDate: string
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const startDate = new Date(weekStartDate);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(weekStartDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+
+    const { data, error } = await supabase
+      .from('meal_plans')
+      .select('*')
+      .eq('diet_plan_id', dietPlanId)
+      .gte('scheduled_for', startDate.toISOString())
+      .lte('scheduled_for', endDate.toISOString())
+      .order('scheduled_for')
+      .order('meal_type');
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error fetching meals for week:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+/**
+ * Check if a meal already exists for a given slot
+ */
+export async function checkMealExists(
+  dietPlanId: string,
+  scheduledDate: string,
+  mealType: string
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('meal_plans')
+      .select('id, name, calories')
+      .eq('diet_plan_id', dietPlanId)
+      .eq('scheduled_date', scheduledDate)
+      .eq('meal_type', mealType)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return { exists: !!data, meal: data || undefined };
+  } catch (error: any) {
+    console.error('Error checking meal existence:', error);
+    return { exists: false, meal: undefined };
+  }
+}
+
+/**
  * Create or update a meal
  */
 export async function saveMeal(mealData: {
@@ -1046,18 +1209,21 @@ export async function saveMeal(mealData: {
 
     const { data, error } = await supabase
       .from('meal_plans')
-      .insert({
-        diet_plan_id: mealData.dietPlanId,
-        scheduled_for: mealData.scheduledFor,
-        scheduled_date: scheduledDate,
-        meal_type: mealData.mealType,
-        name: mealData.name,
-        description: mealData.description,
-        calories: mealData.calories,
-        protein: mealData.protein,
-        carbs: mealData.carbs,
-        fat: mealData.fat,
-      })
+      .upsert(
+        {
+          diet_plan_id: mealData.dietPlanId,
+          scheduled_for: mealData.scheduledFor,
+          scheduled_date: scheduledDate,
+          meal_type: mealData.mealType,
+          name: mealData.name,
+          description: mealData.description,
+          calories: mealData.calories,
+          protein: mealData.protein,
+          carbs: mealData.carbs,
+          fat: mealData.fat,
+        },
+        { onConflict: 'diet_plan_id,scheduled_date,meal_type' }
+      )
       .select()
       .single();
 
@@ -1094,6 +1260,47 @@ export async function toggleMealCompletion(mealId: string, completed: boolean) {
   } catch (error: any) {
     console.error('Error toggling meal completion:', error);
     return { success: false, error: error.message, data: null };
+  }
+}
+
+// ============================================================
+// AI DIET PLAN HELPERS
+// ============================================================
+
+/**
+ * Check if a member has already used their AI plan generation
+ */
+export async function checkAiPlanUsed(memberId: string): Promise<boolean> {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const { data, error } = await supabase
+      .from('members')
+      .select('ai_plan_used')
+      .eq('id', memberId)
+      .single();
+
+    if (error) throw error;
+    return !!data?.ai_plan_used;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mark a member's AI plan as used
+ */
+export async function markAiPlanUsed(memberId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const { error } = await supabase
+      .from('members')
+      .update({ ai_plan_used: true })
+      .eq('id', memberId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }
 
@@ -1427,5 +1634,650 @@ export async function getMemberPaymentHistory(
   } catch (error: any) {
     console.error('Get member payment history error:', error);
     return { success: false, error: error.message, data: [] };
+  }
+}
+
+/**
+ * Get the last completed session date for each routine
+ */
+export async function getLastSessionDates(
+  memberId: string,
+  gymId: string
+): Promise<Record<string, string>> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('routine_id, completed_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('status', 'completed')
+      .not('routine_id', 'is', null)
+      .order('completed_at', { ascending: false });
+
+    if (error) throw error;
+
+    const map: Record<string, string> = {};
+    for (const row of data || []) {
+      if (row.routine_id && !map[row.routine_id]) {
+        map[row.routine_id] = row.completed_at;
+      }
+    }
+    return map;
+  } catch (error: any) {
+    console.error('Get last session dates error:', error);
+    return {};
+  }
+}
+
+/**
+ * Get previous exercise sets from the most recent completed session
+ */
+export async function getPreviousExerciseSets(
+  memberId: string,
+  exerciseId: string
+): Promise<{ set_number: number; weight: number; reps: number }[]> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Find the most recent completed session_exercise for this exercise
+    const { data: sessionExercise, error: seError } = await supabase
+      .from('session_exercises')
+      .select(
+        `id, workout_sessions!inner(member_id, status, completed_at)`
+      )
+      .eq('exercise_id', exerciseId)
+      .eq('workout_sessions.member_id', memberId)
+      .eq('workout_sessions.status', 'completed')
+      .order('workout_sessions(completed_at)', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (seError) throw seError;
+    if (!sessionExercise) return [];
+
+    // Fetch the sets for that session exercise
+    const { data: sets, error: setsError } = await supabase
+      .from('exercise_sets')
+      .select('set_number, weight_lbs, reps')
+      .eq('session_exercise_id', sessionExercise.id)
+      .order('set_number', { ascending: true });
+
+    if (setsError) throw setsError;
+
+    return (sets || []).map((s) => ({
+      set_number: s.set_number,
+      weight: s.weight_lbs || 0,
+      reps: s.reps || 0,
+    }));
+  } catch (error: any) {
+    console.error('Get previous exercise sets error:', error);
+    return [];
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - FOOD ITEMS (PERSONAL DATABASE)
+// ============================================================
+
+export async function getFoodItems(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('food_items')
+      .select('*')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .order('name');
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error fetching food items:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+export async function createFoodItem(input: {
+  memberId: string;
+  gymId: string;
+  name: string;
+  servingSize: string;
+  caloriesPerServing: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('food_items')
+      .insert({
+        member_id: input.memberId,
+        gym_id: input.gymId,
+        name: input.name,
+        serving_size: input.servingSize,
+        calories_per_serving: input.caloriesPerServing,
+        protein: input.protein,
+        carbs: input.carbs,
+        fat: input.fat,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error creating food item:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function updateFoodItem(
+  foodItemId: string,
+  updates: {
+    name?: string;
+    servingSize?: string;
+    caloriesPerServing?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  }
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.servingSize !== undefined) dbUpdates.serving_size = updates.servingSize;
+    if (updates.caloriesPerServing !== undefined) dbUpdates.calories_per_serving = updates.caloriesPerServing;
+    if (updates.protein !== undefined) dbUpdates.protein = updates.protein;
+    if (updates.carbs !== undefined) dbUpdates.carbs = updates.carbs;
+    if (updates.fat !== undefined) dbUpdates.fat = updates.fat;
+
+    const { data, error } = await supabase
+      .from('food_items')
+      .update(dbUpdates)
+      .eq('id', foodItemId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating food item:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function deleteFoodItem(foodItemId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { error } = await supabase
+      .from('food_items')
+      .delete()
+      .eq('id', foodItemId);
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting food item:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - FOOD LOG ENTRIES
+// ============================================================
+
+export async function getFoodLogEntries(memberId: string, gymId: string, date: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('food_log_entries')
+      .select('*')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('logged_date', date)
+      .order('logged_at', { ascending: true });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error fetching food log entries:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+export async function addFoodLogEntry(input: {
+  memberId: string;
+  gymId: string;
+  foodItemId?: string;
+  name: string;
+  servingSize: string;
+  quantity: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  loggedDate: string;
+}) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('food_log_entries')
+      .insert({
+        member_id: input.memberId,
+        gym_id: input.gymId,
+        food_item_id: input.foodItemId || null,
+        name: input.name,
+        serving_size: input.servingSize,
+        quantity: input.quantity,
+        calories: input.calories,
+        protein: input.protein,
+        carbs: input.carbs,
+        fat: input.fat,
+        logged_date: input.loggedDate,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error adding food log entry:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function updateFoodLogEntry(
+  entryId: string,
+  updates: {
+    name?: string;
+    servingSize?: string;
+    quantity?: number;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  }
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.servingSize !== undefined) dbUpdates.serving_size = updates.servingSize;
+    if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
+    if (updates.calories !== undefined) dbUpdates.calories = updates.calories;
+    if (updates.protein !== undefined) dbUpdates.protein = updates.protein;
+    if (updates.carbs !== undefined) dbUpdates.carbs = updates.carbs;
+    if (updates.fat !== undefined) dbUpdates.fat = updates.fat;
+
+    const { data, error } = await supabase
+      .from('food_log_entries')
+      .update(dbUpdates)
+      .eq('id', entryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating food log entry:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function deleteFoodLogEntry(entryId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { error } = await supabase
+      .from('food_log_entries')
+      .delete()
+      .eq('id', entryId);
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting food log entry:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - UPDATE DIET PLAN TARGETS
+// ============================================================
+
+export async function updateDietPlanTargets(
+  dietPlanId: string,
+  targets: {
+    targetCalories?: number;
+    targetProtein?: number;
+    targetCarbs?: number;
+    targetFat?: number;
+  }
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const dbUpdates: Record<string, unknown> = {};
+    if (targets.targetCalories !== undefined) dbUpdates.target_calories = targets.targetCalories;
+    if (targets.targetProtein !== undefined) dbUpdates.target_protein = targets.targetProtein;
+    if (targets.targetCarbs !== undefined) dbUpdates.target_carbs = targets.targetCarbs;
+    if (targets.targetFat !== undefined) dbUpdates.target_fat = targets.targetFat;
+
+    const { data, error } = await supabase
+      .from('diet_plans')
+      .update(dbUpdates)
+      .eq('id', dietPlanId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating diet plan targets:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - CUSTOM TRACKERS
+// ============================================================
+
+export async function getCustomTrackers(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('custom_trackers')
+      .select(`
+        *,
+        tracker_daily_log (
+          current_value,
+          log_date
+        )
+      `)
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('tracker_daily_log.log_date', today)
+      .order('created_at');
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error('Error fetching custom trackers:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+export async function createCustomTracker(input: {
+  memberId: string;
+  gymId: string;
+  name: string;
+  unit: string;
+  dailyTarget: number;
+  icon: string;
+  color: string;
+}) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('custom_trackers')
+      .insert({
+        member_id: input.memberId,
+        gym_id: input.gymId,
+        name: input.name,
+        unit: input.unit,
+        daily_target: input.dailyTarget,
+        icon: input.icon,
+        color: input.color,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error creating custom tracker:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function updateCustomTracker(
+  trackerId: string,
+  updates: {
+    name?: string;
+    unit?: string;
+    dailyTarget?: number;
+    icon?: string;
+    color?: string;
+  }
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
+    if (updates.dailyTarget !== undefined) dbUpdates.daily_target = updates.dailyTarget;
+    if (updates.icon !== undefined) dbUpdates.icon = updates.icon;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
+
+    const { data, error } = await supabase
+      .from('custom_trackers')
+      .update(dbUpdates)
+      .eq('id', trackerId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating custom tracker:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function deleteCustomTracker(trackerId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { error } = await supabase
+      .from('custom_trackers')
+      .delete()
+      .eq('id', trackerId);
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting custom tracker:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteAllCustomTrackers(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { error } = await supabase
+      .from('custom_trackers')
+      .delete()
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId);
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting all custom trackers:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - TRACKER DAILY LOG (INCREMENT/DECREMENT)
+// ============================================================
+
+export async function updateTrackerValue(
+  trackerId: string,
+  memberId: string,
+  value: number
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('tracker_daily_log')
+      .upsert(
+        {
+          tracker_id: trackerId,
+          member_id: memberId,
+          log_date: today,
+          current_value: Math.max(0, value),
+        },
+        { onConflict: 'tracker_id,log_date' }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating tracker value:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+export async function resetAllTrackerValues(memberId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error } = await supabase
+      .from('tracker_daily_log')
+      .update({ current_value: 0 })
+      .eq('member_id', memberId)
+      .eq('log_date', today);
+
+    if (error) throw error;
+
+    revalidatePath('/portal/meals');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error resetting tracker values:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// NUTRITION TRACKER - SEED DEFAULT FOOD ITEMS
+// ============================================================
+
+export async function seedDefaultFoodItems(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Check if member already has food items
+    const { count } = await supabase
+      .from('food_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId);
+
+    if (count && count > 0) {
+      return { success: true, seeded: false };
+    }
+
+    const defaults = [
+      { name: 'Chicken Breast', serving_size: '100g', calories_per_serving: 165, protein: 31, carbs: 0, fat: 4 },
+      { name: 'Brown Rice', serving_size: '1 cup cooked', calories_per_serving: 216, protein: 5, carbs: 45, fat: 2 },
+      { name: 'Broccoli', serving_size: '1 cup', calories_per_serving: 55, protein: 4, carbs: 11, fat: 1 },
+      { name: 'Salmon Fillet', serving_size: '100g', calories_per_serving: 208, protein: 20, carbs: 0, fat: 13 },
+      { name: 'Eggs', serving_size: '1 large', calories_per_serving: 72, protein: 6, carbs: 0, fat: 5 },
+      { name: 'Greek Yogurt', serving_size: '1 cup', calories_per_serving: 130, protein: 22, carbs: 8, fat: 1 },
+      { name: 'Banana', serving_size: '1 medium', calories_per_serving: 105, protein: 1, carbs: 27, fat: 0 },
+      { name: 'Oatmeal', serving_size: '1 cup cooked', calories_per_serving: 154, protein: 5, carbs: 27, fat: 3 },
+      { name: 'Sweet Potato', serving_size: '1 medium', calories_per_serving: 103, protein: 2, carbs: 24, fat: 0 },
+      { name: 'Almonds', serving_size: '1 oz (23 nuts)', calories_per_serving: 164, protein: 6, carbs: 6, fat: 14 },
+      { name: 'Avocado', serving_size: '1/2 medium', calories_per_serving: 120, protein: 2, carbs: 6, fat: 11 },
+      { name: 'Whole Wheat Bread', serving_size: '1 slice', calories_per_serving: 81, protein: 4, carbs: 14, fat: 1 },
+      { name: 'Protein Shake', serving_size: '1 scoop', calories_per_serving: 120, protein: 24, carbs: 3, fat: 1 },
+      { name: 'Apple', serving_size: '1 medium', calories_per_serving: 95, protein: 0, carbs: 25, fat: 0 },
+      { name: 'Cottage Cheese', serving_size: '1 cup', calories_per_serving: 206, protein: 28, carbs: 6, fat: 9 },
+      { name: 'Turkey Breast', serving_size: '100g', calories_per_serving: 135, protein: 30, carbs: 0, fat: 1 },
+      { name: 'Quinoa', serving_size: '1 cup cooked', calories_per_serving: 222, protein: 8, carbs: 39, fat: 4 },
+      { name: 'Spinach', serving_size: '2 cups raw', calories_per_serving: 14, protein: 2, carbs: 2, fat: 0 },
+      { name: 'Peanut Butter', serving_size: '2 tbsp', calories_per_serving: 190, protein: 7, carbs: 7, fat: 16 },
+      { name: 'Tuna (canned)', serving_size: '1 can (85g)', calories_per_serving: 100, protein: 22, carbs: 0, fat: 1 },
+    ];
+
+    const rows = defaults.map((d) => ({
+      member_id: memberId,
+      gym_id: gymId,
+      ...d,
+    }));
+
+    const { error } = await supabase
+      .from('food_items')
+      .insert(rows);
+
+    if (error) throw error;
+
+    return { success: true, seeded: true };
+  } catch (error: any) {
+    console.error('Error seeding default food items:', error);
+    return { success: false, error: error.message };
   }
 }

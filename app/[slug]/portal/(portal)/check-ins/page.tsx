@@ -40,8 +40,8 @@ export default async function CheckInsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Check-in History</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-white">Check-in History</h1>
+        <p className="text-slate-400 mt-1">
           Track your gym attendance and build streaks
         </p>
       </div>
@@ -50,7 +50,7 @@ export default async function CheckInsPage({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Total Check-ins
             </CardTitle>
             <Calendar className="h-4 w-4 text-blue-600" />
@@ -59,13 +59,13 @@ export default async function CheckInsPage({
             <div className="text-2xl font-bold text-blue-600">
               {stats.total}
             </div>
-            <p className="text-xs text-gray-500 mt-1">All time</p>
+            <p className="text-xs text-slate-500 mt-1">All time</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               This Month
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
@@ -74,7 +74,7 @@ export default async function CheckInsPage({
             <div className="text-2xl font-bold text-green-600">
               {stats.thisMonth}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {stats.thisWeek} this week
             </p>
           </CardContent>
@@ -82,7 +82,7 @@ export default async function CheckInsPage({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Current Streak
             </CardTitle>
             <Award className="h-4 w-4 text-orange-600" />
@@ -91,7 +91,7 @@ export default async function CheckInsPage({
             <div className="text-2xl font-bold text-orange-600">
               {streak} {streak === 1 ? 'day' : 'days'}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {streak > 0 ? 'Keep it up!' : 'Start your streak'}
             </p>
           </CardContent>

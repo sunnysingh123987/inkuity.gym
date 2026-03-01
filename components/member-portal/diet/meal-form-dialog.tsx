@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,14 @@ interface MealFormDialogProps {
   onClose: () => void;
   onSave: (mealData: any) => void;
   mealType: string;
+  initialData?: {
+    name: string;
+    description?: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  } | null;
 }
 
 export function MealFormDialog({
@@ -24,7 +32,10 @@ export function MealFormDialog({
   onClose,
   onSave,
   mealType,
+  initialData,
 }: MealFormDialogProps) {
+  const isEditMode = !!initialData;
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -33,13 +44,66 @@ export function MealFormDialog({
     carbs: '',
     fat: '',
   });
+  const [isCalorieOverridden, setIsCalorieOverridden] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form when initialData changes (edit mode)
+  useEffect(() => {
+    if (initialData && isOpen) {
+      setFormData({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        calories: String(initialData.calories || ''),
+        protein: String(initialData.protein || ''),
+        carbs: String(initialData.carbs || ''),
+        fat: String(initialData.fat || ''),
+      });
+      setIsCalorieOverridden(true);
+    }
+  }, [initialData, isOpen]);
+
+  // Auto-calculate calories from macros
+  useEffect(() => {
+    if (!isCalorieOverridden) {
+      const protein = parseInt(formData.protein) || 0;
+      const carbs = parseInt(formData.carbs) || 0;
+      const fat = parseInt(formData.fat) || 0;
+      const calculated = protein * 4 + carbs * 4 + fat * 9;
+      if (protein || carbs || fat) {
+        setFormData((prev) => ({ ...prev, calories: String(calculated) }));
+      }
+    }
+  }, [formData.protein, formData.carbs, formData.fat, isCalorieOverridden]);
+
+  const handleCalorieChange = (value: string) => {
+    if (value === '') {
+      setIsCalorieOverridden(false);
+      setFormData((prev) => ({ ...prev, calories: '' }));
+    } else {
+      setIsCalorieOverridden(true);
+      setFormData((prev) => ({ ...prev, calories: value }));
+    }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'Required';
+    if (!formData.calories || parseInt(formData.calories) <= 0)
+      newErrors.calories = 'Required';
+    if (!formData.protein || parseInt(formData.protein) < 0)
+      newErrors.protein = 'Required';
+    if (!formData.carbs || parseInt(formData.carbs) < 0)
+      newErrors.carbs = 'Required';
+    if (!formData.fat || parseInt(formData.fat) < 0)
+      newErrors.fat = 'Required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      return;
-    }
+    if (!validate()) return;
 
     onSave({
       name: formData.name,
@@ -59,6 +123,8 @@ export function MealFormDialog({
       carbs: '',
       fat: '',
     });
+    setIsCalorieOverridden(false);
+    setErrors({});
   };
 
   const handleClose = () => {
@@ -70,6 +136,8 @@ export function MealFormDialog({
       carbs: '',
       fat: '',
     });
+    setIsCalorieOverridden(false);
+    setErrors({});
     onClose();
   };
 
@@ -78,7 +146,7 @@ export function MealFormDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Add {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+            {isEditMode ? 'Edit' : 'Add'} {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
           </DialogTitle>
         </DialogHeader>
 
@@ -92,9 +160,12 @@ export function MealFormDialog({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="mt-1"
+              className={`mt-1 ${errors.name ? 'border-red-500' : ''}`}
               autoFocus
             />
+            {errors.name && (
+              <p className="text-red-400 text-xs mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -112,28 +183,40 @@ export function MealFormDialog({
           </div>
 
           <div className="space-y-3">
-            <Label>Nutritional Information</Label>
+            <Label>Nutritional Information *</Label>
 
             <div>
-              <Label htmlFor="calories" className="text-sm text-gray-600">
-                Calories
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="calories" className="text-sm text-slate-400">
+                  Calories *
+                </Label>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded ${
+                    isCalorieOverridden
+                      ? 'bg-orange-500/20 text-orange-400'
+                      : 'bg-cyan-500/20 text-cyan-400'
+                  }`}
+                >
+                  {isCalorieOverridden ? 'custom' : 'auto-calculated'}
+                </span>
+              </div>
               <Input
                 id="calories"
                 type="number"
                 placeholder="500"
                 value={formData.calories}
-                onChange={(e) =>
-                  setFormData({ ...formData, calories: e.target.value })
-                }
-                className="mt-1"
+                onChange={(e) => handleCalorieChange(e.target.value)}
+                className={`mt-1 ${errors.calories ? 'border-red-500' : ''}`}
               />
+              {errors.calories && (
+                <p className="text-red-400 text-xs mt-1">{errors.calories}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label htmlFor="protein" className="text-sm text-gray-600">
-                  Protein (g)
+                <Label htmlFor="protein" className="text-sm text-slate-400">
+                  Protein (g) *
                 </Label>
                 <Input
                   id="protein"
@@ -143,13 +226,16 @@ export function MealFormDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, protein: e.target.value })
                   }
-                  className="mt-1"
+                  className={`mt-1 ${errors.protein ? 'border-red-500' : ''}`}
                 />
+                {errors.protein && (
+                  <p className="text-red-400 text-xs mt-1">{errors.protein}</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="carbs" className="text-sm text-gray-600">
-                  Carbs (g)
+                <Label htmlFor="carbs" className="text-sm text-slate-400">
+                  Carbs (g) *
                 </Label>
                 <Input
                   id="carbs"
@@ -159,13 +245,16 @@ export function MealFormDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, carbs: e.target.value })
                   }
-                  className="mt-1"
+                  className={`mt-1 ${errors.carbs ? 'border-red-500' : ''}`}
                 />
+                {errors.carbs && (
+                  <p className="text-red-400 text-xs mt-1">{errors.carbs}</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="fat" className="text-sm text-gray-600">
-                  Fat (g)
+                <Label htmlFor="fat" className="text-sm text-slate-400">
+                  Fat (g) *
                 </Label>
                 <Input
                   id="fat"
@@ -175,8 +264,11 @@ export function MealFormDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, fat: e.target.value })
                   }
-                  className="mt-1"
+                  className={`mt-1 ${errors.fat ? 'border-red-500' : ''}`}
                 />
+                {errors.fat && (
+                  <p className="text-red-400 text-xs mt-1">{errors.fat}</p>
+                )}
               </div>
             </div>
           </div>
@@ -191,7 +283,7 @@ export function MealFormDialog({
               Cancel
             </Button>
             <Button type="submit" className="flex-1">
-              Add Meal
+              {isEditMode ? 'Update Meal' : 'Add Meal'}
             </Button>
           </div>
         </form>

@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Apple,
   Flame,
   Target,
   Calendar,
@@ -13,6 +12,7 @@ import {
   Trash2,
   CheckCircle2,
 } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -43,21 +43,21 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
   const endDate = formatDate(plan.end_date);
 
   return (
-    <Card className={isActive ? 'border-indigo-200 bg-indigo-50/30' : ''}>
+    <Card className={`bg-slate-900 border-slate-800 ${isActive ? 'border-brand-cyan-500/30 bg-brand-cyan-500/5' : ''}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <CardTitle className="text-xl">{plan.name}</CardTitle>
+              <CardTitle className="text-xl text-white">{plan.name}</CardTitle>
               {isActive && (
-                <Badge className="bg-indigo-600">
+                <Badge className="bg-brand-cyan-600">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Active
                 </Badge>
               )}
             </div>
             {plan.description && (
-              <p className="text-sm text-gray-600 mt-1">{plan.description}</p>
+              <p className="text-sm text-slate-400 mt-1">{plan.description}</p>
             )}
           </div>
           <DropdownMenu>
@@ -90,40 +90,40 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
         <div className="space-y-4">
           {/* Macros Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 text-orange-600 mb-1">
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+              <div className="flex items-center gap-2 text-orange-400 mb-1">
                 <Flame className="h-4 w-4" />
                 <span className="text-xs font-medium">Calories</span>
               </div>
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold text-white">
                 {plan.target_calories || 0}
               </p>
             </div>
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 text-blue-600 mb-1">
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+              <div className="flex items-center gap-2 text-blue-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Protein</span>
               </div>
-              <p className="text-lg font-bold">{plan.target_protein || 0}g</p>
+              <p className="text-lg font-bold text-white">{plan.target_protein || 0}g</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 text-yellow-600 mb-1">
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+              <div className="flex items-center gap-2 text-yellow-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Carbs</span>
               </div>
-              <p className="text-lg font-bold">{plan.target_carbs || 0}g</p>
+              <p className="text-lg font-bold text-white">{plan.target_carbs || 0}g</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border">
-              <div className="flex items-center gap-2 text-green-600 mb-1">
+            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+              <div className="flex items-center gap-2 text-green-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Fat</span>
               </div>
-              <p className="text-lg font-bold">{plan.target_fat || 0}g</p>
+              <p className="text-lg font-bold text-white">{plan.target_fat || 0}g</p>
             </div>
           </div>
 
           {/* Date Range */}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
             <Calendar className="h-4 w-4" />
             <span>
               {startDate} - {endDate}
@@ -134,11 +134,11 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
           <div className="flex gap-2">
             <Button asChild className="flex-1">
               <Link href={`/${gymSlug}/portal/diet/${plan.id}/meals`}>
-                <Apple className="h-4 w-4 mr-2" />
+                <img src={getUiSvg('diet')} alt="" className="h-4 w-4 mr-2 opacity-80" />
                 View Meals
               </Link>
             </Button>
-            <Button asChild variant="outline" className="flex-1">
+            <Button asChild variant="outline" className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
               <Link href={`/${gymSlug}/portal/diet/${plan.id}`}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Plan

@@ -9,6 +9,8 @@ import { PageEntrance } from '@/components/animations/page-entrance';
 import { getWorkoutSuggestions } from '@/lib/actions/members-portal';
 import { getActiveAnnouncements } from '@/lib/actions/announcements';
 import { ActiveAnnouncements } from '@/components/member-portal/dashboard/active-announcements';
+import { CheckInCalendar } from '@/components/member-portal/check-ins/check-in-calendar';
+import { NutritionOverview } from '@/components/member-portal/dashboard/nutrition-overview';
 
 export default async function DashboardPage({
   params,
@@ -42,8 +44,8 @@ export default async function DashboardPage({
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Membership Pending</h2>
-          <p className="text-gray-600 text-sm">
+          <h2 className="text-xl font-semibold text-white">Membership Pending</h2>
+          <p className="text-slate-400 text-sm">
             Your membership request is being reviewed. You&apos;ll get full access once the gym owner approves your request.
           </p>
         </div>
@@ -124,7 +126,10 @@ export default async function DashboardPage({
           (prevDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
         );
 
-        if (diff === 1) {
+        if (diff === 0) {
+          // Same day duplicate, skip
+          continue;
+        } else if (diff === 1) {
           currentStreak++;
           prevDate = checkInDate;
         } else {
@@ -173,10 +178,10 @@ export default async function DashboardPage({
     <div className="space-y-6">
       <PageEntrance />
       <div data-animate>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-white">
           Welcome back, {member?.full_name || 'Member'}!
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-slate-400 mt-1">
           Track your fitness journey and reach your goals
         </p>
       </div>
@@ -191,6 +196,10 @@ export default async function DashboardPage({
         <StatsOverview stats={stats} />
       </div>
 
+      <div data-animate>
+        <CheckInCalendar memberId={memberId} gymId={gymId} />
+      </div>
+
       <div data-animate className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <RecentActivity
@@ -200,6 +209,7 @@ export default async function DashboardPage({
         </div>
 
         <div className="space-y-6">
+          <NutritionOverview />
           <WorkoutSuggestions
             suggestions={workoutSuggestions}
             lastWorkouts={lastWorkoutsMap}

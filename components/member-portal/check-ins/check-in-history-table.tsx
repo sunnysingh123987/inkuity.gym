@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Download, Search, Calendar, Clock } from 'lucide-react';
+import { getUiSvg } from '@/lib/svg-icons';
 import { exportCheckInsToCSV } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 
@@ -100,13 +101,13 @@ export function CheckInHistoryTable({
   };
 
   return (
-    <Card>
+    <Card className="bg-slate-900 border-slate-800">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle>Check-in Records</CardTitle>
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
               <Input
                 placeholder="Search by date or notes..."
                 value={searchTerm}
@@ -128,11 +129,11 @@ export function CheckInHistoryTable({
       <CardContent>
         {filteredCheckIns.length === 0 ? (
           <div className="text-center py-12">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <img src={getUiSvg('check-ins')} alt="" className="h-12 w-12 opacity-50 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">
               {searchTerm ? 'No matching check-ins' : 'No check-ins yet'}
             </h3>
-            <p className="text-gray-600">
+            <p className="text-slate-400">
               {searchTerm
                 ? 'Try a different search term'
                 : 'Your check-in history will appear here'}
@@ -164,18 +165,18 @@ export function CheckInHistoryTable({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                          <Clock className="h-3 w-3 mr-1 text-slate-500" />
                           {formatTime(checkIn.check_in_at)}
                         </div>
                       </TableCell>
                       <TableCell>
                         {checkIn.check_out_at ? (
                           <div className="flex items-center">
-                            <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                            <Clock className="h-3 w-3 mr-1 text-slate-500" />
                             {formatTime(checkIn.check_out_at)}
                           </div>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-slate-500">—</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -183,23 +184,23 @@ export function CheckInHistoryTable({
                       </TableCell>
                       <TableCell>
                         {scanData ? (
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-slate-400">
                             <div>{scanData.device_type || 'Unknown'}</div>
-                            <div className="text-gray-400">
+                            <div className="text-slate-500">
                               {scanData.browser}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-slate-500">—</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {checkIn.notes ? (
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-slate-400">
                             {checkIn.notes}
                           </span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-slate-500">—</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -211,7 +212,7 @@ export function CheckInHistoryTable({
         )}
 
         {filteredCheckIns.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-slate-400">
             Showing {filteredCheckIns.length} of {checkIns.length} check-ins
           </div>
         )}

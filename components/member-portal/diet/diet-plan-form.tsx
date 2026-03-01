@@ -127,7 +127,7 @@ export function DietPlanForm({
 
       {/* Macro Targets */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-gray-900">Macro Targets</h3>
+        <h3 className="font-semibold text-white">Macro Targets</h3>
 
         <div>
           <Label htmlFor="calories">Daily Calories *</Label>
@@ -157,7 +157,7 @@ export function DietPlanForm({
               className="mt-1"
             />
             {proteinPercentage > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {proteinPercentage}% of calories
               </p>
             )}
@@ -176,7 +176,7 @@ export function DietPlanForm({
               className="mt-1"
             />
             {carbsPercentage > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {carbsPercentage}% of calories
               </p>
             )}
@@ -195,7 +195,7 @@ export function DietPlanForm({
               className="mt-1"
             />
             {fatPercentage > 0 && (
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {fatPercentage}% of calories
               </p>
             )}
@@ -204,8 +204,8 @@ export function DietPlanForm({
 
         {/* Macro Summary */}
         {totalMacroCals > 0 && (
-          <div className="bg-gray-50 rounded-lg p-3 text-sm">
-            <p className="text-gray-700">
+          <div className="bg-slate-800 rounded-lg p-3 text-sm">
+            <p className="text-slate-300">
               Total from macros:{' '}
               <span className="font-semibold">{totalMacroCals} calories</span>
             </p>
@@ -220,7 +220,7 @@ export function DietPlanForm({
 
       {/* Date Range */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-gray-900">Duration</h3>
+        <h3 className="font-semibold text-white">Duration</h3>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -252,12 +252,12 @@ export function DietPlanForm({
       </div>
 
       {/* Active Status */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
         <div>
           <Label htmlFor="active" className="font-semibold">
             Set as Active Plan
           </Label>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             Your active plan will be used for daily nutrition tracking
           </p>
         </div>
@@ -271,7 +271,7 @@ export function DietPlanForm({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4 border-t">
+      <div className="flex gap-3 pt-4 border-t border-slate-700">
         <Button
           type="button"
           variant="outline"

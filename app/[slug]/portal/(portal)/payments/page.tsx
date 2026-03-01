@@ -39,58 +39,64 @@ export default async function PaymentsPage({
       <PageEntrance />
 
       <div data-animate>
-        <h1 className="text-2xl font-bold text-gray-900">Payment History</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-white">Payment History</h1>
+        <p className="text-slate-400 mt-1">
           View your payment records and upcoming dues
         </p>
       </div>
 
       {/* Summary Cards */}
       <div data-animate className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Total Paid
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <CheckCircle2 className="h-4 w-4 text-green-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-white">
               {formatCurrency(totalPaid)}
             </div>
-            <p className="text-xs text-gray-500 mt-1">All time</p>
+            <p className="text-xs text-slate-500 mt-1">All time</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Pending
             </CardTitle>
-            <Clock className="h-4 w-4 text-amber-600" />
+            <div className="p-2 rounded-lg bg-amber-500/10">
+              <Clock className="h-4 w-4 text-amber-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
+            <div className="text-2xl font-bold text-white">
               {formatCurrency(pendingAmount)}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {pendingPayments.length} upcoming
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Total Transactions
             </CardTitle>
-            <IndianRupee className="h-4 w-4 text-blue-600" />
+            <div className="p-2 rounded-lg bg-brand-cyan-500/10">
+              <IndianRupee className="h-4 w-4 text-brand-cyan-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-white">
               {allPayments.length}
             </div>
-            <p className="text-xs text-gray-500 mt-1">All records</p>
+            <p className="text-xs text-slate-500 mt-1">All records</p>
           </CardContent>
         </Card>
       </div>
@@ -98,9 +104,9 @@ export default async function PaymentsPage({
       {/* Upcoming Dues */}
       {pendingPayments.length > 0 && (
         <div data-animate>
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="bg-amber-500/10 border-amber-500/30">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-amber-400 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Upcoming Dues
               </CardTitle>
@@ -110,17 +116,17 @@ export default async function PaymentsPage({
                 {pendingPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100"
+                    className="flex items-center justify-between p-3 bg-slate-900 rounded-lg border border-slate-800"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-white">
                         {payment.description || payment.type}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-slate-400">
                         Due: {formatDate(payment.payment_date)}
                       </p>
                     </div>
-                    <div className="text-sm font-semibold text-amber-700">
+                    <div className="text-sm font-semibold text-amber-400">
                       {formatCurrency(payment.amount)}
                     </div>
                   </div>
@@ -133,22 +139,22 @@ export default async function PaymentsPage({
 
       {/* Payment History Table */}
       <div data-animate>
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-base font-semibold text-white">
               All Payments
             </CardTitle>
           </CardHeader>
           <CardContent>
             {allPayments.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <IndianRupee className="h-8 w-8 text-gray-400" />
+                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                  <IndianRupee className="h-8 w-8 text-slate-500" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                <h3 className="text-sm font-medium text-white mb-1">
                   No payments yet
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-slate-400">
                   Your payment records will appear here once available.
                 </p>
               </div>
@@ -156,52 +162,52 @@ export default async function PaymentsPage({
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-6 font-medium text-gray-500">
+                    <tr className="border-b border-slate-700">
+                      <th className="text-left py-3 px-6 font-medium text-slate-400">
                         Date
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">
+                      <th className="text-left py-3 px-4 font-medium text-slate-400">
                         Description
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">
+                      <th className="text-left py-3 px-4 font-medium text-slate-400">
                         Period
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">
+                      <th className="text-left py-3 px-4 font-medium text-slate-400">
                         Method
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">
+                      <th className="text-left py-3 px-4 font-medium text-slate-400">
                         Status
                       </th>
-                      <th className="text-right py-3 px-6 font-medium text-gray-500">
+                      <th className="text-right py-3 px-6 font-medium text-slate-400">
                         Amount
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-800">
                     {allPayments.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50/50">
-                        <td className="py-3 px-6 text-gray-900 whitespace-nowrap">
+                      <tr key={payment.id} className="hover:bg-slate-800/50">
+                        <td className="py-3 px-6 text-white whitespace-nowrap">
                           {formatDate(payment.payment_date)}
                         </td>
-                        <td className="py-3 px-4 text-gray-700">
+                        <td className="py-3 px-4 text-slate-300">
                           <div>
                             {payment.description || payment.type}
                           </div>
-                          <div className="text-xs text-gray-400 capitalize">
+                          <div className="text-xs text-slate-500 capitalize">
                             {payment.type}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-gray-500 text-xs whitespace-nowrap">
+                        <td className="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">
                           {payment.period_start && payment.period_end ? (
                             <>
                               {formatDate(payment.period_start)} &ndash;{' '}
                               {formatDate(payment.period_end)}
                             </>
                           ) : (
-                            <span className="text-gray-300">&mdash;</span>
+                            <span className="text-slate-600">&mdash;</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-gray-500 capitalize whitespace-nowrap">
+                        <td className="py-3 px-4 text-slate-400 capitalize whitespace-nowrap">
                           {payment.payment_method
                             ? payment.payment_method.replace(/_/g, ' ')
                             : '\u2014'}
@@ -209,7 +215,7 @@ export default async function PaymentsPage({
                         <td className="py-3 px-4">
                           <StatusBadge status={payment.status} />
                         </td>
-                        <td className="py-3 px-6 text-right font-medium text-gray-900 whitespace-nowrap">
+                        <td className="py-3 px-6 text-right font-medium text-white whitespace-nowrap">
                           {formatCurrency(payment.amount)}
                         </td>
                       </tr>
@@ -230,23 +236,23 @@ export default async function PaymentsPage({
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     completed: {
-      bg: 'bg-green-100',
-      text: 'text-green-700',
+      bg: 'bg-green-500/10',
+      text: 'text-green-400',
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     pending: {
-      bg: 'bg-amber-100',
-      text: 'text-amber-700',
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-400',
       icon: <Clock className="h-3 w-3" />,
     },
     failed: {
-      bg: 'bg-red-100',
-      text: 'text-red-700',
+      bg: 'bg-red-500/10',
+      text: 'text-red-400',
       icon: <XCircle className="h-3 w-3" />,
     },
     refunded: {
-      bg: 'bg-blue-100',
-      text: 'text-blue-700',
+      bg: 'bg-blue-500/10',
+      text: 'text-blue-400',
       icon: <RotateCcw className="h-3 w-3" />,
     },
   };
