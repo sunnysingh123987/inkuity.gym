@@ -234,6 +234,149 @@ export async function getCheckInCalendarData(
 }
 
 /**
+ * Enhanced calendar data: returns check-ins with tags + workout session categories per day.
+ * Used by the mini icon-based calendar.
+ */
+export interface CalendarDayInfo {
+  checkInCount: number;
+  /** Workout focus tags from check-ins, e.g. ["chest","arms"] */
+  workoutTags: string[];
+  /** Routine names from workout_sessions completed that day */
+  routineNames: string[];
+  /** Exercise categories from workout_sessions that day */
+  exerciseCategories: string[];
+}
+
+export async function getCheckInCalendarDataEnhanced(
+  memberId: string,
+  gymId: string,
+  startMonth: number,
+  startYear: number,
+  /** Number of months to fetch (default 1) */
+  monthCount: number = 1
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Compute the full date range spanning all requested months
+    const rangeStart = new Date(startYear, startMonth - 1, 1);
+    // End of the last month in the range
+    const endMonth = startMonth + monthCount - 1;
+    const endYear = startYear + Math.floor((endMonth - 1) / 12);
+    const endMonthNorm = ((endMonth - 1) % 12) + 1;
+    const rangeEnd = new Date(endYear, endMonthNorm, 0, 23, 59, 59);
+
+    // 1. Fetch check-ins with tags
+    const { data: checkIns, error: ciError } = await supabase
+      .from('check_ins')
+      .select('check_in_at, tags')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('check_in_at', rangeStart.toISOString())
+      .lte('check_in_at', rangeEnd.toISOString())
+      .order('check_in_at', { ascending: true });
+
+    if (ciError) throw ciError;
+
+    // 2. Fetch workout sessions with routine name + exercise categories
+    const { data: sessions, error: sessError } = await supabase
+      .from('workout_sessions')
+      .select(`
+        started_at,
+        status,
+        workout_routines (name),
+        session_exercises (
+          exercise_library (category)
+        )
+      `)
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('started_at', rangeStart.toISOString())
+      .lte('started_at', rangeEnd.toISOString())
+      .order('started_at', { ascending: true });
+
+    if (sessError) throw sessError;
+
+    // Build per-day map
+    const calendarData: Record<string, CalendarDayInfo> = {};
+
+    const ensureDay = (dateKey: string): CalendarDayInfo => {
+      if (!calendarData[dateKey]) {
+        calendarData[dateKey] = {
+          checkInCount: 0,
+          workoutTags: [],
+          routineNames: [],
+          exerciseCategories: [],
+        };
+      }
+      return calendarData[dateKey];
+    };
+
+    const toDateKey = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    // Process check-ins
+    checkIns?.forEach((ci) => {
+      const d = new Date(ci.check_in_at);
+      const key = toDateKey(d);
+      const info = ensureDay(key);
+      info.checkInCount += 1;
+
+      // Extract workout tags like "workout:chest"
+      if (ci.tags && Array.isArray(ci.tags)) {
+        for (const tag of ci.tags) {
+          if (typeof tag === 'string' && tag.startsWith('workout:')) {
+            const group = tag.replace('workout:', '').toLowerCase();
+            if (!info.workoutTags.includes(group)) {
+              info.workoutTags.push(group);
+            }
+          }
+        }
+      }
+    });
+
+    // Process workout sessions
+    sessions?.forEach((sess: any) => {
+      const d = new Date(sess.started_at);
+      const key = toDateKey(d);
+      const info = ensureDay(key);
+
+      // Routine name
+      const routineName = Array.isArray(sess.workout_routines)
+        ? sess.workout_routines[0]?.name
+        : sess.workout_routines?.name;
+      if (routineName && !info.routineNames.includes(routineName)) {
+        info.routineNames.push(routineName);
+      }
+
+      // Exercise categories from session_exercises
+      if (sess.session_exercises && Array.isArray(sess.session_exercises)) {
+        for (const se of sess.session_exercises) {
+          const cat = Array.isArray(se.exercise_library)
+            ? se.exercise_library[0]?.category
+            : se.exercise_library?.category;
+          if (cat) {
+            const normalized = cat.toLowerCase();
+            if (!info.exerciseCategories.includes(normalized)) {
+              info.exerciseCategories.push(normalized);
+            }
+          }
+        }
+      }
+    });
+
+    return { success: true, data: calendarData };
+  } catch (error: any) {
+    console.error('Error fetching enhanced calendar data:', error);
+    return { success: false, error: error.message, data: {} };
+  }
+}
+
+/**
  * Export check-ins to CSV format
  */
 export async function exportCheckInsToCSV(memberId: string, gymId: string) {
@@ -1714,6 +1857,153 @@ export async function getPreviousExerciseSets(
   } catch (error: any) {
     console.error('Get previous exercise sets error:', error);
     return [];
+  }
+}
+
+// ============================================================
+// ROUTINE CALENDAR - DAY STATUS TRACKING
+// ============================================================
+
+/**
+ * Get all completed session dates grouped by routine
+ * Returns a map: { routineId: ['2026-03-01', '2026-03-03', ...] }
+ */
+export async function getRoutineCompletionDates(
+  memberId: string,
+  gymId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, string[]>> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('routine_id, completed_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('status', 'completed')
+      .not('routine_id', 'is', null)
+      .not('completed_at', 'is', null)
+      .gte('completed_at', startDate)
+      .lte('completed_at', endDate)
+      .order('completed_at', { ascending: true });
+
+    if (error) throw error;
+
+    const map: Record<string, string[]> = {};
+    for (const row of data || []) {
+      if (!row.routine_id) continue;
+      const dateStr = new Date(row.completed_at).toISOString().split('T')[0];
+      if (!map[row.routine_id]) map[row.routine_id] = [];
+      if (!map[row.routine_id].includes(dateStr)) {
+        map[row.routine_id].push(dateStr);
+      }
+    }
+    return map;
+  } catch (error: any) {
+    console.error('Get routine completion dates error:', error);
+    return {};
+  }
+}
+
+/**
+ * Skip a routine for today - creates an abandoned session to mark the skip
+ */
+export async function skipRoutineForToday(
+  memberId: string,
+  gymId: string,
+  routineId: string
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+
+    // Check if already skipped today
+    const { data: existing } = await supabase
+      .from('workout_sessions')
+      .select('id')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('routine_id', routineId)
+      .eq('status', 'abandoned')
+      .gte('started_at', todayStart)
+      .lte('started_at', todayEnd)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return { success: true, data: existing[0], alreadySkipped: true };
+    }
+
+    // Create an abandoned session to represent a skip
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .insert({
+        member_id: memberId,
+        gym_id: gymId,
+        routine_id: routineId,
+        started_at: now.toISOString(),
+        completed_at: now.toISOString(),
+        status: 'abandoned',
+        notes: 'Skipped',
+        duration_minutes: 0,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/portal/trackers');
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Skip routine error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get skipped routine dates (abandoned sessions with 'Skipped' notes)
+ */
+export async function getRoutineSkippedDates(
+  memberId: string,
+  gymId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, string[]>> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('workout_sessions')
+      .select('routine_id, started_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('status', 'abandoned')
+      .eq('notes', 'Skipped')
+      .not('routine_id', 'is', null)
+      .gte('started_at', startDate)
+      .lte('started_at', endDate)
+      .order('started_at', { ascending: true });
+
+    if (error) throw error;
+
+    const map: Record<string, string[]> = {};
+    for (const row of data || []) {
+      if (!row.routine_id) continue;
+      const dateStr = new Date(row.started_at).toISOString().split('T')[0];
+      if (!map[row.routine_id]) map[row.routine_id] = [];
+      if (!map[row.routine_id].includes(dateStr)) {
+        map[row.routine_id].push(dateStr);
+      }
+    }
+    return map;
+  } catch (error: any) {
+    console.error('Get routine skipped dates error:', error);
+    return {};
   }
 }
 

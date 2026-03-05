@@ -1,16 +1,14 @@
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { redirect } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
-import { StatsOverview } from '@/components/member-portal/dashboard/stats-overview';
-import { RecentActivity } from '@/components/member-portal/dashboard/recent-activity';
-import { QuickActions } from '@/components/member-portal/dashboard/quick-actions';
 import { WorkoutSuggestions } from '@/components/member-portal/dashboard/workout-suggestions';
 import { PageEntrance } from '@/components/animations/page-entrance';
 import { getWorkoutSuggestions } from '@/lib/actions/members-portal';
 import { getActiveAnnouncements } from '@/lib/actions/announcements';
 import { ActiveAnnouncements } from '@/components/member-portal/dashboard/active-announcements';
-import { CheckInCalendar } from '@/components/member-portal/check-ins/check-in-calendar';
-import { NutritionOverview } from '@/components/member-portal/dashboard/nutrition-overview';
+import { DashboardQuickActions } from '@/components/member-portal/dashboard/dashboard-quick-actions';
+import { WeeklyActivityBar } from '@/components/member-portal/dashboard/weekly-activity-bar';
+import { CompactStats } from '@/components/member-portal/dashboard/compact-stats';
 
 export default async function DashboardPage({
   params,
@@ -60,16 +58,6 @@ export default async function DashboardPage({
     .eq('member_id', memberId)
     .eq('gym_id', gymId);
 
-  // Get last check-in
-  const { data: lastCheckIn } = await supabase
-    .from('check_ins')
-    .select('check_in_at')
-    .eq('member_id', memberId)
-    .eq('gym_id', gymId)
-    .order('check_in_at', { ascending: false })
-    .limit(1)
-    .single();
-
   // Get workout count
   const { count: workoutCount } = await supabase
     .from('workout_sessions')
@@ -83,14 +71,6 @@ export default async function DashboardPage({
     .select('*', { count: 'exact', head: true })
     .eq('member_id', memberId)
     .eq('is_active', true);
-
-  // Get active diet plan
-  const { data: activeDietPlan } = await supabase
-    .from('diet_plans')
-    .select('*')
-    .eq('member_id', memberId)
-    .eq('is_active', true)
-    .single();
 
   // Calculate current streak (simplified - count consecutive days)
   const { data: recentCheckIns } = await supabase
@@ -139,22 +119,24 @@ export default async function DashboardPage({
     }
   }
 
-  // Get recent workout sessions
-  const { data: recentWorkouts } = await supabase
-    .from('workout_sessions')
-    .select(`
-      id,
-      started_at,
-      completed_at,
-      duration_minutes,
-      status,
-      workout_routines (
-        name
-      )
-    `)
+  // Weekly check-ins count
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const { count: weeklyCheckIns } = await supabase
+    .from('check_ins')
+    .select('*', { count: 'exact', head: true })
     .eq('member_id', memberId)
-    .order('started_at', { ascending: false })
-    .limit(5);
+    .eq('gym_id', gymId)
+    .gte('check_in_at', startOfWeek.toISOString());
+
+  const { count: weeklyWorkouts } = await supabase
+    .from('workout_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .eq('status', 'completed')
+    .gte('started_at', startOfWeek.toISOString());
 
   // Get workout suggestions
   const suggestionsResult = await getWorkoutSuggestions(memberId, gymId);
@@ -165,24 +147,15 @@ export default async function DashboardPage({
   const announcementsResult = await getActiveAnnouncements(gymId);
   const activeAnnouncements = announcementsResult.data || [];
 
-  const stats = {
-    totalCheckIns: totalCheckIns || 0,
-    currentStreak,
-    lastCheckIn: lastCheckIn?.check_in_at || null,
-    workoutCount: workoutCount || 0,
-    routineCount: routineCount || 0,
-    hasActiveDiet: !!activeDietPlan,
-  };
+  const firstName = member?.full_name?.split(' ')[0] || 'Member';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageEntrance />
+
       <div data-animate>
-        <h1 className="text-2xl font-bold text-white">
-          Welcome back, {member?.full_name || 'Member'}!
-        </h1>
-        <p className="text-slate-400 mt-1">
-          Track your fitness journey and reach your goals
+        <p className="text-lg text-slate-300 text-center">
+          Hey, <span className="font-semibold text-white">{firstName}</span>
         </p>
       </div>
 
@@ -193,29 +166,29 @@ export default async function DashboardPage({
       )}
 
       <div data-animate>
-        <StatsOverview stats={stats} />
+        <DashboardQuickActions gymSlug={params.slug} />
       </div>
 
       <div data-animate>
-        <CheckInCalendar memberId={memberId} gymId={gymId} />
+        <WeeklyActivityBar
+          weeklyCheckIns={weeklyCheckIns || 0}
+          weeklyWorkouts={weeklyWorkouts || 0}
+        />
       </div>
 
-      <div data-animate className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <RecentActivity
-            recentWorkouts={recentWorkouts || []}
-            recentCheckIns={recentCheckIns?.slice(0, 5) || []}
-          />
-        </div>
+      <div data-animate>
+        <CompactStats
+          totalCheckIns={totalCheckIns || 0}
+          workoutCount={workoutCount || 0}
+          routineCount={routineCount || 0}
+        />
+      </div>
 
-        <div className="space-y-6">
-          <NutritionOverview />
-          <WorkoutSuggestions
-            suggestions={workoutSuggestions}
-            lastWorkouts={lastWorkoutsMap}
-          />
-          <QuickActions gymSlug={params.slug} />
-        </div>
+      <div data-animate>
+        <WorkoutSuggestions
+          suggestions={workoutSuggestions}
+          lastWorkouts={lastWorkoutsMap}
+        />
       </div>
     </div>
   );

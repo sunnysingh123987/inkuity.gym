@@ -94,8 +94,8 @@ export function ExerciseSetLogger({
     const lastSet = sets[sets.length - 1];
     const newSet: SetRow = {
       setNumber: sets.length + 1,
-      weight: lastSet?.weight || 50,
-      reps: lastSet?.reps || 12,
+      weight: lastSet?.weight || 0,
+      reps: lastSet?.reps || 0,
       createdAt: null, // new set, not yet persisted
     };
     const newSets = [...sets, newSet];
@@ -138,7 +138,7 @@ export function ExerciseSetLogger({
             <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden">
               <button
                 type="button"
-                onClick={() => updateSet(index, 'weight', -5)}
+                onClick={() => updateSet(index, 'weight', -2.5)}
                 disabled={locked}
                 className="px-2.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -149,7 +149,7 @@ export function ExerciseSetLogger({
               </span>
               <button
                 type="button"
-                onClick={() => updateSet(index, 'weight', 5)}
+                onClick={() => updateSet(index, 'weight', 2.5)}
                 disabled={locked}
                 className="px-2.5 py-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >

@@ -7,7 +7,7 @@ export function Toaster() {
     <Sonner
       position="bottom-right"
       richColors
-      closeButton
+      closeButton={false}
       style={{ zIndex: 60 }}
       toastOptions={{
         style: {

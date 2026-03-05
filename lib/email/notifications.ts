@@ -112,7 +112,7 @@ export async function sendCheckInConfirmation(
 }
 
 // ============================================================
-// 3. PIN EMAIL (Member Portal Access)
+// 3. PIN EMAIL (Member's Page Access)
 // ============================================================
 
 export async function sendPINEmail(data: {

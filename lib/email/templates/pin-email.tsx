@@ -25,8 +25,8 @@ export function PINEmail({
   isNewPIN,
 }: PINEmailProps) {
   const previewText = isNewPIN
-    ? `Your PIN for ${gymName} member portal`
-    : `New PIN for ${gymName} member portal`;
+    ? `Your PIN for ${gymName} member's page`
+    : `New PIN for ${gymName} member's page`;
 
   return (
     <Html>
@@ -37,7 +37,7 @@ export function PINEmail({
           {/* Header */}
           <Section style={header}>
             <Heading style={h1}>{gymName}</Heading>
-            <Text style={subtitle}>Member Portal</Text>
+            <Text style={subtitle}>Member's Page</Text>
           </Section>
 
           {/* Main Content */}
@@ -46,12 +46,12 @@ export function PINEmail({
 
             {isNewPIN ? (
               <Text style={paragraph}>
-                Welcome to the {gymName} member portal! Here's your 4-digit PIN
+                Welcome to the {gymName} member's page! Here's your 4-digit PIN
                 to access your account:
               </Text>
             ) : (
               <Text style={paragraph}>
-                Here's your PIN to access the {gymName} member portal:
+                Here's your PIN to access the {gymName} member's page:
               </Text>
             )}
 
@@ -62,7 +62,7 @@ export function PINEmail({
 
             <Text style={paragraph}>
               Use this PIN along with your email address to sign in at the
-              member portal.
+              member's page.
             </Text>
 
             {isNewPIN && (
@@ -89,7 +89,7 @@ export function PINEmail({
           {/* Footer */}
           <Section style={footer}>
             <Text style={footerText}>
-              This PIN is for {gymName} member portal access only.
+              This PIN is for {gymName} member's page access only.
             </Text>
             <Text style={footerText}>
               If you didn't request this PIN, please contact the gym

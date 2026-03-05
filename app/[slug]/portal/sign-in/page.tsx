@@ -318,7 +318,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
   const getTitle = () => {
     switch (step) {
       case 'email':
-        return searchParams.checkin === 'true' ? 'Gym Check-in' : 'Member Portal';
+        return searchParams.checkin === 'true' ? 'Gym Check-in' : `Welcome to ${gym.name}`;
       case 'pin':
         return 'Enter Your PIN';
       case 'verify':
@@ -333,7 +333,7 @@ export default function SignInPage({ params, searchParams }: SignInPageProps) {
       case 'email':
         return searchParams.checkin === 'true'
           ? `Sign in or register to check in at ${gym.name}`
-          : `Access your ${gym.name} member portal`;
+          : `Access your ${gym.name} member's page`;
       case 'pin':
         return hasExistingPin
           ? `Enter your PIN for ${email}`

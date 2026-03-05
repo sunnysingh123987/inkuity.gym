@@ -76,6 +76,7 @@ export function ActiveAnnouncements({ announcements }: ActiveAnnouncementsProps)
 
   return (
     <div className="space-y-3">
+      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Gym Announcements</p>
       {sorted.map((a) => {
         const config = TYPE_CONFIG[a.type] || TYPE_CONFIG.info;
         const Icon = config.icon;

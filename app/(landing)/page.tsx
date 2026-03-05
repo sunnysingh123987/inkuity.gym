@@ -47,7 +47,7 @@ const testimonials = [
     name: 'Arjun Mehta',
     role: 'Founder, CrossFit Hub',
     quote:
-      'Setting up was incredibly easy. Within minutes we had our gym profile, QR codes, and member portal ready. The onboarding wizard made it effortless.',
+      'Setting up was incredibly easy. Within minutes we had our gym profile, QR codes, and member\'s page ready. The onboarding wizard made it effortless.',
     initials: 'AM',
     gradient: 'from-emerald-400 to-teal-500',
   },
@@ -276,7 +276,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Card 2 - Member Portal */}
+            {/* Card 2 - Member's Page */}
             <div data-feature-card className="rounded-2xl bg-gradient-to-br from-[#0e1a2e] to-[#111d32] border border-white/5 p-6 min-h-[280px] relative overflow-hidden group hover:-translate-y-2 transition-all duration-300">
               <div className="absolute top-4 right-4">
                 <div className="h-8 w-8 bg-brand-purple-400/20 rounded-full flex items-center justify-center">
@@ -284,7 +284,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="mt-12 space-y-3">
-                <h3 className="text-white font-semibold text-lg">Member Portal</h3>
+                <h3 className="text-white font-semibold text-lg">Member's Page</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   Each gym gets a branded portal where members can view their check-in history, streaks, and membership details.
                 </p>
@@ -364,7 +364,7 @@ export default function LandingPage() {
                   'Free to get started, no credit card required',
                   'QR code check-in with zero setup for members',
                   'Real-time analytics and member insights',
-                  'Branded member portal for your gym',
+                  'Branded member\'s page for your gym',
                   'Email notifications for check-ins and alerts',
                 ].map((item) => (
                   <div key={item} data-benefit-item className="flex items-center gap-3">
@@ -465,7 +465,7 @@ export default function LandingPage() {
                   'Analytics dashboard',
                   'Member management',
                   'Email notifications',
-                  'Branded member portal',
+                  'Branded member\'s page',
                 ].map((feature) => (
                   <div key={feature} className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-brand-cyan-400 flex-shrink-0" />

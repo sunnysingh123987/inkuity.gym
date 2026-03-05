@@ -92,19 +92,19 @@ export const CheckInConfirmation = ({
             </Section>
           )}
 
-          {/* Member Portal CTA */}
+          {/* Member's Page CTA */}
           {gymSlug && (
             <Section style={portalSection}>
               <Heading style={portalHeading}>Track Your Fitness Journey</Heading>
               <Text style={portalText}>
-                Access your member portal to view your progress, track workouts,
+                Access your member's page to view your progress, track workouts,
                 manage diet plans, and see your check-in history.
               </Text>
               <Button
                 href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://inkuity.com'}/${gymSlug}/portal/sign-in`}
                 style={portalButton}
               >
-                Access Member Portal
+                Access Member's Page
               </Button>
             </Section>
           )}

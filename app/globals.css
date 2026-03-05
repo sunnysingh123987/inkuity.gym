@@ -95,4 +95,13 @@
   .focus-glow-cyan {
     @apply focus:outline-none focus:ring-2 focus:ring-brand-cyan-500/50 focus:shadow-glow-cyan;
   }
+
+  /* Hide scrollbar for carousel / horizontal scroll areas */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

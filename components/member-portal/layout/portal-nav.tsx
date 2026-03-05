@@ -14,7 +14,7 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
 
   const navItems = [
     {
-      name: 'Dashboard',
+      name: 'Home',
       href: `/${gymSlug}/portal/dashboard`,
       icon: Home,
       matchPaths: [`/${gymSlug}/portal/dashboard`],

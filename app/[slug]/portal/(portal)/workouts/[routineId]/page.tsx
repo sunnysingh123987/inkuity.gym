@@ -4,7 +4,7 @@ import { getWorkoutRoutine, getExerciseLibrary } from '@/lib/actions/members-por
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Play, Edit, ArrowLeft } from 'lucide-react';
+import { Play, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function RoutineDetailPage({
@@ -59,9 +59,6 @@ export default async function RoutineDetailPage({
               <h1 className="text-2xl font-bold text-white">
                 {routine.name}
               </h1>
-              <Badge variant={routine.is_active ? 'default' : 'secondary'}>
-                {routine.is_active ? 'Active' : 'Inactive'}
-              </Badge>
             </div>
             {routine.description && (
               <p className="text-slate-400 mt-2">{routine.description}</p>
@@ -70,7 +67,7 @@ export default async function RoutineDetailPage({
 
           <div className="flex gap-2">
             <Link href={`/${params.slug}/portal/workouts/${params.routineId}/start`}>
-              <Button disabled={!routine.is_active || exercises.length === 0}>
+              <Button disabled={exercises.length === 0}>
                 <Play className="h-4 w-4 mr-2" />
                 Start Workout
               </Button>

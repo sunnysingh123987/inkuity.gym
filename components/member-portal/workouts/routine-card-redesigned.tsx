@@ -9,23 +9,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  MoreVertical,
-  Edit,
-  Trash2,
-  ToggleLeft,
-  ToggleRight,
-  Calendar,
-} from 'lucide-react';
+import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
-import { deleteWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
+import { deleteWorkoutRoutine, completeWorkoutSession } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
-import Link from 'next/link';
 
 interface RoutineCardRedesignedProps {
   routine: any;
   gymSlug: string;
   lastSessionDate?: string;
+  activeSessionId?: string;
+  onSelect?: (routine: any) => void;
 }
 
 const FALLBACK_CATEGORY = 'full-body';
@@ -44,30 +38,17 @@ function getDaysAgoText(dateString?: string, fallback?: string): string {
   return `${Math.floor(diffDays / 7)} weeks ago`;
 }
 
-function getFrequencyDots(lastSessionDate?: string, fallback?: string) {
-  // Show 3 dots representing workout frequency this week
-  // For now, fill based on recency: today=3, 1-2 days=2, 3+ days=1, no session=0
-  const date = lastSessionDate || fallback;
-  if (!date) return 0;
-  const now = new Date();
-  const then = new Date(date);
-  const diffDays = Math.floor((now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 3;
-  if (diffDays <= 2) return 2;
-  if (diffDays <= 5) return 1;
-  return 0;
-}
-
 export function RoutineCardRedesigned({
   routine,
   gymSlug,
   lastSessionDate,
+  activeSessionId,
+  onSelect,
 }: RoutineCardRedesignedProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
-  // Get primary category from first exercise
   const primaryCategory = (() => {
     const exercises = routine.routine_exercises || [];
     if (exercises.length === 0) return null;
@@ -78,23 +59,6 @@ export function RoutineCardRedesigned({
     return exercise?.category?.toLowerCase() || null;
   })();
 
-  // Get category display label (uppercase)
-  const categoryLabel = (() => {
-    const exercises = routine.routine_exercises || [];
-    const categories = new Set<string>();
-    exercises.forEach((re: any) => {
-      const ex = Array.isArray(re.exercise_library)
-        ? re.exercise_library[0]
-        : re.exercise_library;
-      if (ex?.category) categories.add(ex.category.toUpperCase());
-    });
-    const arr = Array.from(categories);
-    if (arr.length === 0) return 'GENERAL';
-    if (arr.length <= 2) return arr.join(' & ');
-    return `${arr[0]} & ${arr[1]}`;
-  })();
-
-  // Get exercise names preview
   const exercisePreview = (() => {
     const exercises = routine.routine_exercises || [];
     const names = exercises.map((re: any) => {
@@ -103,13 +67,10 @@ export function RoutineCardRedesigned({
         : re.exercise_library;
       return ex?.name || 'Exercise';
     });
-    const text = names.join(', ');
-    if (text.length > 50) return text.substring(0, 47) + ',...';
-    return text;
+    return names.join(', ');
   })();
 
   const categorySvgPath = getCategorySvg(primaryCategory || FALLBACK_CATEGORY);
-  const filledDots = getFrequencyDots(lastSessionDate, routine.updated_at);
   const daysAgo = getDaysAgoText(lastSessionDate, routine.updated_at);
   const exerciseCount = routine.routine_exercises?.length || 0;
 
@@ -126,134 +87,95 @@ export function RoutineCardRedesigned({
     }
   };
 
-  const handleToggleActive = async () => {
-    setToggling(true);
-    const result = await updateWorkoutRoutine(routine.id, {
-      is_active: !routine.is_active,
-    });
+  const handleCompleteSession = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activeSessionId || completing) return;
+    setCompleting(true);
+    const result = await completeWorkoutSession(activeSessionId);
     if (result.success) {
-      toast.success(routine.is_active ? 'Routine deactivated' : 'Routine activated');
+      toast.success('Session completed');
       router.refresh();
     } else {
-      toast.error(result.error || 'Failed to update routine');
+      toast.error(result.error || 'Failed to complete session');
     }
-    setToggling(false);
+    setCompleting(false);
   };
 
   const handleCardClick = () => {
-    if (routine.is_active && exerciseCount > 0) {
-      router.push(`/${gymSlug}/portal/workouts/${routine.id}/start`);
+    if (exerciseCount > 0 && onSelect) {
+      onSelect(routine);
     }
   };
 
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-slate-900 rounded-xl border border-slate-800 p-4 space-y-3 cursor-pointer hover:border-slate-700 transition-colors ${
-        !routine.is_active ? 'opacity-60' : ''
-      }`}
+      className="rounded-xl border border-slate-800 px-4 py-3 cursor-pointer hover:border-slate-700 transition-colors"
     >
-      {/* Top row: icon + category + name + frequency + menu */}
-      <div className="flex items-start gap-3">
+      {/* Top row: name + icon, toggle/days ago, menu */}
+      <div className="flex items-center gap-2">
+        {/* Routine name */}
+        <h3 className="text-lg font-bold text-white">{routine.name}</h3>
+
         {/* Category icon */}
-        <div className="flex-shrink-0 h-14 w-14 rounded-xl bg-brand-cyan-500/10 flex items-center justify-center overflow-hidden">
-          <img src={categorySvgPath} alt="" className="h-8 w-8 invert opacity-80" />
-        </div>
+        <img src={categorySvgPath} alt="" className="h-5 w-5 invert opacity-60" />
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="min-w-0">
-              {/* Category label */}
-              <p className="text-xs font-bold text-brand-cyan-400 tracking-wide uppercase">
-                {categoryLabel}
-              </p>
-              {/* Routine name */}
-              <h3 className="text-lg font-bold text-white mt-0.5 truncate">
-                {routine.name}
-              </h3>
-            </div>
+        {/* Spacer */}
+        <div className="flex-1" />
 
-            {/* Right side: Frequency + Menu */}
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {/* Frequency dots */}
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-                  Frequency
-                </span>
-                <div className="flex gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        i < filledDots
-                          ? 'bg-brand-cyan-400'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+        {/* Active toggle or days ago */}
+        {activeSessionId ? (
+          <button
+            type="button"
+            onClick={handleCompleteSession}
+            disabled={completing}
+            className="relative flex-shrink-0 h-6 w-11 rounded-full bg-emerald-500 transition-colors disabled:opacity-50"
+          >
+            <span className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
+          </button>
+        ) : (
+          <span className="text-sm font-medium text-brand-cyan-400 whitespace-nowrap">
+            {daysAgo}
+          </span>
+        )}
 
-              {/* 3-dot menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 flex-shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/${gymSlug}/portal/workouts/${routine.id}`)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleToggleActive} disabled={toggling}>
-                    {routine.is_active ? (
-                      <>
-                        <ToggleLeft className="mr-2 h-4 w-4" />
-                        Deactivate
-                      </>
-                    ) : (
-                      <>
-                        <ToggleRight className="mr-2 h-4 w-4" />
-                        Activate
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Exercise preview */}
-          {exercisePreview && (
-            <p className="text-sm text-slate-400 mt-1.5 leading-snug">
-              {exercisePreview}
-            </p>
-          )}
-        </div>
+        {/* 3-dot menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 flex-shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem
+              onClick={() => router.push(`/${gymSlug}/portal/workouts/${routine.id}`)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Last session date */}
-      <div className="flex items-center gap-1.5 text-slate-500 text-sm pt-1">
-        <Calendar className="h-3.5 w-3.5" />
-        <span>Last: {daysAgo}</span>
-      </div>
+      {/* Exercise list */}
+      {exercisePreview && (
+        <p className="text-sm text-slate-400 mt-1 leading-relaxed">
+          {exercisePreview}
+        </p>
+      )}
     </div>
   );
 }
