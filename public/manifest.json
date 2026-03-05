@@ -2,7 +2,7 @@
   "name": "Inkuity - Smart Gym Management",
   "short_name": "Inkuity",
   "description": "QR check-ins, workout tracking, member analytics, and more for modern gyms",
-  "start_url": "/",
+  "start_url": "/my-gym",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#06b6d4",
