@@ -308,6 +308,16 @@ export interface Announcement {
   updated_at: string;
 }
 
+export interface PushSubscription {
+  id: string;
+  member_id: string;
+  gym_id: string;
+  endpoint: string;
+  keys_p256dh: string;
+  keys_auth: string;
+  created_at: string;
+}
+
 // Join types for queries
 export interface QRCodeWithGym extends QRCode {
   gym: Gym;

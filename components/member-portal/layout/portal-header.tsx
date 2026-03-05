@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut } from 'lucide-react';
+import { LogOut, Bell, Flame } from 'lucide-react';
 import { getUiSvg } from '@/lib/svg-icons';
 import { signOut } from '@/lib/actions/pin-auth';
 import { toast } from 'sonner';
@@ -29,10 +29,12 @@ interface PortalHeaderProps {
     email?: string | null;
     avatar_url?: string | null;
   };
+  streak?: number;
 }
 
-export function PortalHeader({ gym, member }: PortalHeaderProps) {
+export function PortalHeader({ gym, member, streak = 0 }: PortalHeaderProps) {
   const router = useRouter();
+  const initial = (member.full_name || 'M').charAt(0).toUpperCase();
 
   const handleLogout = async () => {
     try {
@@ -46,57 +48,30 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
   };
 
   return (
-    <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo and Gym Name */}
-          <div className="flex items-center">
-            <div className="flex items-center space-x-3">
-              {gym.logo_url && (
-                <div className="relative h-10 w-10 rounded-lg overflow-hidden">
-                  <Image
-                    src={gym.logo_url}
-                    alt={gym.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <div>
-                <h1 className="text-lg font-semibold text-white">
-                  {gym.name}
-                </h1>
-                <p className="text-xs text-slate-400">Member Portal</p>
-              </div>
-            </div>
-          </div>
-
-          {/* User Menu */}
+    <header className="bg-transparent sticky top-0 z-50">
+      <div className="px-4">
+        <div className="flex items-center justify-between h-14">
+          {/* Avatar initial circle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2">
-                  {member.avatar_url ? (
-                    <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                      <Image
-                        src={member.avatar_url}
-                        alt={member.full_name || 'Member'}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-brand-cyan-500/20 flex items-center justify-center">
-                      <User className="h-4 w-4 text-brand-cyan-400" />
-                    </div>
-                  )}
-                  <span className="hidden sm:inline-block text-sm font-medium text-slate-300">
-                    {member.full_name || 'Member'}
-                  </span>
-                </div>
-              </Button>
+              <button className="shrink-0">
+                {member.avatar_url ? (
+                  <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                    <Image
+                      src={member.avatar_url}
+                      alt={member.full_name || 'Member'}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-black border border-slate-700 flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">{initial}</span>
+                  </div>
+                )}
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium">
@@ -119,6 +94,24 @@ export function PortalHeader({ gym, member }: PortalHeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Streak pill — center */}
+          <div className="flex-1 flex justify-center">
+            <Link href={`/${gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-')}/portal/streak`}>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-800/80 border border-slate-700/50 px-4 py-1.5">
+                <Flame className={`h-4 w-4 ${streak > 0 ? 'text-amber-400' : 'text-slate-500'}`} />
+                <span className="text-sm font-semibold text-white">{streak} day streak</span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Bell icon — right */}
+          <Link
+            href={`/${gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-')}/portal/settings?tab=notifications`}
+            className="shrink-0 h-10 w-10 flex items-center justify-center"
+          >
+            <Bell className="h-5 w-5 text-slate-300" />
+          </Link>
         </div>
       </div>
     </header>

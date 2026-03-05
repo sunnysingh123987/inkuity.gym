@@ -337,6 +337,7 @@ export function SettingsPageContent({
             <CardContent>
               <SettingsForm
                 memberId={memberId}
+                gymId={gymId}
                 initialPreferences={memberPreferences}
               />
             </CardContent>

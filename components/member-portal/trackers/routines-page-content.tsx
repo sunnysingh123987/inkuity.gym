@@ -1,43 +1,49 @@
 'use client';
 
+import { useState } from 'react';
 import { RoutineCardRedesigned } from '@/components/member-portal/workouts/routine-card-redesigned';
-import { Dumbbell, Plus } from 'lucide-react';
+import { WorkoutLogSheet } from '@/components/member-portal/workouts/workout-log-sheet';
+import { Dumbbell, Settings, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface RoutinesPageContentProps {
   routines: any[];
   lastSessionDates: Record<string, string>;
   gymSlug: string;
+  memberId: string;
+  gymId: string;
+  activeSession: { routineId: string; sessionId: string } | null;
 }
 
 export function RoutinesPageContent({
   routines,
   lastSessionDates,
   gymSlug,
+  memberId,
+  gymId,
+  activeSession,
 }: RoutinesPageContentProps) {
-  const activeCount = routines.filter((r) => r.is_active).length;
+  const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-4 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Your Workout Plans</h1>
-        {activeCount > 0 && (
-          <span className="inline-block mt-2 px-3 py-1 rounded-full bg-brand-cyan-500/15 text-brand-cyan-400 text-sm font-semibold border border-brand-cyan-500/30">
-            {activeCount} Active {activeCount === 1 ? 'Plan' : 'Plans'}
-          </span>
-        )}
+      <div className="flex items-center gap-2">
+        <h1 className="text-xl font-bold text-white">My routines</h1>
+        <Settings className="h-5 w-5 text-brand-cyan-400" />
       </div>
 
       {/* Routine list */}
       {routines.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {routines.map((routine) => (
             <RoutineCardRedesigned
               key={routine.id}
               routine={routine}
               gymSlug={gymSlug}
               lastSessionDate={lastSessionDates[routine.id]}
+              activeSessionId={routine.id === activeSession?.routineId ? activeSession?.sessionId : undefined}
+              onSelect={(r) => setSelectedRoutine(r)}
             />
           ))}
         </div>
@@ -52,23 +58,26 @@ export function RoutinesPageContent({
           <p className="text-slate-400 mb-6 max-w-sm mx-auto">
             Create your first workout routine to start tracking your progress
           </p>
-          <Link href={`/${gymSlug}/portal/workouts/new`}>
-            <button className="px-6 py-3 rounded-full bg-brand-cyan-500 text-white font-semibold hover:bg-brand-cyan-600 transition-colors">
-              Create Your First Routine
-            </button>
-          </Link>
         </div>
       )}
 
-      {/* Floating action button */}
-      <Link
-        href={`/${gymSlug}/portal/workouts/new`}
-        className="fixed bottom-24 right-6 z-50"
-      >
-        <button className="h-14 w-14 rounded-full bg-brand-cyan-500 flex items-center justify-center hover:bg-brand-cyan-600 transition-colors shadow-lg shadow-brand-cyan-500/25">
-          <Plus className="h-6 w-6 text-white" />
+      {/* Add Routine button */}
+      <Link href={`/${gymSlug}/portal/workouts/new`} className="block">
+        <button className="w-full py-3 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-600 hover:text-white transition-colors flex items-center justify-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add Routine
         </button>
       </Link>
+
+      {/* Workout log bottom sheet */}
+      <WorkoutLogSheet
+        routine={selectedRoutine}
+        gymSlug={gymSlug}
+        memberId={memberId}
+        gymId={gymId}
+        open={!!selectedRoutine}
+        onClose={() => setSelectedRoutine(null)}
+      />
     </div>
   );
 }

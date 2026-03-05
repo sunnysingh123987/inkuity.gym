@@ -11,10 +11,20 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Inkuity - Smart Gym Management Platform',
   description: 'QR check-ins, workout tracking, member analytics, and more for modern gyms',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Inkuity',
+  },
 }
 
 export const viewport: Viewport = {
   themeColor: '#06b6d4',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({

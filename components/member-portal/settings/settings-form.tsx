@@ -5,16 +5,19 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { updateMemberPreferences } from '@/lib/actions/members-portal';
+import { usePushNotifications } from '@/lib/hooks/use-push-notifications';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Bell, BellOff, Smartphone } from 'lucide-react';
 
 interface SettingsFormProps {
   memberId: string;
+  gymId: string;
   initialPreferences: any;
 }
 
 export function SettingsForm({
   memberId,
+  gymId,
   initialPreferences,
 }: SettingsFormProps) {
   const [loading, setLoading] = useState(false);
@@ -27,7 +30,39 @@ export function SettingsForm({
       initialPreferences?.notification_preferences?.email_diet !== false,
     emailWeeklyReport:
       initialPreferences?.notification_preferences?.email_weekly_report !== false,
+    pushMealReminders:
+      initialPreferences?.notification_preferences?.push_meal_reminders !== false,
+    pushWorkoutReminders:
+      initialPreferences?.notification_preferences?.push_workout_reminders !== false,
+    pushTrackerReminders:
+      initialPreferences?.notification_preferences?.push_tracker_reminders !== false,
   });
+
+  const {
+    isSupported,
+    isSubscribed,
+    isLoading: pushLoading,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications({ memberId, gymId });
+
+  const handlePushToggle = async () => {
+    if (isSubscribed) {
+      const success = await unsubscribe();
+      if (success) {
+        toast.success('Push notifications disabled');
+      } else {
+        toast.error('Failed to disable push notifications');
+      }
+    } else {
+      const success = await subscribe();
+      if (success) {
+        toast.success('Push notifications enabled!');
+      } else {
+        toast.error('Could not enable push notifications. Check browser permissions.');
+      }
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -38,6 +73,9 @@ export function SettingsForm({
         email_workout: preferences.emailWorkout,
         email_diet: preferences.emailDiet,
         email_weekly_report: preferences.emailWeeklyReport,
+        push_meal_reminders: preferences.pushMealReminders,
+        push_workout_reminders: preferences.pushWorkoutReminders,
+        push_tracker_reminders: preferences.pushTrackerReminders,
       },
     });
 
@@ -137,6 +175,118 @@ export function SettingsForm({
             }
           />
         </div>
+      </div>
+
+      {/* Push Notifications */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pt-2">
+          <Smartphone className="h-4 w-4 text-cyan-400" />
+          <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+            Push Notifications
+          </h3>
+        </div>
+
+        {!isSupported ? (
+          <div className="p-4 bg-slate-800 rounded-lg">
+            <div className="flex items-center gap-2 text-slate-400">
+              <BellOff className="h-4 w-4" />
+              <p className="text-sm">
+                Push notifications are not supported in this browser.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Master Push Toggle */}
+            <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
+              <div className="flex-1 mr-4">
+                <Label
+                  htmlFor="pushEnabled"
+                  className="font-medium text-white cursor-pointer"
+                >
+                  Enable Push Notifications
+                </Label>
+                <p className="text-sm text-slate-400 mt-1">
+                  Receive push notifications on this device for meals, workouts, and trackers
+                </p>
+              </div>
+              <Switch
+                id="pushEnabled"
+                checked={isSubscribed}
+                disabled={pushLoading}
+                onCheckedChange={handlePushToggle}
+              />
+            </div>
+
+            {/* Individual Push Preferences (only when subscribed) */}
+            {isSubscribed && (
+              <div className="space-y-3 pl-4 border-l-2 border-cyan-500/30">
+                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                  <div className="flex-1 mr-4">
+                    <Label
+                      htmlFor="pushMeal"
+                      className="font-medium text-white cursor-pointer"
+                    >
+                      Meal Reminders
+                    </Label>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Get reminded before your scheduled meals
+                    </p>
+                  </div>
+                  <Switch
+                    id="pushMeal"
+                    checked={preferences.pushMealReminders}
+                    onCheckedChange={(checked) =>
+                      setPreferences({ ...preferences, pushMealReminders: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                  <div className="flex-1 mr-4">
+                    <Label
+                      htmlFor="pushWorkout"
+                      className="font-medium text-white cursor-pointer"
+                    >
+                      Workout Day Reminders
+                    </Label>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Get notified on your scheduled workout days
+                    </p>
+                  </div>
+                  <Switch
+                    id="pushWorkout"
+                    checked={preferences.pushWorkoutReminders}
+                    onCheckedChange={(checked) =>
+                      setPreferences({ ...preferences, pushWorkoutReminders: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                  <div className="flex-1 mr-4">
+                    <Label
+                      htmlFor="pushTracker"
+                      className="font-medium text-white cursor-pointer"
+                    >
+                      Tracker Reminders
+                    </Label>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Evening reminders for incomplete daily trackers (water, vitamins, etc.)
+                    </p>
+                  </div>
+                  <Switch
+                    id="pushTracker"
+                    checked={preferences.pushTrackerReminders}
+                    onCheckedChange={(checked) =>
+                      setPreferences({ ...preferences, pushTrackerReminders: checked })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Save Button */}
