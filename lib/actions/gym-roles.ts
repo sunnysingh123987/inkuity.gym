@@ -19,15 +19,37 @@ export async function getGymRoles(gymId: string): Promise<{
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data, error } = await supabase
+    const { data: roles, error } = await supabase
       .from('gym_roles')
-      .select(`*, profile:profiles(full_name, email)`)
+      .select('*')
       .eq('gym_id', gymId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return { success: true, data: data || [] };
+    // Fetch profiles separately since there's no foreign key relationship
+    const userIds = (roles || []).map((r) => r.user_id).filter(Boolean);
+    let profileMap: Record<string, { full_name: string | null; email: string }> = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profiles) {
+        profileMap = Object.fromEntries(
+          profiles.map((p) => [p.id, { full_name: p.full_name, email: p.email }])
+        );
+      }
+    }
+
+    const data = (roles || []).map((role) => ({
+      ...role,
+      profile: profileMap[role.user_id] || undefined,
+    }));
+
+    return { success: true, data };
   } catch (error: any) {
     console.error('Get gym roles error:', error);
     return { success: false, error: error.message };

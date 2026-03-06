@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { PortalHeader } from '@/components/member-portal/layout/portal-header';
 import { PortalNav } from '@/components/member-portal/layout/portal-nav';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { SetCurrentGymCookie } from '@/components/pwa/set-current-gym-cookie';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 export default async function PortalLayout({
@@ -22,16 +22,6 @@ export default async function PortalLayout({
   }
 
   const { memberId, gymId } = authResult.data;
-
-  // Set cookie so /my-gym PWA start URL knows which gym to redirect to
-  const cookieStore = await cookies();
-  cookieStore.set('inkuity_current_gym', params.slug, {
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-  });
 
   // Get full gym and member data
   const supabase = createAdminSupabaseClient();
@@ -97,6 +87,7 @@ export default async function PortalLayout({
         </main>
       </div>
 
+      <SetCurrentGymCookie slug={params.slug} />
       <InstallPrompt />
     </div>
   );
