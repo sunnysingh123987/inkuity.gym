@@ -141,8 +141,18 @@ export function MemberInfoForm({ memberId, existingName, onComplete }: MemberInf
     }
   }
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (isLastStep) {
+      // Mark info as collected even when skipping, so the form never shows again
+      try {
+        await updateMemberInfo(memberId, {
+          metadata: {
+            info_collected_at: new Date().toISOString(),
+          },
+        })
+      } catch (err) {
+        console.error('Error marking info as collected:', err)
+      }
       onComplete()
     } else {
       setStep(step + 1)

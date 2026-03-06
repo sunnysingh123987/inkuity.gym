@@ -8,7 +8,7 @@ import { recordQRCheckIn } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { WorkoutFocusSelector } from '@/components/member-portal/check-in/workout-focus-selector';
 import { MemberInfoForm } from '@/components/member-portal/check-in/member-info-form';
-import { checkMemberInfoCollected } from '@/lib/actions/members-portal';
+import { checkMemberInfoCollected, updateMemberInfo } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 import { getRandomQuote } from '@/lib/data/fitness-quotes';
 import {
@@ -60,8 +60,15 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
         const scanId = searchParams.get('scan_id') || undefined;
         const qrCode = searchParams.get('qr_code') || undefined;
 
-        // Record the check-in
-        const result = await recordQRCheckIn(mId, gymId, scanId, qrCode);
+        // Record the check-in (handles duplicates gracefully)
+        let result;
+        try {
+          result = await recordQRCheckIn(mId, gymId, scanId, qrCode);
+        } catch (err) {
+          console.error('recordQRCheckIn error:', err);
+          setError('Failed to record check-in. Please try again.');
+          return;
+        }
 
         if (result.success && result.data) {
           setCheckInData(result.data);
@@ -71,7 +78,12 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
           }
 
           // Check if this is a first-time check-in (no info collected yet)
-          const infoCollected = await checkMemberInfoCollected(mId);
+          let infoCollected = true;
+          try {
+            infoCollected = await checkMemberInfoCollected(mId);
+          } catch {
+            // Default to true so we don't block on error
+          }
 
           // Check if member is trial (new via QR)
           const memberIsTrial = result.data.membershipStatus === 'trial' || result.data.membershipStatus === 'pending';
@@ -304,7 +316,19 @@ export default function CheckInSuccessPage({ params }: CheckInSuccessPageProps) 
         <div className="text-center">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/${params.slug}/portal/dashboard`)}
+            onClick={async () => {
+              // Mark info as collected so the form never shows again
+              if (showMemberInfoForm && memberId) {
+                try {
+                  await updateMemberInfo(memberId, {
+                    metadata: { info_collected_at: new Date().toISOString() },
+                  });
+                } catch (err) {
+                  console.error('Error marking info as collected:', err);
+                }
+              }
+              router.push(`/${params.slug}/portal/dashboard`);
+            }}
             className="text-slate-400"
           >
             Go to Dashboard <ArrowRight className="w-4 h-4 ml-1" />

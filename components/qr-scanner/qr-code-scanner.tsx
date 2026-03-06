@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode'
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode'
 import { X, Camera, Keyboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,12 +53,16 @@ export function QRCodeScanner({ onScanSuccess, onClose }: QRCodeScannerProps) {
           }
 
           // Stop scanner and notify parent
-          scanner.stop().then(() => {
+          try {
+            const state = scanner.getState()
+            if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+              scanner.stop().then(() => onScanSuccess(code)).catch(() => onScanSuccess(code))
+            } else {
+              onScanSuccess(code)
+            }
+          } catch {
             onScanSuccess(code)
-          }).catch((err) => {
-            console.error('Error stopping scanner:', err)
-            onScanSuccess(code)
-          })
+          }
         }
 
         // Error callback (optional - fired when no QR detected in frame)
@@ -94,9 +98,14 @@ export function QRCodeScanner({ onScanSuccess, onClose }: QRCodeScannerProps) {
     // Cleanup function
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch((err) => {
-          console.error('Error stopping scanner on cleanup:', err)
-        })
+        try {
+          const state = scannerRef.current.getState()
+          if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+            scannerRef.current.stop().catch(() => {})
+          }
+        } catch {
+          // Scanner already stopped or not initialized
+        }
       }
     }
   }, [scanning, manualEntry, onScanSuccess])
@@ -111,9 +120,14 @@ export function QRCodeScanner({ onScanSuccess, onClose }: QRCodeScannerProps) {
   const switchToManual = () => {
     // Stop scanner
     if (scannerRef.current) {
-      scannerRef.current.stop().catch((err) => {
-        console.error('Error stopping scanner:', err)
-      })
+      try {
+        const state = scannerRef.current.getState()
+        if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+          scannerRef.current.stop().catch(() => {})
+        }
+      } catch {
+        // Scanner not running
+      }
     }
     setScanning(false)
     setManualEntry(true)
