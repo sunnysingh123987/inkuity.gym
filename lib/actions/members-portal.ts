@@ -627,23 +627,63 @@ export async function updateWorkoutRoutine(
     description?: string;
     schedule?: string[];
     is_active?: boolean;
+    exercises?: {
+      exerciseId: string;
+      sets: number;
+      reps: number;
+      rest_seconds: number;
+      notes?: string;
+    }[];
   }
 ) {
   try {
     const supabase = createAdminSupabaseClient();
 
-    const { data, error } = await supabase
-      .from('workout_routines')
-      .update(updates)
-      .eq('id', routineId)
-      .select()
-      .single();
+    const { exercises, ...routineUpdates } = updates;
 
-    if (error) throw error;
+    // Update routine fields
+    if (Object.keys(routineUpdates).length > 0) {
+      const { error } = await supabase
+        .from('workout_routines')
+        .update(routineUpdates)
+        .eq('id', routineId);
+
+      if (error) throw error;
+    }
+
+    // Replace exercises if provided
+    if (exercises) {
+      // Delete existing exercises
+      const { error: deleteError } = await supabase
+        .from('routine_exercises')
+        .delete()
+        .eq('routine_id', routineId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new exercises
+      if (exercises.length > 0) {
+        const { error: insertError } = await supabase
+          .from('routine_exercises')
+          .insert(
+            exercises.map((ex, index) => ({
+              routine_id: routineId,
+              exercise_id: ex.exerciseId,
+              order_index: index,
+              sets: ex.sets,
+              reps: ex.reps,
+              rest_seconds: ex.rest_seconds,
+              notes: ex.notes || null,
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+    }
 
     revalidatePath('/portal/trackers');
 
-    return { success: true, data };
+    return { success: true, data: null };
   } catch (error: any) {
     console.error('Error updating workout routine:', error);
     return { success: false, error: error.message, data: null };
@@ -1790,21 +1830,28 @@ export async function getLastSessionDates(
   try {
     const supabase = createAdminSupabaseClient();
 
+    // Get sessions with their exercise sets to find when sets were actually logged
     const { data, error } = await supabase
       .from('workout_sessions')
-      .select('routine_id, completed_at')
+      .select('routine_id, session_exercises(exercise_sets(created_at))')
       .eq('member_id', memberId)
       .eq('gym_id', gymId)
-      .eq('status', 'completed')
       .not('routine_id', 'is', null)
-      .order('completed_at', { ascending: false });
+      .order('started_at', { ascending: false });
 
     if (error) throw error;
 
     const map: Record<string, string> = {};
-    for (const row of data || []) {
-      if (row.routine_id && !map[row.routine_id]) {
-        map[row.routine_id] = row.completed_at;
+    for (const session of data || []) {
+      if (!session.routine_id) continue;
+      const allSetDates = (session.session_exercises || []).flatMap(
+        (se: any) => (se.exercise_sets || []).map((s: any) => s.created_at)
+      ).filter(Boolean);
+
+      for (const setDate of allSetDates) {
+        if (!map[session.routine_id] || new Date(setDate) > new Date(map[session.routine_id])) {
+          map[session.routine_id] = setDate;
+        }
       }
     }
     return map;

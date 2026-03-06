@@ -16,6 +16,7 @@ interface WorkoutLogSheetProps {
   gymId: string;
   open: boolean;
   onClose: () => void;
+  onProgressChange?: (completed: number, total: number) => void;
 }
 
 function getTodaySets(exerciseSets: any[]): any[] {
@@ -35,6 +36,7 @@ export function WorkoutLogSheet({
   gymId,
   open,
   onClose,
+  onProgressChange,
 }: WorkoutLogSheetProps) {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -111,8 +113,15 @@ export function WorkoutLogSheet({
   }
 
   const handleSetsChange = useCallback((exerciseId: string, count: number) => {
-    setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
-  }, []);
+    setSetsCount((prev) => {
+      const updated = { ...prev, [exerciseId]: count };
+      // Report progress: count exercises with at least 1 set logged
+      const exercisesWithSets = Object.values(updated).filter((c) => c > 0).length;
+      const totalExercises = session?.session_exercises?.length || 0;
+      onProgressChange?.(exercisesWithSets, totalExercises);
+      return updated;
+    });
+  }, [session, onProgressChange]);
 
   const handleBackdropClick = () => {
     onClose();

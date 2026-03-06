@@ -96,11 +96,10 @@ export function ExerciseSetLogger({
       setNumber: sets.length + 1,
       weight: lastSet?.weight || 0,
       reps: lastSet?.reps || 0,
-      createdAt: null, // new set, not yet persisted
+      createdAt: null, // new set, not yet persisted — saved when user changes a value
     };
     const newSets = [...sets, newSet];
     setSets(newSets);
-    saveSet(newSet);
     onSetsChange?.(newSets.length);
   };
 

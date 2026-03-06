@@ -147,6 +147,15 @@ export default async function DashboardPage({
   const announcementsResult = await getActiveAnnouncements(gymId);
   const activeAnnouncements = announcementsResult.data || [];
 
+  // Check if already checked in today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const alreadyCheckedInToday = recentCheckIns?.some((ci) => {
+    const ciDate = new Date(ci.check_in_at);
+    ciDate.setHours(0, 0, 0, 0);
+    return ciDate.getTime() === today.getTime();
+  }) ?? false;
+
   const firstName = member?.full_name?.split(' ')[0] || 'Member';
 
   return (
@@ -166,7 +175,7 @@ export default async function DashboardPage({
       )}
 
       <div data-animate>
-        <DashboardQuickActions gymSlug={params.slug} />
+        <DashboardQuickActions gymSlug={params.slug} alreadyCheckedIn={alreadyCheckedInToday} />
       </div>
 
       <div data-animate>

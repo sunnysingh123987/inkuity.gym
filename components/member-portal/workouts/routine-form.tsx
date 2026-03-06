@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createWorkoutRoutine } from '@/lib/actions/members-portal';
+import { createWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 import { Loader2, Save, Plus, Minus, Search, X, Dumbbell } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
@@ -54,9 +54,30 @@ export function RoutineForm({
   const [sheetVisible, setSheetVisible] = useState(false);
   const [query, setQuery] = useState('');
 
+  const isEditing = !!initialData?.id;
+
   // Form fields
   const [name, setName] = useState(initialData?.name || '');
-  const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
+  const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>(() => {
+    if (!initialData?.routine_exercises) return [];
+    return initialData.routine_exercises
+      .sort((a: any, b: any) => a.order_index - b.order_index)
+      .map((re: any) => {
+        const exercise = Array.isArray(re.exercise_library)
+          ? re.exercise_library[0]
+          : re.exercise_library;
+        return {
+          exerciseId: exercise?.id || re.id,
+          name: exercise?.name || 'Exercise',
+          category: exercise?.category || 'other',
+          sets: re.sets || 3,
+          reps: re.reps || 10,
+          rest_seconds: re.rest_seconds || 60,
+          notes: re.notes || '',
+          source: 'library' as const,
+        };
+      });
+  });
 
   // Animate sheet in/out
   useEffect(() => {
@@ -193,26 +214,36 @@ export function RoutineForm({
 
     setSaving(true);
 
-    const result = await createWorkoutRoutine({
-      memberId,
-      gymId,
-      name: name.trim(),
-      exercises: selectedExercises
-        .filter((ex) => !ex.exerciseId.startsWith('local-'))
-        .map((ex) => ({
-          exerciseId: ex.exerciseId,
-          sets: ex.sets,
-          reps: ex.reps,
-          rest_seconds: ex.rest_seconds,
-          notes: ex.notes || undefined,
-        })),
-    });
+    const exercisesPayload = selectedExercises
+      .filter((ex) => !ex.exerciseId.startsWith('local-'))
+      .map((ex) => ({
+        exerciseId: ex.exerciseId,
+        sets: ex.sets,
+        reps: ex.reps,
+        rest_seconds: ex.rest_seconds,
+        notes: ex.notes || undefined,
+      }));
+
+    let result;
+    if (isEditing) {
+      result = await updateWorkoutRoutine(initialData.id, {
+        name: name.trim(),
+        exercises: exercisesPayload,
+      });
+    } else {
+      result = await createWorkoutRoutine({
+        memberId,
+        gymId,
+        name: name.trim(),
+        exercises: exercisesPayload,
+      });
+    }
 
     if (result.success) {
-      toast.success('Routine created!');
+      toast.success(isEditing ? 'Routine updated!' : 'Routine created!');
       router.push(`/${gymSlug}/portal/trackers`);
     } else {
-      toast.error(result.error || 'Failed to create routine');
+      toast.error(result.error || (isEditing ? 'Failed to update routine' : 'Failed to create routine'));
       setSaving(false);
     }
   };
@@ -342,12 +373,12 @@ export function RoutineForm({
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
+                {isEditing ? 'Saving...' : 'Creating...'}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Create Routine
+                {isEditing ? 'Save Changes' : 'Create Routine'}
               </>
             )}
           </Button>

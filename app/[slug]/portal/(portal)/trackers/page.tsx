@@ -24,9 +24,28 @@ export default async function TrackersPage({
     getActiveWorkoutSession(memberId, gymId),
   ]);
 
-  const activeSession = activeSessionResult.success && activeSessionResult.data
-    ? { routineId: activeSessionResult.data.routine_id, sessionId: activeSessionResult.data.id }
-    : null;
+  const activeSessionData = activeSessionResult.success ? activeSessionResult.data : null;
+  let activeSession = null;
+  if (activeSessionData) {
+    const sessionExercises = activeSessionData.session_exercises || [];
+    const totalExercises = sessionExercises.length;
+    // Count exercises that have at least one set logged today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const completedExercises = sessionExercises.filter((e: any) => {
+      const sets = e.exercise_sets || [];
+      return sets.some((s: any) => new Date(s.created_at) >= today);
+    }).length;
+    // Only show active session if at least one exercise has been logged
+    if (completedExercises > 0) {
+      activeSession = {
+        routineId: activeSessionData.routine_id,
+        sessionId: activeSessionData.id,
+        totalExercises,
+        completedExercises,
+      };
+    }
+  }
 
   return (
     <RoutinesPageContent

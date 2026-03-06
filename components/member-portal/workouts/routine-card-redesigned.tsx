@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
-import { deleteWorkoutRoutine, completeWorkoutSession } from '@/lib/actions/members-portal';
+import { deleteWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
 
 interface RoutineCardRedesignedProps {
@@ -19,6 +19,7 @@ interface RoutineCardRedesignedProps {
   gymSlug: string;
   lastSessionDate?: string;
   activeSessionId?: string;
+  activeProgress?: { total: number; completed: number };
   onSelect?: (routine: any) => void;
 }
 
@@ -43,11 +44,28 @@ export function RoutineCardRedesigned({
   gymSlug,
   lastSessionDate,
   activeSessionId,
+  activeProgress,
   onSelect,
 }: RoutineCardRedesignedProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
-  const [completing, setCompleting] = useState(false);
+  const [glowing, setGlowing] = useState(false);
+  const prevProgressRef = useRef<number | null>(null);
+
+  const isActive = !!activeSessionId;
+  const progressPercent = activeProgress && activeProgress.total > 0
+    ? Math.round((activeProgress.completed / activeProgress.total) * 100)
+    : 0;
+
+  // Trigger glow animation when progress changes
+  useEffect(() => {
+    if (prevProgressRef.current !== null && progressPercent > prevProgressRef.current) {
+      setGlowing(true);
+      const timer = setTimeout(() => setGlowing(false), 600);
+      return () => clearTimeout(timer);
+    }
+    prevProgressRef.current = progressPercent;
+  }, [progressPercent]);
 
   const primaryCategory = (() => {
     const exercises = routine.routine_exercises || [];
@@ -87,20 +105,6 @@ export function RoutineCardRedesigned({
     }
   };
 
-  const handleCompleteSession = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!activeSessionId || completing) return;
-    setCompleting(true);
-    const result = await completeWorkoutSession(activeSessionId);
-    if (result.success) {
-      toast.success('Session completed');
-      router.refresh();
-    } else {
-      toast.error(result.error || 'Failed to complete session');
-    }
-    setCompleting(false);
-  };
-
   const handleCardClick = () => {
     if (exerciseCount > 0 && onSelect) {
       onSelect(routine);
@@ -110,9 +114,25 @@ export function RoutineCardRedesigned({
   return (
     <div
       onClick={handleCardClick}
-      className="rounded-xl border border-slate-800 px-4 py-3 cursor-pointer hover:border-slate-700 transition-colors"
+      className={`relative rounded-xl cursor-pointer transition-all duration-500 ${
+        glowing ? 'scale-[1.02]' : ''
+      }`}
+      style={isActive ? {
+        padding: '2px',
+        background: `conic-gradient(from 0deg, #06b6d4 ${progressPercent}%, transparent ${progressPercent}%)`,
+        borderRadius: '0.75rem',
+        boxShadow: glowing ? '0 0 20px rgba(6, 182, 212, 0.5), 0 0 40px rgba(6, 182, 212, 0.2)' : 'none',
+        transition: 'box-shadow 0.5s ease, transform 0.5s ease',
+      } : undefined}
     >
-      {/* Top row: name + icon, toggle/days ago, menu */}
+      <div
+        className={`rounded-xl px-4 py-3 ${
+          isActive
+            ? 'bg-slate-950 border-0'
+            : 'border border-slate-800 hover:border-slate-700'
+        }`}
+      >
+      {/* Top row: name + icon, days ago, menu */}
       <div className="flex items-center gap-2">
         {/* Routine name */}
         <h3 className="text-lg font-bold text-white">{routine.name}</h3>
@@ -123,21 +143,16 @@ export function RoutineCardRedesigned({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Active toggle or days ago */}
-        {activeSessionId ? (
-          <button
-            type="button"
-            onClick={handleCompleteSession}
-            disabled={completing}
-            className="relative flex-shrink-0 h-6 w-11 rounded-full bg-emerald-500 transition-colors disabled:opacity-50"
-          >
-            <span className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" />
-          </button>
-        ) : (
+        {/* Active progress or days ago */}
+        {isActive ? (
+          <span className="text-sm font-semibold text-brand-cyan-400 whitespace-nowrap">
+            {activeProgress?.completed}/{activeProgress?.total}
+          </span>
+        ) : daysAgo !== 'Today' ? (
           <span className="text-sm font-medium text-brand-cyan-400 whitespace-nowrap">
             {daysAgo}
           </span>
-        )}
+        ) : null}
 
         {/* 3-dot menu */}
         <DropdownMenu>
@@ -153,7 +168,7 @@ export function RoutineCardRedesigned({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem
-              onClick={() => router.push(`/${gymSlug}/portal/workouts/${routine.id}`)}
+              onClick={() => router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`)}
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -176,6 +191,7 @@ export function RoutineCardRedesigned({
           {exercisePreview}
         </p>
       )}
+      </div>
     </div>
   );
 }
