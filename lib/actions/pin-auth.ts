@@ -6,7 +6,7 @@ import { sendPINEmail } from '@/lib/email/notifications';
 import crypto from 'crypto';
 
 const SESSION_COOKIE_NAME = 'member_portal_session';
-const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 const PIN_RATE_LIMIT_MINUTES = 2; // Can request new PIN every 2 minutes
 
 // Encryption key from environment (should be 64 character hex string = 32 bytes)
@@ -82,7 +82,7 @@ function createSessionToken(memberId: string, gymId: string): string {
 }
 
 // Helper function to verify session token
-function verifySessionToken(token: string): { memberId: string; gymId: string } | null {
+function verifySessionToken(token: string): { memberId: string; gymId: string; expiresAt: number } | null {
   try {
     const parts = token.split(':');
     const iv = Buffer.from(parts[0], 'hex');
@@ -107,6 +107,7 @@ function verifySessionToken(token: string): { memberId: string; gymId: string } 
     return {
       memberId: payload.memberId,
       gymId: payload.gymId,
+      expiresAt: payload.expiresAt,
     };
   } catch (error) {
     return null;
@@ -363,7 +364,7 @@ export async function registerNewMember(
     cookies().set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: SESSION_DURATION / 1000,
       path: '/',
     });
@@ -531,7 +532,7 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
     cookies().set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: SESSION_DURATION / 1000, // Convert to seconds
       path: '/',
     });
@@ -591,6 +592,18 @@ export async function getAuthenticatedMember(gymSlug: string) {
         success: false,
         error: 'Invalid session',
       };
+    }
+
+    // Sliding renewal: refresh session if less than half the duration remains
+    if (session.expiresAt - Date.now() < SESSION_DURATION / 2) {
+      const newToken = createSessionToken(session.memberId, session.gymId);
+      cookies().set(SESSION_COOKIE_NAME, newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: SESSION_DURATION / 1000,
+        path: '/',
+      });
     }
 
     return {
