@@ -70,7 +70,7 @@ export function WorkoutSuggestions({
           </div>
         ) : (
           <div className="space-y-3">
-            {suggestions.map((suggestion) => {
+            {suggestions.slice(0, 2).map((suggestion) => {
               const styles = getSeverityStyles(suggestion.daysSince);
 
               return (

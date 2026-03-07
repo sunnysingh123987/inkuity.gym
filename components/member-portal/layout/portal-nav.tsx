@@ -31,7 +31,7 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
       ],
     },
     {
-      name: 'Progress',
+      name: 'Diet',
       href: `/${gymSlug}/portal/meals`,
       icon: UtensilsCrossed,
       matchPaths: [`/${gymSlug}/portal/meals`],

@@ -259,7 +259,7 @@ export function WorkoutLogSheet({
           )}
         </div>
 
-        {/* Done button — just closes the sheet; session stays in_progress for the day */}
+        {/* Done button — closes the sheet */}
         {session && !loading && (
           <div className="px-4 pb-6 pt-2 border-t border-slate-800">
             <button

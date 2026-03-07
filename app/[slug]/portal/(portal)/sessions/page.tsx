@@ -2,8 +2,7 @@ import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { redirect } from 'next/navigation';
 import { getWorkoutSessionHistory } from '@/lib/actions/members-portal';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Dumbbell } from 'lucide-react';
+import { Calendar, Dumbbell } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function SessionsPage({
@@ -31,21 +30,6 @@ export default async function SessionsPage({
     });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return 'N/A';
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
 
   return (
     <div className="space-y-6">
@@ -77,17 +61,6 @@ export default async function SessionsPage({
                           <h3 className="font-semibold text-lg text-white">
                             {routineName || 'Workout Session'}
                           </h3>
-                          <Badge
-                            variant={
-                              workoutSession.status === 'completed'
-                                ? 'default'
-                                : workoutSession.status === 'in_progress'
-                                ? 'secondary'
-                                : 'outline'
-                            }
-                          >
-                            {workoutSession.status}
-                          </Badge>
                         </div>
 
                         <div className="flex flex-wrap gap-4 text-sm text-slate-400">
@@ -95,16 +68,6 @@ export default async function SessionsPage({
                             <Calendar className="h-4 w-4" />
                             {formatDate(workoutSession.started_at)}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {formatTime(workoutSession.started_at)}
-                          </div>
-                          {workoutSession.duration_minutes && (
-                            <div className="flex items-center gap-1">
-                              <Dumbbell className="h-4 w-4" />
-                              {formatDuration(workoutSession.duration_minutes)}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

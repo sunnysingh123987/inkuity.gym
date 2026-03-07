@@ -94,6 +94,7 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
     latitude: (gym?.settings as any)?.latitude?.toString() || '',
     longitude: (gym?.settings as any)?.longitude?.toString() || '',
     geofence_radius: (gym?.settings as any)?.geofence_radius?.toString() || '6',
+    require_location_checkin: (gym?.settings as any)?.require_location_checkin !== false,
   })
   const [geoLoading, setGeoLoading] = useState(false)
 
@@ -190,6 +191,7 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
         ...(lat != null && !isNaN(lat) ? { latitude: lat } : {}),
         ...(lng != null && !isNaN(lng) ? { longitude: lng } : {}),
         geofence_radius: radius,
+        require_location_checkin: geoData.require_location_checkin,
       }
       if (!geoData.latitude) delete updatedSettings.latitude
       if (!geoData.longitude) delete updatedSettings.longitude
@@ -352,9 +354,11 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
                   <div>
                     <p className="text-sm font-medium text-foreground">Check-in Location</p>
                     <p className="text-sm text-muted-foreground">
-                      {geoData.latitude && geoData.longitude
-                        ? `${geoData.geofence_radius || 6}m radius`
-                        : 'Not configured'}
+                      {!geoData.require_location_checkin
+                        ? 'Disabled'
+                        : geoData.latitude && geoData.longitude
+                          ? `${geoData.geofence_radius || 6}m radius`
+                          : 'Not configured'}
                     </p>
                   </div>
                 </div>
@@ -632,6 +636,18 @@ export function SettingsForm({ profile, gym, checkInQRCode }: SettingsFormProps)
               <p className="text-sm text-muted-foreground">
                 Set your gym&apos;s coordinates to restrict QR check-ins to members physically at the gym.
               </p>
+              <label className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/50">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Require Location for Check-in</p>
+                  <p className="text-xs text-muted-foreground">Members must be near the gym to check in</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={geoData.require_location_checkin}
+                  onChange={(e) => setGeoData({ ...geoData, require_location_checkin: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+              </label>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1">Latitude <InfoTooltip text="Your gym's latitude coordinate." /></Label>

@@ -8,6 +8,7 @@ import {
   getCustomTrackers,
   seedDefaultFoodItems,
 } from '@/lib/actions/members-portal';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { NutritionTrackerPage } from '@/components/member-portal/diet/nutrition-tracker-page';
 
 export default async function MealsPage({
@@ -21,6 +22,14 @@ export default async function MealsPage({
   }
 
   const { memberId, gymId } = authResult.data;
+
+  // Get member weight
+  const supabase = createAdminSupabaseClient();
+  const { data: member } = await supabase
+    .from('members')
+    .select('weight_kg, height_feet, height_inches, gender')
+    .eq('id', memberId)
+    .single();
   const today = new Date().toISOString().split('T')[0];
 
   // Ensure member has an active diet plan (create default if none)
@@ -51,6 +60,10 @@ export default async function MealsPage({
         initialFoodDatabase={[]}
         initialFoodLog={[]}
         initialTrackers={[]}
+        memberWeightKg={member?.weight_kg || null}
+        memberHeightFeet={member?.height_feet || null}
+        memberHeightInches={member?.height_inches || null}
+        memberGender={member?.gender || null}
       />
     );
   }
@@ -118,6 +131,10 @@ export default async function MealsPage({
       initialFoodDatabase={foodDatabase}
       initialFoodLog={foodLog}
       initialTrackers={trackers}
+      memberWeightKg={member?.weight_kg || null}
+      memberHeightFeet={member?.height_feet || null}
+      memberHeightInches={member?.height_inches || null}
+      memberGender={member?.gender || null}
     />
   );
 }

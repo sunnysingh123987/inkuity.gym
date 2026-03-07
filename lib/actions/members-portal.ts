@@ -832,7 +832,7 @@ export async function startWorkoutSession(
         routine_id: routineId,
         check_in_id: recentCheckIn?.id,
         started_at: new Date().toISOString(),
-        status: 'in_progress',
+        status: 'completed',
       })
       .select()
       .single();
@@ -872,11 +872,15 @@ export async function startWorkoutSession(
 }
 
 /**
- * Get active workout session for a member
+ * Get today's most recent workout session for a member (for reuse within same day)
  */
 export async function getActiveWorkoutSession(memberId: string, gymId: string) {
   try {
     const supabase = createAdminSupabaseClient();
+
+    // Find today's most recent session to allow reuse
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const { data, error } = await supabase
       .from('workout_sessions')
@@ -906,7 +910,7 @@ export async function getActiveWorkoutSession(memberId: string, gymId: string) {
       `)
       .eq('member_id', memberId)
       .eq('gym_id', gymId)
-      .eq('status', 'in_progress')
+      .gte('started_at', today.toISOString())
       .order('started_at', { ascending: false })
       .limit(1)
       .single();
@@ -973,49 +977,10 @@ export async function addSessionExercise(
 }
 
 /**
- * Complete a workout session
+ * @deprecated Sessions are now always created as completed. Kept for backward compatibility.
  */
 export async function completeWorkoutSession(sessionId: string) {
-  try {
-    const supabase = createAdminSupabaseClient();
-
-    const completedAt = new Date();
-
-    // Get session start time
-    const { data: session } = await supabase
-      .from('workout_sessions')
-      .select('started_at')
-      .eq('id', sessionId)
-      .single();
-
-    let durationMinutes = null;
-    if (session) {
-      const startTime = new Date(session.started_at);
-      durationMinutes = Math.round(
-        (completedAt.getTime() - startTime.getTime()) / (1000 * 60)
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('workout_sessions')
-      .update({
-        completed_at: completedAt.toISOString(),
-        duration_minutes: durationMinutes,
-        status: 'completed',
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    revalidatePath('/portal/sessions');
-
-    return { success: true, data };
-  } catch (error: any) {
-    console.error('Error completing session:', error);
-    return { success: false, error: error.message, data: null };
-  }
+  return { success: true, data: null };
 }
 
 /**

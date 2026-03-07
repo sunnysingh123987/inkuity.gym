@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getAuthenticatedMemberInfo, signOut } from '@/lib/actions/pin-auth';
-import { recordQRCheckIn, validateCheckInLocation } from '@/lib/actions/checkin-flow';
+import { recordQRCheckIn, validateCheckInLocation, getActiveCheckIn, isLocationRequiredForCheckIn } from '@/lib/actions/checkin-flow';
 import { toast } from 'sonner';
-import { Building2, Loader2, MapPinOff } from 'lucide-react';
+import { Building2, Loader2, MapPinOff, LogOut } from 'lucide-react';
+import { checkOutMember } from '@/lib/actions/checkin-flow';
 
 interface QuickCheckInPageProps {
   params: { slug: string };
@@ -26,6 +27,7 @@ export default function QuickCheckInPage({ params }: QuickCheckInPageProps) {
     gymLogoUrl: string | null;
   } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [activeCheckInData, setActiveCheckInData] = useState<{ id: string; check_in_at: string } | null>(null);
 
   useEffect(() => {
     async function loadMemberInfo() {
@@ -33,6 +35,11 @@ export default function QuickCheckInPage({ params }: QuickCheckInPageProps) {
         const result = await getAuthenticatedMemberInfo(params.slug);
         if (result.success && result.data) {
           setMemberInfo(result.data);
+          // Check if member has an active check-in
+          const active = await getActiveCheckIn(result.data.memberId, result.data.gymId);
+          if (active) {
+            setActiveCheckInData(active);
+          }
         } else {
           // Session invalid, redirect to sign-in
           const signInParams = new URLSearchParams();
@@ -62,9 +69,10 @@ export default function QuickCheckInPage({ params }: QuickCheckInPageProps) {
       const scanId = searchParams.get('scan_id') || undefined;
       const qrCode = searchParams.get('qr_code') || undefined;
 
-      // Attempt geolocation validation
+      // Attempt geolocation validation only if gym requires it
+      const locationRequired = await isLocationRequiredForCheckIn(memberInfo.gymId);
       let locationAllowed = true;
-      if (navigator.geolocation) {
+      if (locationRequired && navigator.geolocation) {
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -152,6 +160,93 @@ export default function QuickCheckInPage({ params }: QuickCheckInPageProps) {
     month: 'long',
     day: 'numeric',
   });
+
+  // If member has an active check-in, show check-out UI
+  if (activeCheckInData) {
+    const checkInTime = new Date(activeCheckInData.check_in_at).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const handleCheckOut = async () => {
+      setIsCheckingIn(true);
+      try {
+        const result = await checkOutMember(memberInfo.memberId, memberInfo.gymId);
+        if (result.success) {
+          toast.success('Checked out successfully!');
+          router.push(`/${params.slug}/portal/dashboard`);
+        } else {
+          toast.error(result.error || 'Check-out failed');
+        }
+      } catch {
+        toast.error('An unexpected error occurred');
+      } finally {
+        setIsCheckingIn(false);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+            <CardContent className="pt-8 pb-6 px-6 text-center space-y-6">
+              {memberInfo.gymLogoUrl ? (
+                <div className="flex justify-center">
+                  <img
+                    src={memberInfo.gymLogoUrl}
+                    alt={memberInfo.gymName}
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <LogOut className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <p className="text-sm text-slate-400">{memberInfo.gymName}</p>
+                <h1 className="text-2xl font-bold text-white">
+                  Already checked in, {firstName}!
+                </h1>
+                <p className="text-sm text-slate-400">
+                  You checked in at {checkInTime}
+                </p>
+              </div>
+
+              <div className="text-slate-400 text-sm space-y-0.5">
+                <p>{dateString}</p>
+                <p className="font-mono text-lg text-slate-300">{timeString}</p>
+              </div>
+
+              {/* Check-out button */}
+              <button
+                onClick={handleCheckOut}
+                disabled={isCheckingIn}
+                className="relative mx-auto flex items-center justify-center w-40 h-40 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 text-white font-bold text-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-60 disabled:hover:scale-100"
+              >
+                {isCheckingIn ? (
+                  <Loader2 className="h-10 w-10 animate-spin" />
+                ) : (
+                  'Check Out'
+                )}
+              </button>
+
+              {/* Go to dashboard instead */}
+              <button
+                onClick={() => router.push(`/${params.slug}/portal/dashboard`)}
+                className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Go to dashboard instead
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">

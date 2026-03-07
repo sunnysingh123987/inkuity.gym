@@ -2,8 +2,7 @@ import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { redirect } from 'next/navigation';
 import { getWorkoutSessionHistory } from '@/lib/actions/members-portal';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dumbbell, Clock, Calendar } from 'lucide-react';
+import { Dumbbell, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function WorkoutsPage({
@@ -36,13 +35,6 @@ export default async function WorkoutsPage({
     });
   };
 
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return null;
-    if (minutes < 60) return `${minutes}m`;
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  };
 
   return (
     <div className="space-y-5">
@@ -67,7 +59,6 @@ export default async function WorkoutsPage({
             const routineName = Array.isArray(session.workout_routines)
               ? session.workout_routines[0]?.name
               : session.workout_routines?.name;
-            const duration = formatDuration(session.duration_minutes);
 
             return (
               <Link
@@ -87,20 +78,8 @@ export default async function WorkoutsPage({
                         <Calendar className="h-3 w-3" />
                         {formatDate(session.started_at)}
                       </span>
-                      {duration && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {duration}
-                        </span>
-                      )}
                     </div>
                   </div>
-                  <Badge
-                    variant={session.status === 'completed' ? 'default' : 'secondary'}
-                    className="shrink-0 text-[10px]"
-                  >
-                    {session.status}
-                  </Badge>
                 </div>
               </Link>
             );

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { UAParser } from 'ua-parser-js';
+import { cookies } from 'next/headers';
+import { getActiveCheckIn } from '@/lib/actions/checkin-flow';
 
 /**
  * QR Code Scan Handler

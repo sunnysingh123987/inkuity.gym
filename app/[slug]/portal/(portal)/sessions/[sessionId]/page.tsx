@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getWorkoutSession } from '@/lib/actions/members-portal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Dumbbell, Trophy, CheckCircle2 } from 'lucide-react';
+import { Calendar, Dumbbell, Trophy, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -36,21 +36,6 @@ export default async function SessionDetailPage({
     });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return 'N/A';
-    if (minutes < 60) return `${minutes} minutes`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
 
   const routineName = Array.isArray(workoutSession.workout_routines)
     ? workoutSession.workout_routines[0]?.name
@@ -99,37 +84,14 @@ export default async function SessionDetailPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-slate-400">Status</p>
-              <Badge
-                variant={
-                  workoutSession.status === 'completed'
-                    ? 'default'
-                    : workoutSession.status === 'in_progress'
-                    ? 'secondary'
-                    : 'outline'
-                }
-              >
-                {workoutSession.status}
-              </Badge>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-slate-400 flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Start Time
+                <Calendar className="h-4 w-4" />
+                Date
               </p>
               <p className="font-semibold">
-                {formatTime(workoutSession.started_at)}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-400 flex items-center gap-1">
-                <Dumbbell className="h-4 w-4" />
-                Duration
-              </p>
-              <p className="font-semibold">
-                {formatDuration(workoutSession.duration_minutes)}
+                {formatDate(workoutSession.started_at)}
               </p>
             </div>
             <div className="space-y-1">

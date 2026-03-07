@@ -7,8 +7,10 @@ import { getWorkoutSuggestions } from '@/lib/actions/members-portal';
 import { getActiveAnnouncements } from '@/lib/actions/announcements';
 import { ActiveAnnouncements } from '@/components/member-portal/dashboard/active-announcements';
 import { DashboardQuickActions } from '@/components/member-portal/dashboard/dashboard-quick-actions';
+import { AutoCheckoutWarning } from '@/components/member-portal/dashboard/auto-checkout-warning';
 import { WeeklyActivityBar } from '@/components/member-portal/dashboard/weekly-activity-bar';
 import { CompactStats } from '@/components/member-portal/dashboard/compact-stats';
+import { getActiveCheckIn, getLiveGymTraffic, getPeakHourToday, getHourlyTrafficAverage } from '@/lib/actions/checkin-flow';
 
 export default async function DashboardPage({
   params,
@@ -119,24 +121,8 @@ export default async function DashboardPage({
     }
   }
 
-  // Weekly check-ins count
-  const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const { count: weeklyCheckIns } = await supabase
-    .from('check_ins')
-    .select('*', { count: 'exact', head: true })
-    .eq('member_id', memberId)
-    .eq('gym_id', gymId)
-    .gte('check_in_at', startOfWeek.toISOString());
-
-  const { count: weeklyWorkouts } = await supabase
-    .from('workout_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('member_id', memberId)
-    .eq('status', 'completed')
-    .gte('started_at', startOfWeek.toISOString());
+  // Hourly gym traffic averages
+  const hourlyTraffic = await getHourlyTrafficAverage(gymId);
 
   // Get workout suggestions
   const suggestionsResult = await getWorkoutSuggestions(memberId, gymId);
@@ -146,6 +132,13 @@ export default async function DashboardPage({
   // Get active announcements
   const announcementsResult = await getActiveAnnouncements(gymId);
   const activeAnnouncements = announcementsResult.data || [];
+
+  // Get active check-in, live traffic, and peak hour
+  const [activeCheckIn, liveTraffic, peakHour] = await Promise.all([
+    getActiveCheckIn(memberId, gymId),
+    getLiveGymTraffic(gymId),
+    getPeakHourToday(gymId),
+  ]);
 
   // Check if already checked in today
   const today = new Date();
@@ -175,15 +168,53 @@ export default async function DashboardPage({
       )}
 
       <div data-animate>
-        <DashboardQuickActions gymSlug={params.slug} alreadyCheckedIn={alreadyCheckedInToday} />
+        <DashboardQuickActions
+          gymSlug={params.slug}
+          alreadyCheckedIn={alreadyCheckedInToday}
+          activeCheckIn={activeCheckIn}
+          memberId={memberId}
+          gymId={gymId}
+          liveTraffic={liveTraffic}
+        />
+        {activeCheckIn && (
+          <AutoCheckoutWarning
+            checkInTime={activeCheckIn.check_in_at}
+            memberId={memberId}
+            gymId={gymId}
+          />
+        )}
       </div>
 
       <div data-animate>
-        <WeeklyActivityBar
-          weeklyCheckIns={weeklyCheckIns || 0}
-          weeklyWorkouts={weeklyWorkouts || 0}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex flex-col items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              <span className="text-[11px] text-slate-500">In Gym Now</span>
+            </div>
+            <span className="text-xl font-bold text-white">{liveTraffic}</span>
+          </div>
+          <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex flex-col items-center gap-1">
+            <span className="text-[11px] text-slate-500">Peak Hour</span>
+            {peakHour ? (
+              <span className="text-xl font-bold text-white">
+                {peakHour.hour % 12 || 12}{peakHour.hour < 12 ? 'am' : 'pm'}
+              </span>
+            ) : (
+              <span className="text-sm text-slate-500">No data yet</span>
+            )}
+          </div>
+        </div>
       </div>
+
+      {hourlyTraffic.some((d) => d.count > 0) && (
+        <div data-animate>
+          <WeeklyActivityBar data={hourlyTraffic} />
+        </div>
+      )}
 
       <div data-animate>
         <CompactStats

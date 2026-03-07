@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RoutineCardRedesigned } from '@/components/member-portal/workouts/routine-card-redesigned';
 import { WorkoutLogSheet } from '@/components/member-portal/workouts/workout-log-sheet';
-import { Dumbbell, Settings, Plus } from 'lucide-react';
+import { Dumbbell, ClipboardList, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface RoutinesPageContentProps {
@@ -83,7 +83,7 @@ export function RoutinesPageContent({
       {/* Header */}
       <div className="flex items-center gap-2">
         <h1 className="text-xl font-bold text-white">My routines</h1>
-        <Settings className="h-5 w-5 text-brand-cyan-400" />
+        <ClipboardList className="h-5 w-5 text-brand-cyan-400" />
       </div>
 
       {/* Routine list */}

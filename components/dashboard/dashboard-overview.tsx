@@ -57,6 +57,7 @@ interface DashboardOverviewProps {
   liveCheckIns: {
     id: string
     check_in_at: string
+    check_out_at?: string | null
     member: {
       id: string
       full_name: string | null
@@ -68,6 +69,7 @@ interface DashboardOverviewProps {
     streak?: number
     daysLeft?: number | null
   }[]
+  inGymNow?: number
   financeSummary?: {
     totalRevenue: number
     totalExpenses: number
@@ -103,6 +105,7 @@ export function DashboardOverview({
   paymentsDue,
   currency,
   liveCheckIns,
+  inGymNow = 0,
   financeSummary,
   lastMonthFinanceSummary,
   recentReviews = [],
@@ -183,6 +186,7 @@ export function DashboardOverview({
             weekCheckIns={weekCheckIns}
             monthCheckIns={monthCheckIns}
             totalCheckIns={analytics.totalScans}
+            inGymNow={inGymNow}
           />
         </div>
       )}
@@ -218,6 +222,7 @@ export function DashboardOverview({
                   hour: '2-digit',
                   minute: '2-digit',
                 })
+                const isStillIn = !checkIn.check_out_at
                 const phone = member?.phone
                 const whatsappLink = phone
                   ? `https://wa.me/${phone.replace(/[^0-9]/g, '')}`
@@ -249,6 +254,14 @@ export function DashboardOverview({
                             <Clock className="h-3 w-3" />
                             {time}
                           </span>
+                          {isStillIn ? (
+                            <span className="flex items-center gap-1 text-green-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                              In gym
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">Left</span>
+                          )}
                           {streak > 0 && (
                             <span className="flex items-center gap-1 text-amber-400">
                               <Zap className="h-3 w-3" />
@@ -789,11 +802,13 @@ function CheckInMetricsCard({
   weekCheckIns,
   monthCheckIns,
   totalCheckIns,
+  inGymNow = 0,
 }: {
   todayCheckIns: number
   weekCheckIns: number
   monthCheckIns: number
   totalCheckIns: number
+  inGymNow?: number
 }) {
   const metrics = [
     { label: 'Today', value: todayCheckIns, icon: TrendingUp, color: 'text-brand-cyan-400' },
@@ -808,6 +823,20 @@ function CheckInMetricsCard({
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
           Check-in Metrics
         </p>
+
+        {/* In Gym Now - prominent display */}
+        {inGymNow > 0 && (
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+              </span>
+              <span className="text-sm font-medium text-green-400">In Gym Now</span>
+            </div>
+            <span className="text-lg font-bold tabular-nums text-green-400">{inGymNow}</span>
+          </div>
+        )}
 
         <div className="flex-1 space-y-3">
           {metrics.map((metric) => (

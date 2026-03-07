@@ -2,7 +2,7 @@ import { getGyms, getQRCodes, getAnalyticsSummary } from '@/lib/actions/gyms'
 import { getDashboardSettings } from '@/lib/dashboard-settings'
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
 import { createClient } from '@/lib/supabase/server'
-import { getLiveCheckIns } from '@/lib/actions/checkin-flow'
+import { getLiveCheckIns, getLiveGymTraffic } from '@/lib/actions/checkin-flow'
 import { getGymReviews, getFeedbackRequests } from '@/lib/actions/reviews'
 import { getFinancialSummary } from '@/lib/actions/staff-expenses'
 
@@ -245,6 +245,12 @@ export default async function DashboardPage() {
     // Get top expenses this month
   }
 
+  // Fetch live gym traffic count
+  let inGymNow = 0
+  if (gym) {
+    inGymNow = await getLiveGymTraffic(gym.id)
+  }
+
   // Fetch today's live check-ins with member details (enhanced with subscription data)
   let liveCheckIns: any[] = []
   if (gym) {
@@ -373,6 +379,7 @@ export default async function DashboardPage() {
       paymentsDue={paymentsDue}
       currency={gym?.currency || 'INR'}
       liveCheckIns={liveCheckIns}
+      inGymNow={inGymNow}
       financeSummary={financeSummary}
       lastMonthFinanceSummary={lastMonthFinanceSummary}
       recentReviews={recentReviews}

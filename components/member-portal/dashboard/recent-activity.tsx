@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Dumbbell, Clock } from 'lucide-react';
+import { Calendar, Dumbbell } from 'lucide-react';
 
 interface RecentActivityProps {
   recentWorkouts: any[];
@@ -20,13 +20,6 @@ export function RecentActivity({
     });
   };
 
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return 'N/A';
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
 
   return (
     <Card className="bg-slate-900 border-slate-800">
@@ -66,19 +59,7 @@ export function RecentActivity({
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        {workout.status === 'completed' && (
-                          <div className="flex items-center text-xs text-slate-400">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {formatDuration(workout.duration_minutes)}
-                          </div>
-                        )}
-                        {workout.status === 'in_progress' && (
-                          <span className="text-xs text-amber-400 font-medium">
-                            In Progress
-                          </span>
-                        )}
-                      </div>
+                      <div className="text-right" />
                     </div>
                   );
                 })}

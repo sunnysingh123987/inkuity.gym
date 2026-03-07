@@ -5,9 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RoutineCard } from '@/components/member-portal/workouts/routine-card';
 import { PRTracker } from '@/components/member-portal/personal-records/pr-tracker';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, Clock } from 'lucide-react';
+import { Plus, Calendar } from 'lucide-react';
 import { getUiSvg } from '@/lib/svg-icons';
 import Link from 'next/link';
 import type { PersonalRecord } from '@/types/database';
@@ -53,20 +52,6 @@ export function TrackersPageContent({
     });
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return 'N/A';
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
 
   return (
     <div className="space-y-6">
@@ -183,33 +168,12 @@ export function TrackersPageContent({
                               <h3 className="font-semibold text-lg text-white">
                                 {routineName || 'Workout Session'}
                               </h3>
-                              <Badge
-                                variant={
-                                  workoutSession.status === 'completed'
-                                    ? 'default'
-                                    : workoutSession.status === 'in_progress'
-                                    ? 'secondary'
-                                    : 'outline'
-                                }
-                              >
-                                {workoutSession.status}
-                              </Badge>
                             </div>
                             <div className="flex flex-wrap gap-4 text-sm text-slate-400">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
                                 {formatDate(workoutSession.started_at)}
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatTime(workoutSession.started_at)}
-                              </div>
-                              {workoutSession.duration_minutes && (
-                                <div className="flex items-center gap-1">
-                                  <img src={getUiSvg('timer')} alt="" className="h-4 w-4 opacity-70" />
-                                  {formatDuration(workoutSession.duration_minutes)}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>

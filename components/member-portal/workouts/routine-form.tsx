@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
-import { Loader2, Save, Plus, Minus, Search, X, Dumbbell } from 'lucide-react';
+import { Loader2, Save, Plus, Minus, Search, X, Dumbbell, ChevronDown, Check } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
-import { cn } from '@/lib/utils';
 import {
   EXERCISES as LOCAL_EXERCISES,
   searchExercises,
+  type Exercise,
 } from '@/lib/data/exercises';
 
 interface RoutineFormProps {
@@ -39,6 +39,7 @@ interface ExerciseOption {
   name: string;
   category: string;
   source: 'library' | 'local';
+  equipment?: string[];
 }
 
 export function RoutineForm({
@@ -53,6 +54,8 @@ export function RoutineForm({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [query, setQuery] = useState('');
+  const [expandedEquipmentId, setExpandedEquipmentId] = useState<string | null>(null);
+  const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
 
   const isEditing = !!initialData?.id;
 
@@ -90,27 +93,45 @@ export function RoutineForm({
 
   // Merge gym library + local exercises
   const allExercises = useMemo(() => {
+    // Normalize name for deduplication (lowercase, trim, strip trailing 's')
+    const normalizeName = (n: string) => {
+      const key = n.toLowerCase().trim();
+      return key.endsWith('s') ? key.slice(0, -1) : key;
+    };
+
+    // Build a lookup from local exercises by normalized name for equipment data
+    const localByName = new Map<string, Exercise>();
+    for (const local of LOCAL_EXERCISES) {
+      localByName.set(normalizeName(local.name), local);
+    }
+
     const libraryMap = new Map<string, ExerciseOption>();
-    const libraryNames = new Set<string>();
+    const libraryNorms = new Set<string>();
 
     for (const ex of exercises) {
+      const norm = normalizeName(ex.name);
+      const localMatch = localByName.get(norm);
+      // Skip library exercise if a local exercise with equipment exists for the same base name
+      if (localMatch && localMatch.equipment.length > 0) continue;
       libraryMap.set(ex.id, {
         id: ex.id,
         name: ex.name,
         category: ex.category || 'other',
         source: 'library',
+        equipment: localMatch?.equipment,
       });
-      libraryNames.add(ex.name.toLowerCase().trim());
+      libraryNorms.add(norm);
     }
 
     const localExtras: ExerciseOption[] = [];
     for (const local of LOCAL_EXERCISES) {
-      if (!libraryNames.has(local.name.toLowerCase().trim())) {
+      if (!libraryNorms.has(normalizeName(local.name))) {
         localExtras.push({
           id: `local-${local.id}`,
           name: local.name,
           category: local.category,
           source: 'local',
+          equipment: local.equipment,
         });
       }
     }
@@ -118,9 +139,14 @@ export function RoutineForm({
     return [...Array.from(libraryMap.values()), ...localExtras];
   }, [exercises]);
 
-  // Filter by search query
+  // Filter by search query and muscle group
   const filteredExercises = useMemo(() => {
     let results = allExercises;
+
+    // Apply muscle group filter
+    if (muscleFilter) {
+      results = results.filter((ex) => ex.category?.toLowerCase() === muscleFilter);
+    }
 
     if (query.trim()) {
       const q = query.toLowerCase().trim();
@@ -156,17 +182,34 @@ export function RoutineForm({
     }
 
     return results;
-  }, [allExercises, query]);
+  }, [allExercises, query, muscleFilter]);
 
   const selectedIds = new Set(selectedExercises.map((e) => e.exerciseId));
 
   const handleAddExercise = (exercise: ExerciseOption) => {
+    const equipmentList = exercise.equipment || [];
+
+    // If 2+ equipment options, toggle sub-menu instead of adding directly
+    if (equipmentList.length >= 2) {
+      setExpandedEquipmentId((prev) => (prev === exercise.id ? null : exercise.id));
+      return;
+    }
+
+    // 0 or 1 equipment → add directly
     if (selectedIds.has(exercise.id)) return;
+    const finalName = equipmentList.length === 1
+      ? `${exercise.name} - ${equipmentList[0]}`
+      : exercise.name;
+    const finalId = equipmentList.length === 1
+      ? `${exercise.id}-${equipmentList[0].toLowerCase().replace(/\s+/g, '-')}`
+      : exercise.id;
+
+    if (selectedIds.has(finalId)) return;
     setSelectedExercises((prev) => [
       ...prev,
       {
-        exerciseId: exercise.id,
-        name: exercise.name,
+        exerciseId: finalId,
+        name: finalName,
         category: exercise.category,
         sets: 3,
         reps: 10,
@@ -175,6 +218,29 @@ export function RoutineForm({
         source: exercise.source,
       },
     ]);
+  };
+
+  const handleSelectEquipment = (exercise: ExerciseOption, equipment: string) => {
+    const equipSlug = equipment.toLowerCase().replace(/\s+/g, '-');
+    const finalId = `${exercise.id}-${equipSlug}`;
+    if (selectedIds.has(finalId)) {
+      setExpandedEquipmentId(null);
+      return;
+    }
+    setSelectedExercises((prev) => [
+      ...prev,
+      {
+        exerciseId: finalId,
+        name: `${exercise.name} - ${equipment}`,
+        category: exercise.category,
+        sets: 3,
+        reps: 10,
+        rest_seconds: 60,
+        notes: '',
+        source: exercise.source,
+      },
+    ]);
+    setExpandedEquipmentId(null);
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
@@ -187,17 +253,11 @@ export function RoutineForm({
     );
   };
 
-  const moveExercise = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= selectedExercises.length) return;
-    const updated = [...selectedExercises];
-    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-    setSelectedExercises(updated);
-  };
-
   const closeSheet = () => {
     setSheetOpen(false);
     setQuery('');
+    setExpandedEquipmentId(null);
+    setMuscleFilter(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -269,14 +329,9 @@ export function RoutineForm({
         {/* ---- Selected Exercises ---- */}
         {selectedExercises.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-slate-300 text-sm font-semibold">
-                Exercises ({selectedExercises.length})
-              </Label>
-              <span className="text-xs text-slate-500">
-                Tap arrows to reorder
-              </span>
-            </div>
+            <Label className="text-slate-300 text-sm font-semibold">
+              Exercises ({selectedExercises.length})
+            </Label>
 
             <div className="space-y-2.5">
               {selectedExercises.map((exercise, index) => (
@@ -286,38 +341,6 @@ export function RoutineForm({
                 >
                   {/* Exercise header */}
                   <div className="flex items-center gap-2">
-                    {/* Reorder buttons */}
-                    <div className="flex flex-col gap-0.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => moveExercise(index, 'up')}
-                        className={cn(
-                          'h-5 w-5 flex items-center justify-center rounded text-slate-500 transition-colors',
-                          index === 0 ? 'opacity-30' : 'hover:text-white hover:bg-slate-800'
-                        )}
-                      >
-                        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                          <path d="M6 2L2 7H10L6 2Z" fill="currentColor" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index === selectedExercises.length - 1}
-                        onClick={() => moveExercise(index, 'down')}
-                        className={cn(
-                          'h-5 w-5 flex items-center justify-center rounded text-slate-500 transition-colors',
-                          index === selectedExercises.length - 1
-                            ? 'opacity-30'
-                            : 'hover:text-white hover:bg-slate-800'
-                        )}
-                      >
-                        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                          <path d="M6 10L10 5H2L6 10Z" fill="currentColor" />
-                        </svg>
-                      </button>
-                    </div>
-
                     <img
                       src={getCategorySvg(exercise.category)}
                       alt=""
@@ -338,15 +361,6 @@ export function RoutineForm({
                     </button>
                   </div>
 
-                  {/* Notes */}
-                  <Input
-                    placeholder="Notes (optional)"
-                    value={exercise.notes}
-                    onChange={(e) =>
-                      updateExercise(exercise.exerciseId, { notes: e.target.value })
-                    }
-                    className="bg-slate-800 border-slate-700 text-xs placeholder:text-slate-600 h-8"
-                  />
                 </div>
               ))}
             </div>
@@ -420,13 +434,23 @@ export function RoutineForm({
             {/* Header */}
             <div className="flex items-center justify-between px-4 pb-3">
               <h2 className="text-lg font-bold text-white">Add Exercises</h2>
-              <button
-                type="button"
-                onClick={closeSheet}
-                className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-5 w-5 text-slate-400" />
-              </button>
+              {selectedExercises.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={closeSheet}
+                  className="h-9 w-9 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+                >
+                  <Check className="h-5 w-5 text-white" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={closeSheet}
+                  className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <X className="h-5 w-5 text-slate-400" />
+                </button>
+              )}
             </div>
 
             {/* Search */}
@@ -443,10 +467,28 @@ export function RoutineForm({
               </div>
             </div>
 
+            {/* Muscle group filter */}
+            <div className="px-4 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
+              {['chest', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'core', 'full-body', 'cardio', 'forearms'].map((group) => (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => setMuscleFilter(muscleFilter === group ? null : group)}
+                  className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
+                    muscleFilter === group
+                      ? 'bg-brand-cyan-500/20 border-brand-cyan-500/50 text-brand-cyan-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {group.charAt(0).toUpperCase() + group.slice(1).replace('-', ' ')}
+                </button>
+              ))}
+            </div>
+
             {/* Exercise list */}
             <div
               className="overflow-y-auto px-4 pb-6 overscroll-contain"
-              style={{ maxHeight: 'calc(75vh - 140px)' }}
+              style={{ maxHeight: 'calc(75vh - 185px)' }}
             >
               {filteredExercises.length === 0 ? (
                 <div className="text-center py-12">
@@ -456,49 +498,101 @@ export function RoutineForm({
               ) : (
                 <div className="space-y-1">
                   {filteredExercises.map((exercise) => {
-                    const isAdded = selectedIds.has(exercise.id);
+                    const hasMultiEquipment = (exercise.equipment?.length || 0) >= 2;
+                    const isExpanded = expandedEquipmentId === exercise.id;
+                    const isAdded = hasMultiEquipment
+                      ? false // multi-equipment exercises are added per-variant
+                      : selectedIds.has(exercise.id) ||
+                        (exercise.equipment?.length === 1 &&
+                          selectedIds.has(`${exercise.id}-${exercise.equipment[0].toLowerCase().replace(/\s+/g, '-')}`));
                     return (
-                      <div
-                        key={exercise.id}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-900/80 transition-colors"
-                      >
-                        {/* Category icon */}
-                        <img
-                          src={getCategorySvg(exercise.category)}
-                          alt=""
-                          className="h-5 w-5 invert opacity-60 flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                      <div key={exercise.id}>
+                        <div
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-900/80 transition-colors ${
+                            isExpanded ? 'bg-slate-900/60' : ''
+                          }`}
+                        >
+                          {/* Category icon */}
+                          <img
+                            src={getCategorySvg(exercise.category)}
+                            alt=""
+                            className="h-5 w-5 invert opacity-60 flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
 
-                        {/* Name + category */}
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-white truncate block">
-                            {exercise.name}
-                          </span>
-                          <span className="text-[11px] text-slate-500 capitalize">
-                            {exercise.category}
-                          </span>
+                          {/* Name + category */}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-white truncate block">
+                              {exercise.name}
+                            </span>
+                            <span className="text-[11px] text-slate-500 capitalize">
+                              {exercise.category}
+                            </span>
+                          </div>
+
+                          {/* + / chevron / - button */}
+                          {isAdded ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const equipList = exercise.equipment || [];
+                                const removeId = equipList.length === 1
+                                  ? `${exercise.id}-${equipList[0].toLowerCase().replace(/\s+/g, '-')}`
+                                  : exercise.id;
+                                handleRemoveExercise(removeId);
+                              }}
+                              className="h-8 w-8 flex items-center justify-center rounded-full border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                          ) : hasMultiEquipment ? (
+                            <button
+                              type="button"
+                              onClick={() => handleAddExercise(exercise)}
+                              className={`h-8 w-8 flex items-center justify-center rounded-full border transition-colors flex-shrink-0 ${
+                                isExpanded
+                                  ? 'border-brand-cyan-500/60 text-brand-cyan-300 bg-brand-cyan-500/10'
+                                  : 'border-slate-600 text-slate-400 hover:bg-slate-800 hover:text-white'
+                              }`}
+                            >
+                              <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAddExercise(exercise)}
+                              className="h-8 w-8 flex items-center justify-center rounded-full border border-brand-cyan-500/40 text-brand-cyan-400 hover:bg-brand-cyan-500/10 transition-colors flex-shrink-0"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
 
-                        {/* + or - button */}
-                        {isAdded ? (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExercise(exercise.id)}
-                            className="h-8 w-8 flex items-center justify-center rounded-full border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleAddExercise(exercise)}
-                            className="h-8 w-8 flex items-center justify-center rounded-full border border-brand-cyan-500/40 text-brand-cyan-400 hover:bg-brand-cyan-500/10 transition-colors flex-shrink-0"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
+                        {/* Equipment sub-menu */}
+                        {isExpanded && exercise.equipment && (
+                          <div className="flex flex-wrap gap-2 px-3 py-2 ml-8">
+                            {exercise.equipment.map((equip) => {
+                              const equipSlug = equip.toLowerCase().replace(/\s+/g, '-');
+                              const variantId = `${exercise.id}-${equipSlug}`;
+                              const variantAdded = selectedIds.has(variantId);
+                              return (
+                                <button
+                                  key={equip}
+                                  type="button"
+                                  onClick={() => handleSelectEquipment(exercise, equip)}
+                                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                                    variantAdded
+                                      ? 'bg-brand-cyan-500/20 border-brand-cyan-500/50 text-brand-cyan-300'
+                                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                  }`}
+                                >
+                                  {equip}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     );
@@ -506,7 +600,22 @@ export function RoutineForm({
                 </div>
               )}
             </div>
+
           </div>
+
+          {/* Floating done button */}
+          {selectedExercises.length > 0 && (
+            <div className="absolute bottom-4 left-4 right-4">
+              <button
+                type="button"
+                onClick={closeSheet}
+                className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-500/25"
+              >
+                <Check className="h-4 w-4" />
+                Done ({selectedExercises.length} exercise{selectedExercises.length !== 1 ? 's' : ''})
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
