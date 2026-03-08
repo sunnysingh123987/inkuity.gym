@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -37,6 +39,8 @@ export default function RootLayout({
       <body className={plusJakarta.className}>
         {children}
         <Toaster />
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )
