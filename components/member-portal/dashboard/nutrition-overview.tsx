@@ -24,7 +24,7 @@ const MOCK_WEEKLY_METRICS = [
   { label: 'Calories', unit: 'cal', todayValue: 700, weeklyAvg: 1850, trend: 'down' as const, color: 'text-orange-400' },
   { label: 'Protein', unit: 'g', todayValue: 85, weeklyAvg: 120, trend: 'down' as const, color: 'text-blue-400' },
   { label: 'Carbs', unit: 'g', todayValue: 27, weeklyAvg: 200, trend: 'down' as const, color: 'text-yellow-400' },
-  { label: 'Fat', unit: 'g', todayValue: 26, weeklyAvg: 65, trend: 'down' as const, color: 'text-green-400' },
+  { label: 'Fat', unit: 'g', todayValue: 26, weeklyAvg: 65, trend: 'down' as const, color: 'text-emerald-400' },
 ];
 
 const MOCK_TRACKER_SUMMARY = [
@@ -40,15 +40,15 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const COLOR_CLASSES: Record<string, { bg: string; text: string; progress: string }> = {
-  cyan: { bg: 'bg-cyan-600/20', text: 'text-cyan-400', progress: 'bg-cyan-600' },
+  cyan: { bg: 'bg-brand-cyan-600/20', text: 'text-brand-cyan-400', progress: 'bg-brand-cyan-600' },
   blue: { bg: 'bg-blue-600/20', text: 'text-blue-400', progress: 'bg-blue-600' },
-  green: { bg: 'bg-green-600/20', text: 'text-green-400', progress: 'bg-green-600' },
+  green: { bg: 'bg-emerald-600/20', text: 'text-emerald-400', progress: 'bg-emerald-600' },
   purple: { bg: 'bg-purple-600/20', text: 'text-purple-400', progress: 'bg-purple-600' },
   orange: { bg: 'bg-orange-600/20', text: 'text-orange-400', progress: 'bg-orange-600' },
 };
 
 const trendIcons = { up: TrendingUp, down: TrendingDown, same: Minus };
-const trendColors = { up: 'text-green-400', down: 'text-red-400', same: 'text-slate-400' };
+const trendColors = { up: 'text-emerald-400', down: 'text-red-400', same: 'text-slate-400' };
 
 // ─── Component ──────────────────────────────────────────────────────────────
 

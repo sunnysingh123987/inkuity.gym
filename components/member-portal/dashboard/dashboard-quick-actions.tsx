@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { ScanLine, Dumbbell, ListChecks, Loader2, Check, LogOut, X, Calendar } from 'lucide-react';
+import { ScanLine, Dumbbell, ListChecks, Loader2, Check, LogOut, X, Calendar, ChevronDown } from 'lucide-react';
 import { recordQRCheckIn, checkOutMember } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMemberInfo } from '@/lib/actions/pin-auth';
 import { getWorkoutSessionHistory } from '@/lib/actions/members-portal';
@@ -36,6 +36,7 @@ export function DashboardQuickActions({
   const [workoutsVisible, setWorkoutsVisible] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<any[]>([]);
   const [loadingWorkouts, setLoadingWorkouts] = useState(false);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
   const hasActiveCheckIn = activeCheckIn && !isCheckedOut;
 
@@ -92,7 +93,11 @@ export function DashboardQuickActions({
       const result = await recordQRCheckIn(mId, gId);
       if (result.success) {
         setCheckedIn(true);
-        router.push(`/${gymSlug}/portal/check-in-success`);
+        if (result.alreadyCheckedIn) {
+          toast.info('Already checked in today');
+        } else {
+          router.push(`/${gymSlug}/portal/check-in-success`);
+        }
       } else {
         toast.error(result.error || 'Check-in failed');
       }
@@ -144,9 +149,9 @@ export function DashboardQuickActions({
     };
   } else {
     primaryAction = {
-      label: checkedIn ? 'Checked In' : 'Check In',
+      label: checkedIn ? 'Done' : 'Check In',
       icon: checkedIn ? Check : checkingIn ? Loader2 : ScanLine,
-      color: checkedIn ? 'bg-emerald-500/15 text-emerald-400' : 'bg-cyan-500/15 text-cyan-400',
+      color: checkedIn ? 'bg-emerald-500/15 text-emerald-400' : 'bg-brand-cyan-500/15 text-brand-cyan-400',
       iconClass: checkingIn ? 'h-6 w-6 animate-spin' : 'h-6 w-6',
       onClick: handleCheckIn,
       disabled: checkingIn || checkedIn,
@@ -166,7 +171,7 @@ export function DashboardQuickActions({
     {
       label: 'Routines',
       icon: ListChecks,
-      color: 'bg-emerald-500/15 text-emerald-400',
+      color: 'bg-blue-500/15 text-blue-400',
       iconClass: 'h-6 w-6',
       onClick: () => router.push(`/${gymSlug}/portal/trackers`),
       disabled: false,
@@ -178,8 +183,8 @@ export function DashboardQuickActions({
       {liveTraffic != null && liveTraffic > 0 && (
         <div className="flex items-center justify-center gap-2 mb-3">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
           </span>
           <span className="text-xs text-slate-400">
             <span className="font-semibold text-white">{liveTraffic}</span> {liveTraffic === 1 ? 'person' : 'people'} in gym now
@@ -193,7 +198,7 @@ export function DashboardQuickActions({
             key={action.label}
             onClick={action.onClick}
             disabled={action.disabled}
-            className={`flex flex-col items-center gap-2 ${action.disabled ? 'opacity-60' : ''}`}
+            className={`flex flex-col items-center gap-2 active:scale-[0.95] transition-transform ${action.disabled ? 'opacity-60' : ''}`}
           >
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.color}`}>
               <action.icon className={action.iconClass} />
@@ -239,42 +244,98 @@ export function DashboardQuickActions({
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
                 </div>
-              ) : workoutSessions.length === 0 ? (
+              ) : (() => {
+                // Filter to only sessions with at least 1 exercise with valid sets
+                const recordedSessions = workoutSessions.filter((session: any) =>
+                  (session.session_exercises || []).some((ex: any) =>
+                    (ex.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
+                  )
+                );
+                return recordedSessions.length === 0 ? (
                 <div className="text-center py-12">
                   <Dumbbell className="h-7 w-7 mx-auto mb-2 text-slate-600" />
                   <p className="text-sm text-slate-500">No workouts yet</p>
                   <p className="text-xs text-slate-600 mt-1">Start a workout from your routines</p>
+                  <button
+                    onClick={() => {
+                      closeWorkoutsSheet();
+                      router.push(`/${gymSlug}/portal/trackers`);
+                    }}
+                    className="mt-3 px-4 py-2 rounded-lg bg-brand-cyan-500/15 text-brand-cyan-400 text-sm font-medium hover:bg-brand-cyan-500/25 transition-colors"
+                  >
+                    Browse routines
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {workoutSessions.map((session: any) => {
+                  {recordedSessions.map((session: any) => {
                     const routineName = Array.isArray(session.workout_routines)
                       ? session.workout_routines[0]?.name
                       : session.workout_routines?.name;
+                    const isExpanded = expandedSession === session.id;
+                    // Only include exercises that have at least 1 valid set
+                    const exercises = (session.session_exercises || []).filter((ex: any) =>
+                      (ex.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
+                    );
                     return (
-                      <button
-                        key={session.id}
-                        onClick={() => {
-                          closeWorkoutsSheet();
-                          router.push(`/${gymSlug}/portal/sessions/${session.id}`);
-                        }}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center gap-4 hover:bg-slate-800/80 transition-colors text-left"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
-                          <Dumbbell className="h-5 w-5 text-purple-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">
-                            {routineName || 'Workout Session'}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(session.started_at)}
-                            </span>
+                      <div key={session.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
+                        <button
+                          onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                          className="w-full p-4 flex items-center gap-4 hover:bg-slate-800/80 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
+                            <Dumbbell className="h-5 w-5 text-purple-400" />
                           </div>
-                        </div>
-                      </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">
+                              {routineName || 'Workout Session'}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(session.started_at)}
+                              </span>
+                              {exercises.length > 0 && (
+                                <span>{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-slate-500 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isExpanded && exercises.length > 0 && (
+                          <div className="border-t border-slate-700/50 px-4 py-3 space-y-2">
+                            {exercises
+                              .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                              .map((ex: any) => {
+                                const exName = Array.isArray(ex.exercise_library)
+                                  ? ex.exercise_library[0]?.name
+                                  : ex.exercise_library?.name;
+                                const sets = ex.exercise_sets || [];
+                                const completedSets = sets.filter((s: any) => s.completed);
+                                return (
+                                  <div key={ex.id} className="flex items-center gap-3">
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${ex.completed ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium text-slate-300 truncate">{exName || 'Exercise'}</p>
+                                    </div>
+                                    <span className="text-[11px] text-slate-500 shrink-0">
+                                      {completedSets.length}/{sets.length} sets
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            <button
+                              onClick={() => {
+                                closeWorkoutsSheet();
+                                router.push(`/${gymSlug}/portal/sessions/${session.id}`);
+                              }}
+                              className="text-xs text-brand-cyan-400 font-medium mt-1 hover:text-brand-cyan-300 transition-colors"
+                            >
+                              View full session
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                   <button
@@ -287,7 +348,8 @@ export function DashboardQuickActions({
                     View all workouts
                   </button>
                 </div>
-              )}
+              );
+              })()}
             </div>
           </div>
         </div>,

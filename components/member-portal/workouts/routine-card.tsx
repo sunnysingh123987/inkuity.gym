@@ -68,7 +68,7 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
     const colors: Record<string, string> = {
       chest: 'bg-red-500/10 text-red-400',
       back: 'bg-blue-500/10 text-blue-400',
-      legs: 'bg-green-500/10 text-green-400',
+      legs: 'bg-emerald-500/10 text-emerald-400',
       shoulders: 'bg-yellow-500/10 text-yellow-400',
       arms: 'bg-purple-500/10 text-purple-400',
       biceps: 'bg-purple-500/10 text-purple-400',

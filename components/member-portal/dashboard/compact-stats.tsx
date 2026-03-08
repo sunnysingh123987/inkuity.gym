@@ -7,7 +7,7 @@ interface CompactStatsProps {
 }
 
 const stats = [
-  { key: 'checkins', icon: Calendar, label: 'Check-ins', color: 'text-cyan-400' },
+  { key: 'checkins', icon: Calendar, label: 'Check-ins', color: 'text-brand-cyan-400' },
   { key: 'workouts', icon: Dumbbell, label: 'Workouts', color: 'text-purple-400' },
   { key: 'routines', icon: ListChecks, label: 'Routines', color: 'text-emerald-400' },
 ] as const;

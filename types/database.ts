@@ -218,6 +218,16 @@ export interface FeedbackRequest {
   created_at: string;
 }
 
+export interface FeedbackMessage {
+  id: string;
+  gym_id: string;
+  member_id: string;
+  message: string;
+  sender_type: 'member' | 'inkuity';
+  read_at: string | null;
+  created_at: string;
+}
+
 export interface Referral {
   id: string;
   gym_id: string;

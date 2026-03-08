@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { X, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, ChevronDown, ChevronUp, Zap, AlertTriangle } from 'lucide-react';
 import { ExerciseSetLogger } from '@/components/member-portal/sessions/exercise-set-logger';
 import {
-  startWorkoutSession,
   getActiveWorkoutSession,
+  ensureWorkoutSession,
+  deleteWorkoutSession,
 } from '@/lib/actions/members-portal';
+import { getActiveCheckIn, getTodayCheckInStatus } from '@/lib/actions/checkin-flow';
 import { toast } from 'sonner';
 
 interface WorkoutLogSheetProps {
@@ -43,61 +45,62 @@ export function WorkoutLogSheet({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [setsCount, setSetsCount] = useState<Record<string, number>>({});
   const [visible, setVisible] = useState(false);
+  const [conflict, setConflict] = useState<{
+    routineName: string;
+    sessionId: string;
+  } | null>(null);
+  const [resolvingConflict, setResolvingConflict] = useState(false);
+  const [checkInStatus, setCheckInStatus] = useState<'loading' | 'active' | 'checked-out' | 'none'>('loading');
+  const [checkOutAt, setCheckOutAt] = useState<string | undefined>();
+  const sessionCreatedRef = useRef(false);
 
   // Animate in/out
   useEffect(() => {
     if (open) {
-      // Small delay to trigger CSS transition
       requestAnimationFrame(() => setVisible(true));
     } else {
       setVisible(false);
     }
   }, [open]);
 
-  // Load or create session when sheet opens
+  // Load existing session (if any) when sheet opens — NO eager creation
   useEffect(() => {
     if (!open || !routine) return;
 
     let cancelled = false;
 
-    async function initSession() {
+    async function loadSession() {
       setLoading(true);
+      sessionCreatedRef.current = false;
 
-      // Check for an existing active session first
-      const activeResult = await getActiveWorkoutSession(memberId, gymId);
+      // Check check-in status
+      const ciStatus = await getTodayCheckInStatus(memberId, gymId);
+      if (cancelled) return;
+      setCheckInStatus(ciStatus.status);
+      setCheckOutAt(ciStatus.checkOutAt);
+
+      // Also allow logging if actively checked in (for ensureWorkoutSession server check)
+      // getActiveCheckIn is still used server-side
+
+      // Check if there's an existing session for this routine today
+      const activeResult = await getActiveWorkoutSession(memberId, gymId, routine.id);
       if (cancelled) return;
 
-      if (activeResult.success && activeResult.data && activeResult.data.routine_id === routine.id) {
-        // Reuse existing session
+      if (activeResult.success && activeResult.data) {
+        // Reuse existing session — check if it has valid sets
+        const hasValidSets = (activeResult.data.session_exercises || []).some((se: any) =>
+          (se.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
+        );
         setSession(activeResult.data);
+        if (hasValidSets) sessionCreatedRef.current = true;
         initSetsCount(activeResult.data);
-        setLoading(false);
-        return;
       }
-
-      // Start a new session
-      const result = await startWorkoutSession(memberId, gymId, routine.id);
-      if (cancelled) return;
-
-      if (result.success && result.data) {
-        // Re-fetch to get full session with exercises and sets
-        const freshResult = await getActiveWorkoutSession(memberId, gymId);
-        if (cancelled) return;
-
-        if (freshResult.success && freshResult.data) {
-          setSession(freshResult.data);
-          initSetsCount(freshResult.data);
-        } else {
-          setSession(result.data);
-        }
-      } else {
-        toast.error(result.error || 'Failed to start session');
-      }
+      // If no session, exercises will be rendered from routine prop
 
       setLoading(false);
     }
 
-    initSession();
+    loadSession();
     return () => { cancelled = true; };
   }, [open, routine, memberId, gymId]);
 
@@ -105,23 +108,92 @@ export function WorkoutLogSheet({
     const counts: Record<string, number> = {};
     (sessionData.session_exercises || []).forEach((se: any) => {
       const todaySets = getTodaySets(se.exercise_sets || []);
-      if (todaySets.length > 0) {
-        counts[se.id] = todaySets.length;
+      // Only count sets with non-zero values
+      const validSets = todaySets.filter((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0));
+      if (validSets.length > 0) {
+        counts[se.id] = validSets.length;
       }
     });
     setSetsCount(counts);
   }
 
-  const handleSetsChange = useCallback((exerciseId: string, count: number) => {
-    setSetsCount((prev) => {
-      const updated = { ...prev, [exerciseId]: count };
-      // Report progress: count exercises with at least 1 set logged
-      const exercisesWithSets = Object.values(updated).filter((c) => c > 0).length;
-      const totalExercises = session?.session_exercises?.length || 0;
-      onProgressChange?.(exercisesWithSets, totalExercises);
-      return updated;
-    });
-  }, [session, onProgressChange]);
+  // Use a ref for session so the ensure callback always has the latest value
+  const sessionRef = useRef<any>(null);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+
+  // Called by ExerciseSetLogger before persisting the first valid set
+  const handleEnsureSession = async (exerciseId: string): Promise<string | null> => {
+    // If we've already confirmed this session is valid for today, just return the ID
+    if (sessionCreatedRef.current && sessionRef.current) {
+      const se = sessionRef.current.session_exercises?.find((s: any) =>
+        s.exercise_id === exerciseId || s.exercise_library?.id === exerciseId
+      );
+      return se?.id || null;
+    }
+
+    // Always go through ensureWorkoutSession for conflict detection
+    const result = await ensureWorkoutSession(memberId, gymId, routine.id);
+
+    if (result.notCheckedIn) {
+      toast.error('Check in to the gym first to log your workout');
+      return null;
+    }
+
+    if (result.conflict) {
+      setConflict({
+        routineName: result.conflictRoutineName || 'another routine',
+        sessionId: result.conflictSessionId!,
+      });
+      return null; // Abort — user needs to confirm
+    }
+
+    if (result.success && result.data) {
+      setSession(result.data);
+      sessionCreatedRef.current = true;
+      initSetsCount(result.data);
+      const se = result.data.session_exercises?.find((s: any) =>
+        s.exercise_library?.id === exerciseId
+      );
+      return se?.id || null;
+    }
+
+    toast.error(result.error || 'Failed to start session');
+    return null;
+  };
+
+  const handleConfirmConflict = async () => {
+    if (!conflict) return;
+    setResolvingConflict(true);
+
+    // Delete the conflicting session
+    await deleteWorkoutSession(conflict.sessionId);
+
+    // Now create the new session
+    const result = await ensureWorkoutSession(memberId, gymId, routine.id);
+
+    if (result.success && result.data) {
+      setSession(result.data);
+      sessionCreatedRef.current = true;
+      initSetsCount(result.data);
+      toast.success('Switched to this routine');
+    } else {
+      toast.error(result.error || 'Failed to start session');
+    }
+
+    setConflict(null);
+    setResolvingConflict(false);
+  };
+
+  // Report progress to parent whenever setsCount changes
+  useEffect(() => {
+    const exercisesWithSets = Object.values(setsCount).filter((c) => c > 0).length;
+    const totalExercises = session?.session_exercises?.length || (routine?.routine_exercises?.length || 0);
+    onProgressChange?.(exercisesWithSets, totalExercises);
+  }, [setsCount, session, routine, onProgressChange]);
+
+  const handleSetsChange = (exerciseId: string, count: number) => {
+    setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
+  };
 
   const handleBackdropClick = () => {
     onClose();
@@ -134,16 +206,29 @@ export function WorkoutLogSheet({
         setSession(null);
         setExpandedId(null);
         setSetsCount({});
-      }, 300); // after transition
+        setConflict(null);
+        setCheckInStatus('loading');
+        setCheckOutAt(undefined);
+        sessionCreatedRef.current = false;
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [open]);
 
   if (!open && !visible) return null;
 
+  // Use session exercises if available, otherwise build from routine prop
   const exercises = session?.session_exercises
     ? [...session.session_exercises].sort((a: any, b: any) => a.order_index - b.order_index)
-    : [];
+    : (routine?.routine_exercises || [])
+        .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+        .map((re: any) => ({
+          id: re.id, // routine_exercise id as fallback key
+          order_index: re.order_index,
+          exercise_library: re.exercise_library,
+          exercise_id: re.exercise_id,
+          exercise_sets: [],
+        }));
 
   return (
     <div className="fixed inset-0 z-50">
@@ -154,6 +239,38 @@ export function WorkoutLogSheet({
           visible ? 'opacity-100' : 'opacity-0'
         }`}
       />
+
+      {/* Conflict warning modal */}
+      {conflict && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Switch routine?</h3>
+            </div>
+            <p className="text-sm text-slate-400">
+              Your today&apos;s active routine is <span className="font-semibold text-white">{conflict.routineName}</span>. Logging in this routine will delete your previous logged sets.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConflict(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmConflict}
+                disabled={resolvingConflict}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-60"
+              >
+                {resolvingConflict ? 'Switching...' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sheet */}
       <div
@@ -244,11 +361,15 @@ export function WorkoutLogSheet({
                     {isExpanded && (
                       <div className="px-4 pb-4">
                         <ExerciseSetLogger
-                          sessionExerciseId={sessionExercise.id}
+                          sessionExerciseId={session ? sessionExercise.id : null}
+                          exerciseId={exercise?.id}
                           existingSets={getTodaySets(sessionExercise.exercise_sets || [])}
                           onSetsChange={(count) =>
                             handleSetsChange(sessionExercise.id, count)
                           }
+                          onEnsureSession={handleEnsureSession}
+                          checkInStatus={checkInStatus}
+                          checkOutAt={checkOutAt}
                         />
                       </div>
                     )}
@@ -259,8 +380,8 @@ export function WorkoutLogSheet({
           )}
         </div>
 
-        {/* Done button — closes the sheet */}
-        {session && !loading && (
+        {/* Done button */}
+        {!loading && (
           <div className="px-4 pb-6 pt-2 border-t border-slate-800">
             <button
               type="button"

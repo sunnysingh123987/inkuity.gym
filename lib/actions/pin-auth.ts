@@ -10,7 +10,12 @@ const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 const PIN_RATE_LIMIT_MINUTES = 2; // Can request new PIN every 2 minutes
 
 // Encryption key from environment (should be 64 character hex string = 32 bytes)
-const ENCRYPTION_KEY = process.env.PIN_ENCRYPTION_KEY || 'default-key-change-in-production-32b';
+function getEncryptionKeyEnv(): string {
+  const key = process.env.PIN_ENCRYPTION_KEY;
+  if (!key) throw new Error('PIN_ENCRYPTION_KEY env var is required');
+  return key;
+}
+const ENCRYPTION_KEY: string = getEncryptionKeyEnv();
 
 // Helper function to get encryption key as buffer
 function getEncryptionKey(): Buffer {
@@ -203,17 +208,68 @@ export async function sendVerificationCode(email: string, gymId: string) {
     // Check if there's already a pending verification for this email
     const { data: existing } = await supabase
       .from('members')
-      .select('id, last_pin_sent_at')
+      .select('id, last_pin_sent_at, metadata, membership_status')
       .eq('email', email.toLowerCase().trim())
       .eq('gym_id', gymId)
       .maybeSingle();
 
-    if (existing) {
+    if (existing && existing.membership_status !== 'pending') {
       // Member already exists — they should use the normal PIN flow
       return { success: false, error: 'An account with this email already exists. Please enter your PIN.' };
     }
 
-    // Rate limiting check using a simple approach
+    // Rate limiting for pending verification resends
+    if (existing && existing.membership_status === 'pending') {
+      const metadata = existing.metadata as Record<string, any> | null;
+      const sentAt = metadata?.verification_sent_at;
+      if (sentAt) {
+        const minutesSinceLastSend = (Date.now() - new Date(sentAt).getTime()) / (1000 * 60);
+        if (minutesSinceLastSend < PIN_RATE_LIMIT_MINUTES) {
+          const waitTime = Math.ceil(PIN_RATE_LIMIT_MINUTES - minutesSinceLastSend);
+          return {
+            success: false,
+            error: `Please wait ${waitTime} minute${waitTime > 1 ? 's' : ''} before requesting a new code.`,
+          };
+        }
+      }
+
+      // Update existing pending record with new code instead of creating duplicate
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          metadata: {
+            verification_code: encryptedCode,
+            verification_sent_at: new Date().toISOString(),
+          },
+        })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        return { success: false, error: 'Failed to send verification code. Please try again.' };
+      }
+
+      // Get gym details for email
+      const { data: gym } = await supabase
+        .from('gyms')
+        .select('name, slug, logo_url')
+        .eq('id', gymId)
+        .single();
+
+      await sendPINEmail({
+        to: email,
+        pin: code,
+        memberName: 'New Member',
+        gymName: gym?.name || 'Gym',
+        isNewPIN: true,
+      });
+
+      return {
+        success: true,
+        message: 'Verification code sent to your email!',
+        memberId: existing.id,
+      };
+    }
+
     // Store verification code in a temporary way — we'll create the member record
     // with 'pending' status and store the code in metadata
     const { data: pendingMember, error: createError } = await supabase
@@ -496,7 +552,7 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
     // Find member
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('id, email, full_name, gym_id, portal_pin')
+      .select('id, email, full_name, gym_id, portal_pin, failed_pin_attempts, pin_locked_until')
       .eq('email', email.toLowerCase().trim())
       .eq('gym_id', gym.id)
       .single();
@@ -506,6 +562,19 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
         success: false,
         error: 'Invalid email or PIN.',
       };
+    }
+
+    // Check if account is locked due to too many failed attempts
+    if (member.pin_locked_until) {
+      const lockExpiry = new Date(member.pin_locked_until).getTime();
+      if (Date.now() < lockExpiry) {
+        const minutesLeft = Math.ceil((lockExpiry - Date.now()) / (1000 * 60));
+        return {
+          success: false,
+          error: `Invalid email or PIN. Please try again in ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}.`,
+        };
+      }
+      // Lock has expired — reset on next successful/failed attempt below
     }
 
     // Check if member has a PIN
@@ -519,10 +588,33 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
     // Verify PIN
     const decryptedPIN = decryptPIN(member.portal_pin);
     if (decryptedPIN !== pin.trim()) {
+      // Atomically increment failed attempts
+      const newAttempts = (member.failed_pin_attempts || 0) + 1;
+      const MAX_ATTEMPTS = 5;
+      const LOCKOUT_MINUTES = 15;
+
+      await supabase
+        .from('members')
+        .update({
+          failed_pin_attempts: newAttempts,
+          ...(newAttempts >= MAX_ATTEMPTS
+            ? { pin_locked_until: new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString() }
+            : {}),
+        })
+        .eq('id', member.id);
+
       return {
         success: false,
         error: 'Invalid email or PIN.',
       };
+    }
+
+    // Successful login — reset failed attempts
+    if (member.failed_pin_attempts && member.failed_pin_attempts > 0) {
+      await supabase
+        .from('members')
+        .update({ failed_pin_attempts: 0, pin_locked_until: null })
+        .eq('id', member.id);
     }
 
     // Create session

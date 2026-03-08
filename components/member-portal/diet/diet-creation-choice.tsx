@@ -35,13 +35,13 @@ export function DietCreationChoice({
           className={`relative cursor-pointer transition-all border-2 ${
             aiPlanUsed
               ? 'opacity-60 cursor-not-allowed border-slate-700'
-              : 'border-slate-700 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10'
+              : 'border-slate-700 hover:border-brand-cyan-500/50 hover:shadow-lg hover:shadow-brand-cyan-500/10'
           }`}
           onClick={() => !aiPlanUsed && onSelectAi()}
         >
           <CardContent className="p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center mx-auto">
-              <Sparkles className="h-8 w-8 text-cyan-400" />
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-cyan-500/20 to-purple-500/20 flex items-center justify-center mx-auto">
+              <Sparkles className="h-8 w-8 text-brand-cyan-400" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">
@@ -72,11 +72,11 @@ export function DietCreationChoice({
         </Card>
 
         {/* Option B: Manual */}
-        <Card className="relative cursor-pointer transition-all border-2 border-slate-700 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10">
+        <Card className="relative cursor-pointer transition-all border-2 border-slate-700 hover:border-brand-cyan-500/50 hover:shadow-lg hover:shadow-brand-cyan-500/10">
           <Link href={`/${gymSlug}/portal/diet/new?mode=manual`}>
             <CardContent className="p-6 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center mx-auto">
-                <PenLine className="h-8 w-8 text-green-400" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-500/20 flex items-center justify-center mx-auto">
+                <PenLine className="h-8 w-8 text-emerald-400" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">

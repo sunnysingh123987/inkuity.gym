@@ -114,7 +114,7 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
               <p className="text-lg font-bold text-white">{plan.target_carbs || 0}g</p>
             </div>
             <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-              <div className="flex items-center gap-2 text-green-400 mb-1">
+              <div className="flex items-center gap-2 text-emerald-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Fat</span>
               </div>

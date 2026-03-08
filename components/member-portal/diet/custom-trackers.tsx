@@ -83,9 +83,9 @@ const COLOR_OPTIONS = [
 ];
 
 const COLOR_CLASSES: Record<string, { bg: string; text: string; progress: string; ring: string }> = {
-  cyan: { bg: 'bg-cyan-600/20', text: 'text-cyan-400', progress: 'bg-cyan-600', ring: 'ring-cyan-500' },
+  cyan: { bg: 'bg-brand-cyan-600/20', text: 'text-brand-cyan-400', progress: 'bg-brand-cyan-600', ring: 'ring-brand-cyan-500' },
   blue: { bg: 'bg-blue-600/20', text: 'text-blue-400', progress: 'bg-blue-600', ring: 'ring-blue-500' },
-  green: { bg: 'bg-green-600/20', text: 'text-green-400', progress: 'bg-green-600', ring: 'ring-green-500' },
+  green: { bg: 'bg-emerald-600/20', text: 'text-emerald-400', progress: 'bg-emerald-600', ring: 'ring-emerald-500' },
   purple: { bg: 'bg-purple-600/20', text: 'text-purple-400', progress: 'bg-purple-600', ring: 'ring-purple-500' },
   orange: { bg: 'bg-orange-600/20', text: 'text-orange-400', progress: 'bg-orange-600', ring: 'ring-orange-500' },
 };

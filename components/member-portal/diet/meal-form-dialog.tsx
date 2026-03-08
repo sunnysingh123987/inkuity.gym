@@ -194,7 +194,7 @@ export function MealFormDialog({
                   className={`text-xs px-1.5 py-0.5 rounded ${
                     isCalorieOverridden
                       ? 'bg-orange-500/20 text-orange-400'
-                      : 'bg-cyan-500/20 text-cyan-400'
+                      : 'bg-brand-cyan-500/20 text-brand-cyan-400'
                   }`}
                 >
                   {isCalorieOverridden ? 'custom' : 'auto-calculated'}

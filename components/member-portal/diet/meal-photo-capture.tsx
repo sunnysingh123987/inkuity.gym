@@ -259,7 +259,7 @@ export function MealPhotoCapture({
         {/* Analyzing Mode */}
         {mode === 'analyzing' && (
           <div className="flex flex-col items-center py-12 space-y-4">
-            <Loader2 className="h-10 w-10 text-cyan-400 animate-spin" />
+            <Loader2 className="h-10 w-10 text-brand-cyan-400 animate-spin" />
             <p className="text-white font-medium">Analyzing your meal...</p>
             <p className="text-sm text-slate-400">
               AI is identifying foods and estimating nutrition
@@ -279,7 +279,7 @@ export function MealPhotoCapture({
                 className="w-full h-full object-cover opacity-50"
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Check className="h-8 w-8 text-green-400" />
+                <Check className="h-8 w-8 text-emerald-400" />
               </div>
             </div>
 

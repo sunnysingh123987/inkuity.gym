@@ -94,7 +94,7 @@ const WORKOUT_OPTIONS = [
   {
     id: 'legs',
     label: 'Legs',
-    color: 'from-green-500 to-emerald-600',
+    color: 'from-emerald-500 to-emerald-600',
     bgHover: 'hover:border-slate-600',
     selectedBg: 'bg-emerald-500/10 border-emerald-500 shadow-glow-cyan',
     icon: (
@@ -150,7 +150,7 @@ const WORKOUT_OPTIONS = [
   {
     id: 'full-body',
     label: 'Full Body',
-    color: 'from-teal-500 to-cyan-600',
+    color: 'from-teal-500 to-brand-cyan-600',
     bgHover: 'hover:border-slate-600',
     selectedBg: 'bg-brand-cyan-500/10 border-brand-cyan-500 shadow-glow-cyan',
     icon: (

@@ -40,7 +40,7 @@ export function ExerciseSelector({
     const colors: Record<string, string> = {
       chest: 'bg-red-500/10 text-red-400 hover:bg-red-500/20',
       back: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20',
-      legs: 'bg-green-500/10 text-green-400 hover:bg-green-500/20',
+      legs: 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20',
       shoulders: 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20',
       arms: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
       biceps: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',

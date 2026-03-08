@@ -2,6 +2,7 @@ import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { redirect } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { getMemberPaymentHistory } from '@/lib/actions/members-portal';
+import { getFeedbackMessages } from '@/lib/actions/reviews';
 import { SettingsPageContent } from '@/components/member-portal/settings/settings-page-content';
 import type { GymReview, FeedbackRequest } from '@/types/database';
 
@@ -21,7 +22,7 @@ export default async function SettingsPage({
   const supabase = createAdminSupabaseClient();
 
   // Fetch all data in parallel
-  const [paymentsResult, reviewResult, feedbackResult, memberResult] =
+  const [paymentsResult, reviewResult, feedbackResult, memberResult, chatResult] =
     await Promise.all([
       getMemberPaymentHistory(memberId, gymId),
       supabase
@@ -39,9 +40,10 @@ export default async function SettingsPage({
         .order('created_at', { ascending: false }),
       supabase
         .from('members')
-        .select('metadata')
+        .select('full_name, email, avatar_url, metadata')
         .eq('id', memberId)
         .single(),
+      getFeedbackMessages(memberId, gymId),
     ]);
 
   return (
@@ -49,9 +51,13 @@ export default async function SettingsPage({
       memberId={memberId}
       gymId={gymId}
       gymSlug={params.slug}
+      memberName={memberResult.data?.full_name || 'Member'}
+      memberEmail={memberResult.data?.email || null}
+      memberAvatar={memberResult.data?.avatar_url || null}
       payments={paymentsResult.data || []}
       existingReview={(reviewResult.data as GymReview) || null}
       feedbackRequests={(feedbackResult.data || []) as FeedbackRequest[]}
+      feedbackMessages={chatResult.data || []}
       memberPreferences={memberResult.data?.metadata || {}}
       initialTab={searchParams.tab}
     />

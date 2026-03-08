@@ -77,13 +77,11 @@ export default async function PortalLayout({
     <div className="min-h-screen bg-slate-950">
       <PortalHeader gym={gym} member={member} streak={currentStreak} />
 
-      <div className="flex">
+      <div className="flex justify-center">
         <PortalNav gymSlug={params.slug} />
 
-        <main className="flex-1 p-4 pb-24 md:pb-6 md:p-6 lg:p-8 ml-0 md:ml-64">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <main className="w-full max-w-md p-4 pb-24">
+          {children}
         </main>
       </div>
 

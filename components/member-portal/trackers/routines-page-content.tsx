@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RoutineCardRedesigned } from '@/components/member-portal/workouts/routine-card-redesigned';
 import { WorkoutLogSheet } from '@/components/member-portal/workouts/workout-log-sheet';
-import { Dumbbell, ClipboardList, Plus } from 'lucide-react';
+import { Dumbbell, ClipboardList, Plus, MousePointerClick, GripVertical, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface RoutinesPageContentProps {
@@ -81,9 +81,16 @@ export function RoutinesPageContent({
   return (
     <div className="space-y-4 pb-24">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold text-white">My routines</h1>
-        <ClipboardList className="h-5 w-5 text-brand-cyan-400" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-white">My routines</h1>
+          <ClipboardList className="h-5 w-5 text-brand-cyan-400" />
+        </div>
+        <Link href={`/${gymSlug}/portal/workouts/new`}>
+          <button className="h-9 w-9 rounded-xl bg-brand-cyan-500/15 flex items-center justify-center text-brand-cyan-400 hover:bg-brand-cyan-500/25 transition-colors">
+            <Plus className="h-5 w-5" />
+          </button>
+        </Link>
       </div>
 
       {/* Routine list */}
@@ -123,13 +130,30 @@ export function RoutinesPageContent({
         </div>
       )}
 
-      {/* Add Routine button */}
-      <Link href={`/${gymSlug}/portal/workouts/new`} className="block">
-        <button className="w-full py-3 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-600 hover:text-white transition-colors flex items-center justify-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Routine
-        </button>
-      </Link>
+      {/* Instructions */}
+      {routines.length > 0 && (
+        <div className="mt-6 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">How it works</h4>
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-3">
+              <MousePointerClick className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-slate-500">Tap a routine to start logging your workout</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Plus className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-slate-500">Use the + button to create a new routine</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Pencil className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-slate-500">Open the menu on any card to edit or delete it</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Dumbbell className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-slate-500">Active routines glow until all exercises are completed</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Workout log bottom sheet */}
       <WorkoutLogSheet

@@ -156,7 +156,7 @@ export function StreakPageContent({
             let cellClasses = 'w-9 h-9 rounded-full flex items-center justify-center mx-auto text-sm font-medium';
 
             if (hasCheckIn) {
-              cellClasses += ' bg-cyan-500/20 text-cyan-400';
+              cellClasses += ' bg-brand-cyan-500/20 text-brand-cyan-400';
             } else if (isFuture) {
               cellClasses += ' text-slate-600';
             } else {
@@ -164,7 +164,7 @@ export function StreakPageContent({
             }
 
             if (isToday) {
-              cellClasses += ' ring-2 ring-cyan-400';
+              cellClasses += ' ring-2 ring-brand-cyan-400';
             }
 
             return (
@@ -181,15 +181,15 @@ export function StreakPageContent({
         <p className="text-base font-bold text-white">How to increase your streak</p>
         <ul className="space-y-3 text-sm text-slate-300">
           <li className="flex gap-2">
-            <span className="text-cyan-400 font-bold shrink-0">1.</span>
+            <span className="text-brand-cyan-400 font-bold shrink-0">1.</span>
             <span>Check in at the gym every day by scanning the QR code at the front desk.</span>
           </li>
           <li className="flex gap-2">
-            <span className="text-cyan-400 font-bold shrink-0">2.</span>
+            <span className="text-brand-cyan-400 font-bold shrink-0">2.</span>
             <span>Each consecutive day you check in adds one to your streak.</span>
           </li>
           <li className="flex gap-2">
-            <span className="text-cyan-400 font-bold shrink-0">3.</span>
+            <span className="text-brand-cyan-400 font-bold shrink-0">3.</span>
             <span>Missing a single day resets your streak back to zero.</span>
           </li>
         </ul>

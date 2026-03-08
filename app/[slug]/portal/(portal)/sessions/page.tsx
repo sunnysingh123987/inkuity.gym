@@ -40,9 +40,17 @@ export default async function SessionsPage({
         </p>
       </div>
 
-      {sessions && sessions.length > 0 ? (
+      {sessions && sessions.filter((s: any) =>
+        (s.session_exercises || []).some((ex: any) =>
+          (ex.exercise_sets || []).some((st: any) => (st.weight && st.weight > 0) || (st.reps && st.reps > 0))
+        )
+      ).length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {sessions.map((workoutSession) => {
+          {sessions.filter((s: any) =>
+            (s.session_exercises || []).some((ex: any) =>
+              (ex.exercise_sets || []).some((st: any) => (st.weight && st.weight > 0) || (st.reps && st.reps > 0))
+            )
+          ).map((workoutSession) => {
             const routines = workoutSession.workout_routines as any;
             const routineName = Array.isArray(routines)
               ? routines[0]?.name

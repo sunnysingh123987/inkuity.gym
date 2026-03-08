@@ -36,7 +36,7 @@ export function NutritionTracker({ targets, consumed }: NutritionTrackerProps) {
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 90 && percentage <= 110) return 'bg-green-600';
+    if (percentage >= 90 && percentage <= 110) return 'bg-emerald-600';
     if (percentage >= 80 && percentage < 90) return 'bg-yellow-600';
     if (percentage > 110) return 'bg-red-600';
     return 'bg-brand-cyan-600';
@@ -64,14 +64,14 @@ export function NutritionTracker({ targets, consumed }: NutritionTrackerProps) {
       label: 'Fat',
       consumed: consumed.fat,
       target: targets.fat,
-      color: 'text-green-400',
+      color: 'text-emerald-400',
       unit: 'g',
     },
   ];
 
   const statusBadge = (() => {
     if (caloriesPct >= 90 && caloriesPct <= 110)
-      return { label: 'On Track', className: 'bg-green-600/20 text-green-400 border-green-600/30' };
+      return { label: 'On Track', className: 'bg-emerald-600/20 text-emerald-400 border-emerald-600/30' };
     if (caloriesPct > 110)
       return { label: 'Over Goal', className: 'bg-red-600/20 text-red-400 border-red-600/30' };
     return { label: 'Under Goal', className: 'bg-brand-cyan-600/20 text-brand-cyan-400 border-brand-cyan-600/30' };

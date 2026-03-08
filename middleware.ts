@@ -10,6 +10,7 @@ const protectedRoutes = [
   '/members',
   '/analytics',
   '/settings',
+  '/admin',
 ]
 
 const authRoutes = ['/login', '/register', '/reset-password']
@@ -43,7 +44,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // For authenticated users on protected routes, check onboarding status
-  if (user && (isProtectedRoute || isOnboardingRoute)) {
+  // Skip onboarding check for /admin routes — they don't require gym setup
+  const isAdminRoute = pathname.startsWith('/admin')
+  if (user && !isAdminRoute && (isProtectedRoute || isOnboardingRoute)) {
     // Create a supabase client to check profile
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

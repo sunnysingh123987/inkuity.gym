@@ -113,7 +113,7 @@ export function MealCalendar({
       breakfast: 'bg-orange-500/10 text-orange-400',
       lunch: 'bg-blue-500/10 text-blue-400',
       dinner: 'bg-purple-500/10 text-purple-400',
-      snack: 'bg-green-500/10 text-green-400',
+      snack: 'bg-emerald-500/10 text-emerald-400',
     };
     return colors[type] || 'bg-slate-700 text-slate-300';
   };
@@ -185,13 +185,13 @@ export function MealCalendar({
                               <div
                                 className={`p-2 rounded-md text-xs ${
                                   meal.completed
-                                    ? 'bg-green-500/10 border border-green-500/30'
+                                    ? 'bg-emerald-500/10 border border-emerald-500/30'
                                     : 'bg-slate-800 border border-slate-700'
                                 } ${today ? 'hover:shadow-sm transition-shadow' : 'opacity-80'}`}
                               >
                                 <div className="flex items-center gap-1 mb-1">
                                   {meal.completed ? (
-                                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                                   ) : (
                                     <Circle className="h-3 w-3 text-slate-500" />
                                   )}

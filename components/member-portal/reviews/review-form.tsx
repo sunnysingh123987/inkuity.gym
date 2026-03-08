@@ -151,7 +151,7 @@ export function ReviewForm({ gymId, memberId, existingReview }: ReviewFormProps)
           <div
             className={`rounded-lg px-4 py-3 text-sm ${
               message.type === 'success'
-                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                 : 'bg-red-500/10 text-red-400 border border-red-500/20'
             }`}
           >

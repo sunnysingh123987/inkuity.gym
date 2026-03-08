@@ -438,7 +438,7 @@ export function RoutineForm({
                 <button
                   type="button"
                   onClick={closeSheet}
-                  className="h-9 w-9 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+                  className="h-9 w-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors"
                 >
                   <Check className="h-5 w-5 text-white" />
                 </button>
@@ -609,7 +609,7 @@ export function RoutineForm({
               <button
                 type="button"
                 onClick={closeSheet}
-                className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-500/25"
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
               >
                 <Check className="h-4 w-4" />
                 Done ({selectedExercises.length} exercise{selectedExercises.length !== 1 ? 's' : ''})

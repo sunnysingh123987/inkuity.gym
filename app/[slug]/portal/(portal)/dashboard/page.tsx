@@ -10,7 +10,7 @@ import { DashboardQuickActions } from '@/components/member-portal/dashboard/dash
 import { AutoCheckoutWarning } from '@/components/member-portal/dashboard/auto-checkout-warning';
 import { WeeklyActivityBar } from '@/components/member-portal/dashboard/weekly-activity-bar';
 import { CompactStats } from '@/components/member-portal/dashboard/compact-stats';
-import { getActiveCheckIn, getLiveGymTraffic, getPeakHourToday, getHourlyTrafficAverage } from '@/lib/actions/checkin-flow';
+import { getActiveCheckIn, getLiveGymTraffic, getPeakHourToday, getHourlyTrafficAverage, getGymTodayStart } from '@/lib/actions/checkin-flow';
 
 export default async function DashboardPage({
   params,
@@ -53,35 +53,54 @@ export default async function DashboardPage({
     );
   }
 
-  // Get check-in stats
-  const { count: totalCheckIns } = await supabase
-    .from('check_ins')
-    .select('*', { count: 'exact', head: true })
-    .eq('member_id', memberId)
-    .eq('gym_id', gymId);
+  // Parallelize all independent DB queries
+  const [
+    { count: totalCheckIns },
+    { count: workoutCount },
+    { count: routineCount },
+    { data: recentCheckIns },
+    hourlyTraffic,
+    suggestionsResult,
+    announcementsResult,
+    activeCheckIn,
+    liveTraffic,
+    peakHour,
+    gymTodayStart,
+  ] = await Promise.all([
+    supabase
+      .from('check_ins')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId),
+    supabase
+      .from('workout_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('status', 'completed'),
+    supabase
+      .from('workout_routines')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', memberId)
+      .eq('is_active', true),
+    supabase
+      .from('check_ins')
+      .select('check_in_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .order('check_in_at', { ascending: false })
+      .limit(30),
+    getHourlyTrafficAverage(gymId),
+    getWorkoutSuggestions(memberId, gymId),
+    getActiveAnnouncements(gymId),
+    getActiveCheckIn(memberId, gymId),
+    getLiveGymTraffic(gymId),
+    getPeakHourToday(gymId),
+    getGymTodayStart(gymId),
+  ]);
 
-  // Get workout count
-  const { count: workoutCount } = await supabase
-    .from('workout_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('member_id', memberId)
-    .eq('status', 'completed');
-
-  // Get active workout routines count
-  const { count: routineCount } = await supabase
-    .from('workout_routines')
-    .select('*', { count: 'exact', head: true })
-    .eq('member_id', memberId)
-    .eq('is_active', true);
-
-  // Calculate current streak (simplified - count consecutive days)
-  const { data: recentCheckIns } = await supabase
-    .from('check_ins')
-    .select('check_in_at')
-    .eq('member_id', memberId)
-    .eq('gym_id', gymId)
-    .order('check_in_at', { ascending: false })
-    .limit(30);
+  const workoutSuggestions = suggestionsResult.data?.suggestions || [];
+  const lastWorkoutsMap = suggestionsResult.data?.lastWorkouts || {};
+  const activeAnnouncements = announcementsResult.data || [];
 
   let currentStreak = 0;
   if (recentCheckIns && recentCheckIns.length > 0) {
@@ -121,33 +140,10 @@ export default async function DashboardPage({
     }
   }
 
-  // Hourly gym traffic averages
-  const hourlyTraffic = await getHourlyTrafficAverage(gymId);
-
-  // Get workout suggestions
-  const suggestionsResult = await getWorkoutSuggestions(memberId, gymId);
-  const workoutSuggestions = suggestionsResult.data?.suggestions || [];
-  const lastWorkoutsMap = suggestionsResult.data?.lastWorkouts || {};
-
-  // Get active announcements
-  const announcementsResult = await getActiveAnnouncements(gymId);
-  const activeAnnouncements = announcementsResult.data || [];
-
-  // Get active check-in, live traffic, and peak hour
-  const [activeCheckIn, liveTraffic, peakHour] = await Promise.all([
-    getActiveCheckIn(memberId, gymId),
-    getLiveGymTraffic(gymId),
-    getPeakHourToday(gymId),
-  ]);
-
-  // Check if already checked in today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const alreadyCheckedInToday = recentCheckIns?.some((ci) => {
-    const ciDate = new Date(ci.check_in_at);
-    ciDate.setHours(0, 0, 0, 0);
-    return ciDate.getTime() === today.getTime();
-  }) ?? false;
+  // Check if already checked in today (gym-timezone-aware)
+  const alreadyCheckedInToday = recentCheckIns?.some((ci) =>
+    new Date(ci.check_in_at).getTime() >= new Date(gymTodayStart).getTime()
+  ) ?? false;
 
   const firstName = member?.full_name?.split(' ')[0] || 'Member';
 

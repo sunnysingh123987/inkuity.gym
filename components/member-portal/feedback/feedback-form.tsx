@@ -53,7 +53,7 @@ export function FeedbackForm({ feedbackRequest }: FeedbackFormProps) {
   if (message?.type === 'success') {
     return (
       <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6">
-        <div className="rounded-lg px-4 py-3 text-sm bg-green-500/10 text-green-400 border border-green-500/20">
+        <div className="rounded-lg px-4 py-3 text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
           {message.text}
         </div>
       </div>

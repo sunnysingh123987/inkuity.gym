@@ -36,7 +36,7 @@ const MEAL_TYPE_COLORS: Record<string, string> = {
   breakfast: 'text-orange-400',
   lunch: 'text-blue-400',
   dinner: 'text-purple-400',
-  snack: 'text-green-400',
+  snack: 'text-emerald-400',
 };
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -79,7 +79,7 @@ export function AiDietPreview({
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <Target className="h-5 w-5 text-green-400 mx-auto mb-1" />
+            <Target className="h-5 w-5 text-emerald-400 mx-auto mb-1" />
             <p className="text-lg font-bold text-white">{plan.dailyFat}g</p>
             <p className="text-xs text-slate-400">Fat</p>
           </CardContent>
@@ -94,7 +94,7 @@ export function AiDietPreview({
             <Card key={day.day}>
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-semibold text-cyan-400">
+                  <span className="text-sm font-semibold text-brand-cyan-400">
                     Day {day.day}
                     {day.day <= 7 && ` (${DAY_LABELS[day.day - 1]})`}
                   </span>

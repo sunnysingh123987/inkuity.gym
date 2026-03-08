@@ -41,7 +41,10 @@ export default async function SessionDetailPage({
     ? workoutSession.workout_routines[0]?.name
     : workoutSession.workout_routines?.name;
 
-  const exercises = workoutSession.session_exercises || [];
+  // Only include exercises that have at least 1 valid set (non-zero weight or reps)
+  const exercises = (workoutSession.session_exercises || []).filter((ex: any) =>
+    (ex.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
+  );
 
   // Calculate total sets and volume
   const totalSets = exercises.reduce((sum: number, ex: any) => {

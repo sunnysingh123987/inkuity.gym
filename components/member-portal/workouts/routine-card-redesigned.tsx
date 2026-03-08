@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
 import { deleteWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
@@ -27,16 +27,16 @@ const FALLBACK_CATEGORY = 'full-body';
 
 function getDaysAgoText(dateString?: string, fallback?: string): string {
   const date = dateString || fallback;
-  if (!date) return 'New';
+  if (!date) return '';
   const now = new Date();
   const then = new Date(date);
   const diffMs = now.getTime() - then.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return '1 day ago';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 14) return '1 week ago';
-  return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays === 1) return '1d ago';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 14) return '1w ago';
+  return `${Math.floor(diffDays / 7)}w ago`;
 }
 
 export function RoutineCardRedesigned({
@@ -49,6 +49,7 @@ export function RoutineCardRedesigned({
 }: RoutineCardRedesignedProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [glowing, setGlowing] = useState(false);
   const prevProgressRef = useRef<number | null>(null);
 
@@ -57,7 +58,6 @@ export function RoutineCardRedesigned({
     ? Math.round((activeProgress.completed / activeProgress.total) * 100)
     : 0;
 
-  // Trigger glow animation when progress changes
   useEffect(() => {
     if (prevProgressRef.current !== null && progressPercent > prevProgressRef.current) {
       setGlowing(true);
@@ -77,23 +77,15 @@ export function RoutineCardRedesigned({
     return exercise?.category?.toLowerCase() || null;
   })();
 
-  const exercisePreview = (() => {
-    const exercises = routine.routine_exercises || [];
-    const names = exercises.map((re: any) => {
-      const ex = Array.isArray(re.exercise_library)
-        ? re.exercise_library[0]
-        : re.exercise_library;
-      return ex?.name || 'Exercise';
-    });
-    return names.join(', ');
-  })();
-
+  const exerciseCount = routine.routine_exercises?.length || 0;
   const categorySvgPath = getCategorySvg(primaryCategory || FALLBACK_CATEGORY);
   const daysAgo = getDaysAgoText(lastSessionDate, routine.updated_at);
-  const exerciseCount = routine.routine_exercises?.length || 0;
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this routine?')) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
     setDeleting(true);
     const result = await deleteWorkoutRoutine(routine.id);
     if (result.success) {
@@ -101,96 +93,124 @@ export function RoutineCardRedesigned({
       router.refresh();
     } else {
       toast.error(result.error || 'Failed to delete routine');
-      setDeleting(false);
     }
+    setDeleting(false);
+    setConfirmingDelete(false);
   };
 
   const handleCardClick = () => {
     if (exerciseCount > 0 && onSelect) {
       onSelect(routine);
+    } else if (exerciseCount === 0) {
+      router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`);
     }
   };
 
   return (
     <div
       onClick={handleCardClick}
-      className={`relative rounded-xl cursor-pointer transition-all duration-500 ${
-        glowing ? 'scale-[1.02]' : ''
-      }`}
-      style={isActive ? {
-        padding: '2px',
-        background: `conic-gradient(from 0deg, #06b6d4 ${progressPercent}%, transparent ${progressPercent}%)`,
-        borderRadius: '0.75rem',
-        boxShadow: glowing ? '0 0 20px rgba(6, 182, 212, 0.5), 0 0 40px rgba(6, 182, 212, 0.2)' : 'none',
-        transition: 'box-shadow 0.5s ease, transform 0.5s ease',
-      } : undefined}
+      className="relative rounded-2xl cursor-pointer active:scale-[0.98] transition-transform duration-200"
     >
+      {/* Subtle pulsing glow behind active card */}
+      {isActive && (
+        <>
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{
+              background: 'rgba(6, 182, 212, 0.15)',
+              filter: 'blur(12px)',
+              animation: 'subtle-pulse 3s ease-in-out infinite',
+            }}
+          />
+          <style>{`
+            @keyframes subtle-pulse {
+              0%, 100% { opacity: 0.9; transform: scale(1.2); }
+              50% { opacity: 0.5; transform: scale(1); }
+            }
+          `}</style>
+        </>
+      )}
+
+      {/* Card */}
       <div
-        className={`rounded-xl px-4 py-3 ${
+        className={`relative z-10 rounded-2xl px-4 py-3.5 ${
           isActive
-            ? 'bg-slate-950 border-0'
-            : 'border border-slate-800 hover:border-slate-700'
+            ? 'bg-slate-900 border border-brand-cyan-500/20'
+            : 'bg-slate-800/50 border border-slate-700/50'
         }`}
       >
-      {/* Top row: name + icon, days ago, menu */}
-      <div className="flex items-center gap-2">
-        {/* Routine name */}
-        <h3 className="text-lg font-bold text-white">{routine.name}</h3>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-slate-700/50 flex items-center justify-center shrink-0">
+            <img src={categorySvgPath} alt="" className="h-6 w-6 invert opacity-70" />
+          </div>
 
-        {/* Category icon */}
-        <img src={categorySvgPath} alt="" className="h-5 w-5 invert opacity-60" />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-white truncate">{routine.name}</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[11px] text-slate-500">
+                {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''}
+              </span>
+              {daysAgo && (
+                <>
+                  <span className="text-slate-700 text-[11px]">&middot;</span>
+                  <span className="text-[11px] text-slate-500">{daysAgo}</span>
+                </>
+              )}
+            </div>
+          </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
+          {isActive && (
+            <span className="text-[11px] font-bold text-brand-cyan-400 bg-brand-cyan-500/10 px-2 py-0.5 rounded-full shrink-0">
+              {activeProgress?.completed}/{activeProgress?.total}
+            </span>
+          )}
 
-        {/* Active progress or days ago */}
-        {isActive ? (
-          <span className="text-sm font-semibold text-brand-cyan-400 whitespace-nowrap">
-            {activeProgress?.completed}/{activeProgress?.total}
-          </span>
-        ) : daysAgo !== 'Today' ? (
-          <span className="text-sm font-medium text-brand-cyan-400 whitespace-nowrap">
-            {daysAgo}
-          </span>
-        ) : null}
-
-        {/* 3-dot menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 flex-shrink-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem
-              onClick={() => router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`)}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-red-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Exercise list */}
-      {exercisePreview && (
-        <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-          {exercisePreview}
-        </p>
-      )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 shrink-0 text-slate-500 hover:text-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem
+                onClick={() => router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              {confirmingDelete ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-red-500 font-semibold"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deleting ? 'Deleting...' : 'Confirm Delete'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setConfirmingDelete(false)}
+                  >
+                    Cancel
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );

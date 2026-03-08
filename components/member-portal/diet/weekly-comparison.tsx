@@ -23,7 +23,7 @@ const trendIcons = {
 };
 
 const trendColors = {
-  up: 'text-green-400',
+  up: 'text-emerald-400',
   down: 'text-red-400',
   same: 'text-slate-400',
 };

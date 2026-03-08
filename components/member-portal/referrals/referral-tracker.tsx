@@ -71,7 +71,7 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
                 className="shrink-0"
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-emerald-600" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
@@ -90,7 +90,7 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
             </Button>
             <Button
               onClick={handleShareWhatsApp}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-green-700 text-white"
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share on WhatsApp
@@ -110,7 +110,7 @@ export function ReferralTracker({ memberId, gymSlug, referrals }: ReferralTracke
         </Card>
         <Card className="bg-slate-900 border-slate-800">
           <CardContent className="pt-6 text-center">
-            <CheckCircle2 className="h-5 w-5 mx-auto text-green-500 mb-2" />
+            <CheckCircle2 className="h-5 w-5 mx-auto text-emerald-500 mb-2" />
             <p className="text-2xl font-bold text-white">{convertedCount}</p>
             <p className="text-xs text-slate-500">Converted</p>
           </CardContent>
@@ -180,8 +180,8 @@ function ReferralStatusBadge({ status }: { status: string }) {
       icon: <Clock className="h-3 w-3" />,
     },
     converted: {
-      bg: 'bg-green-500/10',
-      text: 'text-green-400',
+      bg: 'bg-emerald-500/10',
+      text: 'text-emerald-400',
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     rewarded: {

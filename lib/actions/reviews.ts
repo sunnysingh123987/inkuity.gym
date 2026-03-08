@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import type { GymReview, GymReviewWithMember, FeedbackRequest, FeedbackRequestWithMember } from '@/types/database';
+import type { GymReview, GymReviewWithMember, FeedbackRequest, FeedbackRequestWithMember, FeedbackMessage } from '@/types/database';
 
 // ============================================================
 // REVIEWS ACTIONS
@@ -237,6 +237,203 @@ export async function respondToFeedback(
     return { success: true };
   } catch (error: any) {
     console.error('Respond to feedback error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// FEEDBACK CHAT ACTIONS
+// ============================================================
+
+export async function getFeedbackMessages(
+  memberId: string,
+  gymId: string
+): Promise<{ success: boolean; data?: FeedbackMessage[]; error?: string }> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('feedback_messages')
+      .select('*')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    return { success: true, data: (data || []) as FeedbackMessage[] };
+  } catch (error: any) {
+    console.error('Get feedback messages error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+const MAX_CONSECUTIVE_MEMBER_MESSAGES = 5;
+
+export async function sendFeedbackMessage(
+  memberId: string,
+  gymId: string,
+  message: string
+): Promise<{ success: boolean; data?: FeedbackMessage; error?: string }> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Enforce consecutive message limit
+    const { data: recent } = await supabase
+      .from('feedback_messages')
+      .select('sender_type')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .order('created_at', { ascending: false })
+      .limit(MAX_CONSECUTIVE_MEMBER_MESSAGES);
+
+    if (
+      recent &&
+      recent.length >= MAX_CONSECUTIVE_MEMBER_MESSAGES &&
+      recent.every((m) => m.sender_type === 'member')
+    ) {
+      return { success: false, error: 'Please wait for a reply before sending more messages.' };
+    }
+
+    const { data, error } = await supabase
+      .from('feedback_messages')
+      .insert({
+        gym_id: gymId,
+        member_id: memberId,
+        message: message.trim(),
+        sender_type: 'member',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data: data as FeedbackMessage };
+  } catch (error: any) {
+    console.error('Send feedback message error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// ADMIN — INKUITY FEEDBACK INBOX
+// ============================================================
+
+export interface FeedbackConversation {
+  member_id: string;
+  gym_id: string;
+  member_name: string;
+  member_email: string | null;
+  gym_name: string;
+  last_message: string;
+  last_message_at: string;
+  last_sender: 'member' | 'inkuity';
+  unread_count: number;
+}
+
+export async function getAllFeedbackConversations(): Promise<{
+  success: boolean;
+  data?: FeedbackConversation[];
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data: messages, error } = await supabase
+      .from('feedback_messages')
+      .select('*, member:members(full_name, email), gym:gyms(name)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Group by (member_id, gym_id) — pick latest message per conversation
+    const convMap = new Map<string, FeedbackConversation>();
+
+    for (const msg of messages || []) {
+      const key = `${msg.member_id}::${msg.gym_id}`;
+      const memberData = Array.isArray(msg.member) ? msg.member[0] : msg.member;
+      const gymData = Array.isArray(msg.gym) ? msg.gym[0] : msg.gym;
+
+      if (!convMap.has(key)) {
+        convMap.set(key, {
+          member_id: msg.member_id,
+          gym_id: msg.gym_id,
+          member_name: memberData?.full_name || 'Unknown',
+          member_email: memberData?.email || null,
+          gym_name: gymData?.name || 'Unknown Gym',
+          last_message: msg.message,
+          last_message_at: msg.created_at,
+          last_sender: msg.sender_type,
+          unread_count: 0,
+        });
+      }
+
+      // Count unread member messages
+      if (msg.sender_type === 'member' && !msg.read_at) {
+        const conv = convMap.get(key)!;
+        conv.unread_count++;
+      }
+    }
+
+    const conversations = Array.from(convMap.values()).sort(
+      (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+    );
+
+    return { success: true, data: conversations };
+  } catch (error: any) {
+    console.error('Get all feedback conversations error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendInkuityReply(
+  memberId: string,
+  gymId: string,
+  message: string
+): Promise<{ success: boolean; data?: FeedbackMessage; error?: string }> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('feedback_messages')
+      .insert({
+        gym_id: gymId,
+        member_id: memberId,
+        message: message.trim(),
+        sender_type: 'inkuity',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data: data as FeedbackMessage };
+  } catch (error: any) {
+    console.error('Send inkuity reply error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function markConversationRead(
+  memberId: string,
+  gymId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { error } = await supabase
+      .from('feedback_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .eq('sender_type', 'member')
+      .is('read_at', null);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Mark conversation read error:', error);
     return { success: false, error: error.message };
   }
 }

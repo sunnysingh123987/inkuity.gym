@@ -137,7 +137,7 @@ export function AiDietWizard({
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
                 s <= step
-                  ? 'bg-cyan-500 text-white'
+                  ? 'bg-brand-cyan-500 text-white'
                   : 'bg-slate-700 text-slate-400'
               }`}
             >
@@ -146,7 +146,7 @@ export function AiDietWizard({
             {s < 3 && (
               <div
                 className={`flex-1 h-0.5 mx-2 ${
-                  s < step ? 'bg-cyan-500' : 'bg-slate-700'
+                  s < step ? 'bg-brand-cyan-500' : 'bg-slate-700'
                 }`}
               />
             )}
@@ -173,11 +173,11 @@ export function AiDietWizard({
                   onClick={() => setGoal(g.value)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
                     goal === g.value
-                      ? 'border-cyan-500 bg-cyan-500/10'
+                      ? 'border-brand-cyan-500 bg-brand-cyan-500/10'
                       : 'border-slate-700 hover:border-slate-600'
                   }`}
                 >
-                  <Icon className={`h-6 w-6 mb-2 ${goal === g.value ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <Icon className={`h-6 w-6 mb-2 ${goal === g.value ? 'text-brand-cyan-400' : 'text-slate-400'}`} />
                   <p className="font-semibold text-white text-sm">{g.label}</p>
                   <p className="text-xs text-slate-400 mt-1">{g.desc}</p>
                 </button>
@@ -292,11 +292,11 @@ export function AiDietWizard({
                 onClick={() => setActivityLevel(a.value)}
                 className={`w-full p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3 ${
                   activityLevel === a.value
-                    ? 'border-cyan-500 bg-cyan-500/10'
+                    ? 'border-brand-cyan-500 bg-brand-cyan-500/10'
                     : 'border-slate-700 hover:border-slate-600'
                 }`}
               >
-                <Activity className={`h-5 w-5 ${activityLevel === a.value ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <Activity className={`h-5 w-5 ${activityLevel === a.value ? 'text-brand-cyan-400' : 'text-slate-400'}`} />
                 <div>
                   <p className="font-semibold text-white text-sm">{a.label}</p>
                   <p className="text-xs text-slate-400">{a.desc}</p>
@@ -314,7 +314,7 @@ export function AiDietWizard({
                 onClick={() => setMealsPerDay(3)}
                 className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${
                   mealsPerDay === 3
-                    ? 'border-cyan-500 bg-cyan-500/10'
+                    ? 'border-brand-cyan-500 bg-brand-cyan-500/10'
                     : 'border-slate-700'
                 }`}
               >
@@ -327,7 +327,7 @@ export function AiDietWizard({
                 onClick={() => setMealsPerDay(4)}
                 className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${
                   mealsPerDay === 4
-                    ? 'border-cyan-500 bg-cyan-500/10'
+                    ? 'border-brand-cyan-500 bg-brand-cyan-500/10'
                     : 'border-slate-700'
                 }`}
               >
@@ -362,11 +362,11 @@ export function AiDietWizard({
                   onClick={() => setDietaryPreference(d.value)}
                   className={`p-3 rounded-lg border-2 text-left transition-all ${
                     dietaryPreference === d.value
-                      ? 'border-cyan-500 bg-cyan-500/10'
+                      ? 'border-brand-cyan-500 bg-brand-cyan-500/10'
                       : 'border-slate-700 hover:border-slate-600'
                   }`}
                 >
-                  <Salad className={`h-5 w-5 mb-1 ${dietaryPreference === d.value ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <Salad className={`h-5 w-5 mb-1 ${dietaryPreference === d.value ? 'text-brand-cyan-400' : 'text-slate-400'}`} />
                   <p className="font-semibold text-white text-sm">{d.label}</p>
                 </button>
               ))}
@@ -384,7 +384,7 @@ export function AiDietWizard({
                   onClick={() => toggleCuisine(c)}
                   className={`px-3 py-1.5 rounded-full text-sm transition-all ${
                     cuisinePreferences.includes(c)
-                      ? 'bg-cyan-500 text-white'
+                      ? 'bg-brand-cyan-500 text-white'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }`}
                 >

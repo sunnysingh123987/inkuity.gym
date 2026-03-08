@@ -35,15 +35,15 @@ const CATEGORY_ICON_MAP: Record<string, CategoryStyle> = {
   arms: { icon: Dumbbell, color: 'text-purple-400', bg: 'bg-purple-500/15' },
   biceps: { icon: Dumbbell, color: 'text-purple-400', bg: 'bg-purple-500/15' },
   triceps: { icon: Dumbbell, color: 'text-purple-400', bg: 'bg-purple-500/15' },
-  legs: { icon: PersonStanding, color: 'text-green-400', bg: 'bg-green-500/15' },
-  glutes: { icon: PersonStanding, color: 'text-green-400', bg: 'bg-green-500/15' },
-  hamstrings: { icon: PersonStanding, color: 'text-green-400', bg: 'bg-green-500/15' },
-  quads: { icon: PersonStanding, color: 'text-green-400', bg: 'bg-green-500/15' },
-  calves: { icon: PersonStanding, color: 'text-green-400', bg: 'bg-green-500/15' },
+  legs: { icon: PersonStanding, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  glutes: { icon: PersonStanding, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  hamstrings: { icon: PersonStanding, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  quads: { icon: PersonStanding, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  calves: { icon: PersonStanding, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
   core: { icon: Zap, color: 'text-orange-400', bg: 'bg-orange-500/15' },
   abs: { icon: Zap, color: 'text-orange-400', bg: 'bg-orange-500/15' },
   cardio: { icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/15' },
-  cycling: { icon: Bike, color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
+  cycling: { icon: Bike, color: 'text-brand-cyan-400', bg: 'bg-brand-cyan-500/15' },
 };
 
 const DEFAULT_CHECKIN_STYLE: CategoryStyle = {

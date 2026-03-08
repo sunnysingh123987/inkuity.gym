@@ -180,7 +180,7 @@ export function SettingsForm({
       {/* Push Notifications */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 pt-2">
-          <Smartphone className="h-4 w-4 text-cyan-400" />
+          <Smartphone className="h-4 w-4 text-brand-cyan-400" />
           <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
             Push Notifications
           </h3>
@@ -220,7 +220,7 @@ export function SettingsForm({
 
             {/* Individual Push Preferences (only when subscribed) */}
             {isSubscribed && (
-              <div className="space-y-3 pl-4 border-l-2 border-cyan-500/30">
+              <div className="space-y-3 pl-4 border-l-2 border-brand-cyan-500/30">
                 <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
                   <div className="flex-1 mr-4">
                     <Label

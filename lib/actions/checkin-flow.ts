@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
  * E.g., if it's 12:30 AM IST Mar 7, this returns the UTC equivalent of Mar 7 00:00 IST
  * which is "2026-03-06T18:30:00.000Z". This ensures "today" queries match the gym's local date.
  */
-async function getGymTodayStart(gymId: string, supabase?: ReturnType<typeof createAdminSupabaseClient>): Promise<string> {
+export async function getGymTodayStart(gymId: string, supabase?: ReturnType<typeof createAdminSupabaseClient>): Promise<string> {
   const sb = supabase || createAdminSupabaseClient();
   let tz = 'Asia/Kolkata';
   try {
@@ -443,6 +443,41 @@ export async function getActiveCheckIn(memberId: string, gymId: string) {
   } catch (error: any) {
     console.error('Error getting active check-in:', error);
     return null;
+  }
+}
+
+/**
+ * Get today's check-in status for a member:
+ * - 'active': currently checked in (no check_out_at)
+ * - 'checked-out': checked in today but already checked out, returns check_out_at
+ * - 'none': no check-in today
+ */
+export async function getTodayCheckInStatus(memberId: string, gymId: string): Promise<{
+  status: 'active' | 'checked-out' | 'none';
+  checkOutAt?: string;
+}> {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select('id, check_in_at, check_out_at')
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('check_in_at', today.toISOString())
+      .order('check_in_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return { status: 'none' };
+
+    if (!data.check_out_at) return { status: 'active' };
+
+    return { status: 'checked-out', checkOutAt: data.check_out_at };
+  } catch {
+    return { status: 'none' };
   }
 }
 

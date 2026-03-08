@@ -872,17 +872,16 @@ export async function startWorkoutSession(
 }
 
 /**
- * Get today's most recent workout session for a member (for reuse within same day)
+ * Get today's most recent workout session for a member (optionally filtered by routine)
  */
-export async function getActiveWorkoutSession(memberId: string, gymId: string) {
+export async function getActiveWorkoutSession(memberId: string, gymId: string, routineId?: string) {
   try {
     const supabase = createAdminSupabaseClient();
 
-    // Find today's most recent session to allow reuse
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('workout_sessions')
       .select(`
         *,
@@ -912,8 +911,13 @@ export async function getActiveWorkoutSession(memberId: string, gymId: string) {
       .eq('gym_id', gymId)
       .gte('started_at', today.toISOString())
       .order('started_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+
+    if (routineId) {
+      query = query.eq('routine_id', routineId);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
 
@@ -921,6 +925,160 @@ export async function getActiveWorkoutSession(memberId: string, gymId: string) {
   } catch (error: any) {
     console.error('Error fetching active session:', error);
     return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
+ * Get today's recorded session (one with at least 1 valid set: weight > 0 or reps > 0)
+ */
+export async function getTodayRecordedSession(memberId: string, gymId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get all today's sessions with their sets
+    const { data: sessions, error } = await supabase
+      .from('workout_sessions')
+      .select(`
+        id, routine_id, started_at,
+        workout_routines (name),
+        session_exercises (
+          exercise_sets (weight, reps)
+        )
+      `)
+      .eq('member_id', memberId)
+      .eq('gym_id', gymId)
+      .gte('started_at', today.toISOString())
+      .order('started_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Find the first session that has at least 1 valid set
+    for (const session of sessions || []) {
+      const hasValidSet = (session.session_exercises || []).some((se: any) =>
+        (se.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
+      );
+      if (hasValidSet) {
+        const routineName = Array.isArray(session.workout_routines)
+          ? session.workout_routines[0]?.name
+          : (session.workout_routines as any)?.name;
+        return {
+          success: true,
+          data: {
+            sessionId: session.id,
+            routineId: session.routine_id,
+            routineName: routineName || 'Workout',
+          },
+        };
+      }
+    }
+
+    return { success: true, data: null };
+  } catch (error: any) {
+    console.error('Error fetching today recorded session:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
+ * Delete a workout session and all its child data (sets, exercises)
+ */
+export async function deleteWorkoutSession(sessionId: string) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    // Get session exercise IDs first
+    const { data: sessionExercises } = await supabase
+      .from('session_exercises')
+      .select('id')
+      .eq('session_id', sessionId);
+
+    const seIds = (sessionExercises || []).map((se: any) => se.id);
+
+    // Delete sets
+    if (seIds.length > 0) {
+      await supabase
+        .from('exercise_sets')
+        .delete()
+        .in('session_exercise_id', seIds);
+    }
+
+    // Delete session exercises
+    await supabase
+      .from('session_exercises')
+      .delete()
+      .eq('session_id', sessionId);
+
+    // Delete session
+    await supabase
+      .from('workout_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting workout session:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Ensure a workout session exists for a routine. Handles conflict detection.
+ * Returns the session if it exists/created, or a conflict object if another routine is active today.
+ */
+export async function ensureWorkoutSession(
+  memberId: string,
+  gymId: string,
+  routineId: string
+) {
+  try {
+    // Must be checked in to log sets
+    const { getActiveCheckIn } = await import('@/lib/actions/checkin-flow');
+    const checkIn = await getActiveCheckIn(memberId, gymId);
+    if (!checkIn) {
+      return { success: false, error: 'You must be checked in to log a workout', data: null, conflict: false, notCheckedIn: true };
+    }
+
+    // Check if there's already a recorded session today
+    const recorded = await getTodayRecordedSession(memberId, gymId);
+
+    if (recorded.success && recorded.data) {
+      // Same routine — reuse
+      if (recorded.data.routineId === routineId) {
+        const existing = await getActiveWorkoutSession(memberId, gymId, routineId);
+        return { success: true, data: existing.data, conflict: false };
+      }
+
+      // Different routine — conflict
+      return {
+        success: true,
+        data: null,
+        conflict: true,
+        conflictRoutineName: recorded.data.routineName,
+        conflictSessionId: recorded.data.sessionId,
+      };
+    }
+
+    // No recorded session today — check if there's an empty session for this routine
+    const existing = await getActiveWorkoutSession(memberId, gymId, routineId);
+    if (existing.success && existing.data) {
+      return { success: true, data: existing.data, conflict: false };
+    }
+
+    // Create new session
+    const result = await startWorkoutSession(memberId, gymId, routineId);
+    if (!result.success) {
+      return { success: false, error: result.error, data: null, conflict: false };
+    }
+
+    // Re-fetch with full data
+    const fresh = await getActiveWorkoutSession(memberId, gymId, routineId);
+    return { success: true, data: fresh.data, conflict: false };
+  } catch (error: any) {
+    console.error('Error ensuring workout session:', error);
+    return { success: false, error: error.message, data: null, conflict: false };
   }
 }
 
@@ -999,6 +1157,13 @@ export async function logExerciseSet(
   try {
     const supabase = createAdminSupabaseClient();
 
+    // Validate: at least weight or reps must be non-zero
+    const hasWeight = setData.weight != null && setData.weight > 0;
+    const hasReps = setData.reps != null && setData.reps > 0;
+    if (!hasWeight && !hasReps) {
+      return { success: false, error: 'Set must have weight > 0 or reps > 0', data: null };
+    }
+
     // Check if this set already exists
     const { data: existing } = await supabase
       .from('exercise_sets')
@@ -1076,7 +1241,21 @@ export async function getWorkoutSessionHistory(
         completed_at,
         duration_minutes,
         status,
-        workout_routines (name)
+        workout_routines (name),
+        session_exercises (
+          id,
+          order_index,
+          completed,
+          exercise_library (
+            name
+          ),
+          exercise_sets (
+            set_number,
+            weight,
+            reps,
+            completed
+          )
+        )
       `)
       .eq('member_id', memberId)
       .eq('gym_id', gymId)
@@ -1117,7 +1296,7 @@ export async function getWorkoutSession(sessionId: string) {
           exercise_sets (
             id,
             set_number,
-            weight_lbs,
+            weight,
             reps,
             duration_seconds,
             completed,
@@ -1855,7 +2034,7 @@ export async function getPreviousExerciseSets(
     // Fetch the sets for that session exercise
     const { data: sets, error: setsError } = await supabase
       .from('exercise_sets')
-      .select('set_number, weight_lbs, reps')
+      .select('set_number, weight, reps')
       .eq('session_exercise_id', sessionExercise.id)
       .order('set_number', { ascending: true });
 
@@ -1863,7 +2042,7 @@ export async function getPreviousExerciseSets(
 
     return (sets || []).map((s) => ({
       set_number: s.set_number,
-      weight: s.weight_lbs || 0,
+      weight: s.weight || 0,
       reps: s.reps || 0,
     }));
   } catch (error: any) {

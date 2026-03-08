@@ -568,7 +568,7 @@ export function NutritionTrackerPage({
               <button
                 type="button"
                 onClick={saveTargets}
-                className="h-9 w-9 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+                className="h-9 w-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors"
               >
                 <Check className="h-5 w-5 text-white" />
               </button>
@@ -678,7 +678,7 @@ export function NutritionTrackerPage({
                     <span className="text-xs text-slate-500 w-14 text-right flex-shrink-0">{targetForm.carbs * 4} cal</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-8 rounded-full bg-green-400 flex-shrink-0" />
+                    <div className="w-2 h-8 rounded-full bg-emerald-400 flex-shrink-0" />
                     <div className="flex-1">
                       <label className="text-xs text-slate-400 mb-1 block">Fat (g)</label>
                       <Input
@@ -710,7 +710,7 @@ export function NutritionTrackerPage({
                 <ul className="text-xs text-slate-500 space-y-1.5 list-disc list-inside">
                   <li><span className="text-blue-400">Protein:</span> 1.6 - 2.2g per kg of body weight for muscle building</li>
                   <li><span className="text-yellow-400">Carbs:</span> 3 - 5g per kg for moderate activity, more if training hard</li>
-                  <li><span className="text-green-400">Fat:</span> 0.8 - 1.2g per kg to support hormones and health</li>
+                  <li><span className="text-emerald-400">Fat:</span> 0.8 - 1.2g per kg to support hormones and health</li>
                   <li>To <span className="text-brand-cyan-400">lose weight</span>, set total calories 300-500 below maintenance</li>
                   <li>To <span className="text-brand-cyan-400">gain weight</span>, set total calories 200-400 above maintenance</li>
                 </ul>
