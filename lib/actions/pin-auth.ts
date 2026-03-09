@@ -549,10 +549,11 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
       };
     }
 
-    // Find member
+    // Find member — query core columns only, then lockout columns separately
+    // to avoid breaking login if lockout columns haven't been migrated yet
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('id, email, full_name, gym_id, portal_pin, failed_pin_attempts, pin_locked_until')
+      .select('id, email, full_name, gym_id, portal_pin')
       .eq('email', email.toLowerCase().trim())
       .eq('gym_id', gym.id)
       .single();
@@ -564,9 +565,23 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
       };
     }
 
+    // Fetch lockout columns (may not exist if migration not yet applied)
+    let failedAttempts = 0;
+    let pinLockedUntil: string | null = null;
+    const { data: lockoutData } = await supabase
+      .from('members')
+      .select('failed_pin_attempts, pin_locked_until')
+      .eq('id', member.id)
+      .single();
+
+    if (lockoutData) {
+      failedAttempts = lockoutData.failed_pin_attempts || 0;
+      pinLockedUntil = lockoutData.pin_locked_until;
+    }
+
     // Check if account is locked due to too many failed attempts
-    if (member.pin_locked_until) {
-      const lockExpiry = new Date(member.pin_locked_until).getTime();
+    if (pinLockedUntil) {
+      const lockExpiry = new Date(pinLockedUntil).getTime();
       if (Date.now() < lockExpiry) {
         const minutesLeft = Math.ceil((lockExpiry - Date.now()) / (1000 * 60));
         return {
@@ -588,8 +603,8 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
     // Verify PIN
     const decryptedPIN = decryptPIN(member.portal_pin);
     if (decryptedPIN !== pin.trim()) {
-      // Atomically increment failed attempts
-      const newAttempts = (member.failed_pin_attempts || 0) + 1;
+      // Increment failed attempts (best-effort, won't break if columns missing)
+      const newAttempts = failedAttempts + 1;
       const MAX_ATTEMPTS = 5;
       const LOCKOUT_MINUTES = 15;
 
@@ -610,7 +625,7 @@ export async function signInWithPIN(email: string, pin: string, gymSlug: string)
     }
 
     // Successful login — reset failed attempts
-    if (member.failed_pin_attempts && member.failed_pin_attempts > 0) {
+    if (failedAttempts > 0) {
       await supabase
         .from('members')
         .update({ failed_pin_attempts: 0, pin_locked_until: null })
