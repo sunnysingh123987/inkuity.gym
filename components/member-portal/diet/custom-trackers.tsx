@@ -154,7 +154,7 @@ export function CustomTrackers({
 
   return (
     <>
-      <Card className="bg-slate-900 border-slate-800">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-white">
@@ -172,7 +172,7 @@ export function CustomTrackers({
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-700">
+                <DropdownMenuContent align="end" className="glass-modal">
                   <DropdownMenuItem
                     onClick={() => setIsManageDialogOpen(true)}
                     className="text-slate-300 focus:bg-slate-800 focus:text-white"
@@ -215,7 +215,7 @@ export function CustomTrackers({
               return (
                 <div
                   key={tracker.id}
-                  className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 space-y-2"
+                  className="p-3 rounded-lg glass space-y-2"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export function CustomTrackers({
 
       {/* Add/Edit Tracker Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700">
+        <DialogContent className="glass-modal">
           <DialogHeader>
             <DialogTitle className="text-white">
               {editingTracker ? 'Edit Tracker' : 'Add New Tracker'}
@@ -279,7 +279,7 @@ export function CustomTrackers({
                 placeholder="e.g. Water"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="bg-slate-800 border-slate-700 text-white"
+                className="glass-input text-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -289,7 +289,7 @@ export function CustomTrackers({
                   placeholder="e.g. glasses"
                   value={formUnit}
                   onChange={(e) => setFormUnit(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-white"
+                  className="glass-input text-white"
                 />
               </div>
               <div className="space-y-2">
@@ -300,7 +300,7 @@ export function CustomTrackers({
                   placeholder="e.g. 8"
                   value={formTarget}
                   onChange={(e) => setFormTarget(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-white"
+                  className="glass-input text-white"
                 />
               </div>
             </div>
@@ -365,7 +365,7 @@ export function CustomTrackers({
 
       {/* Manage Trackers Dialog (Edit Trackers) */}
       <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700">
+        <DialogContent className="glass-modal">
           <DialogHeader>
             <DialogTitle className="text-white">Edit Trackers</DialogTitle>
           </DialogHeader>
@@ -379,7 +379,7 @@ export function CustomTrackers({
                 return (
                   <div
                     key={tracker.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
+                    className="flex items-center justify-between p-3 rounded-lg glass"
                   >
                     <div className="flex items-center gap-2">
                       <div className={`p-1.5 rounded-md ${colors.bg}`}>

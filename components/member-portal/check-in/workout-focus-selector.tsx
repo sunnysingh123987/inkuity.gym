@@ -235,7 +235,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
                 ${
                   isSelected
                     ? `${option.selectedBg} scale-[1.02] shadow-md`
-                    : `bg-slate-800 border-slate-700 ${option.bgHover} hover:bg-slate-700 hover:shadow-sm hover:scale-[1.01]`
+                    : `glass border-white/[0.06] ${option.bgHover} glass-hover hover:shadow-sm hover:scale-[1.01]`
                 }
               `}
             >
@@ -264,7 +264,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
       </div>
 
       {selected.length > 0 && (
-        <div className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-2">
+        <div className="flex items-center justify-between glass rounded-lg px-4 py-2">
           <span className="text-sm text-slate-400">
             <strong className="text-white">{selected.length}</strong> selected:{' '}
             {selected
@@ -302,7 +302,7 @@ export function WorkoutFocusSelector({ checkInId, onComplete }: WorkoutFocusSele
           onClick={onComplete}
           disabled={isSubmitting}
           size="lg"
-          className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+          className="border-white/[0.06] text-slate-300 glass-hover hover:text-white"
         >
           Skip
         </Button>

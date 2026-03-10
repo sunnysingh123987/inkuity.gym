@@ -46,8 +46,30 @@ export function GymLandingPage({ gym, referralCode, reviews = [] }: GymLandingPa
   const fullAddress = [gym.address, gym.city, gym.state, gym.zip_code].filter(Boolean).join(', ')
   const joinUrl = `/${gym.slug}/portal/sign-in?gymId=${gym.id}&gymName=${encodeURIComponent(gym.name)}${gym.logo_url ? `&gymLogo=${encodeURIComponent(gym.logo_url)}` : ''}${referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ''}`
 
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': `https://inkuity.com/${gym.slug}`,
+    name: gym.name,
+    url: `https://inkuity.com/${gym.slug}`,
+  }
+  if (gym.description) jsonLd.description = gym.description
+  if (gym.phone) jsonLd.telephone = gym.phone
+  if (gym.email) jsonLd.email = gym.email
+  if (gym.address || gym.city || gym.state) {
+    const address: Record<string, string> = { '@type': 'PostalAddress' }
+    if (gym.address) address.streetAddress = gym.address
+    if (gym.city) address.addressLocality = gym.city
+    if (gym.state) address.addressRegion = gym.state
+    jsonLd.address = address
+  }
+
   return (
     <div ref={containerRef} className="min-h-screen bg-[#0B1120] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header / Hero */}
       <header className="relative overflow-hidden">
         {/* Background effects */}

@@ -80,7 +80,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
       {statCards.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title} className="bg-slate-900 border-slate-800">
+          <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-slate-400">
                 {stat.title}

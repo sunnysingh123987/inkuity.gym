@@ -315,7 +315,7 @@ export function MealManagement({
 
       {/* Override Confirmation Dialog */}
       <Dialog open={isOverrideDialogOpen} onOpenChange={setIsOverrideDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700">
+        <DialogContent className="glass-modal">
           <DialogHeader>
             <DialogTitle className="text-white">Replace Existing Meal?</DialogTitle>
             <DialogDescription className="text-slate-400">

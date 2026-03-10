@@ -557,6 +557,8 @@ interface CreateRoutineInput {
   schedule?: string[];
   exercises: {
     exerciseId: string;
+    name?: string;
+    category?: string;
     sets: number;
     reps?: number;
     duration_seconds?: number;
@@ -566,11 +568,65 @@ interface CreateRoutineInput {
 }
 
 /**
+ * Resolve exercise IDs — for local exercises (not in DB), find or create them in the library.
+ */
+async function resolveExerciseIds(
+  supabase: any,
+  gymId: string,
+  exercises: CreateRoutineInput['exercises']
+) {
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const resolved: string[] = [];
+
+  for (const ex of exercises) {
+    // Strip equipment suffix from UUID if present (uuid-barbell → uuid)
+    const baseId = ex.exerciseId.length > 36 ? ex.exerciseId.substring(0, 36) : ex.exerciseId;
+
+    if (UUID_REGEX.test(baseId)) {
+      resolved.push(baseId);
+      continue;
+    }
+
+    // Not a valid UUID — look up by name or create in library
+    const exerciseName = ex.name || ex.exerciseId.replace(/^local-/, '').replace(/-/g, ' ');
+    const category = ex.category || 'other';
+
+    // Try to find existing exercise by name
+    const { data: existing } = await supabase
+      .from('exercise_library')
+      .select('id')
+      .eq('gym_id', gymId)
+      .ilike('name', exerciseName)
+      .limit(1)
+      .single();
+
+    if (existing) {
+      resolved.push(existing.id);
+    } else {
+      // Create new exercise in library
+      const { data: created, error: createErr } = await supabase
+        .from('exercise_library')
+        .insert({ gym_id: gymId, name: exerciseName, category, is_custom: false })
+        .select('id')
+        .single();
+
+      if (createErr) throw createErr;
+      resolved.push(created.id);
+    }
+  }
+
+  return resolved;
+}
+
+/**
  * Create a new workout routine
  */
 export async function createWorkoutRoutine(input: CreateRoutineInput) {
   try {
     const supabase = createAdminSupabaseClient();
+
+    // Resolve all exercise IDs (auto-create missing ones)
+    const resolvedIds = await resolveExerciseIds(supabase, input.gymId, input.exercises);
 
     // Create the routine
     const { data: routine, error: routineError } = await supabase
@@ -592,7 +648,7 @@ export async function createWorkoutRoutine(input: CreateRoutineInput) {
     if (input.exercises.length > 0) {
       const routineExercises = input.exercises.map((exercise, index) => ({
         routine_id: routine.id,
-        exercise_id: exercise.exerciseId,
+        exercise_id: resolvedIds[index],
         order_index: index,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -629,6 +685,8 @@ export async function updateWorkoutRoutine(
     is_active?: boolean;
     exercises?: {
       exerciseId: string;
+      name?: string;
+      category?: string;
       sets: number;
       reps: number;
       rest_seconds: number;
@@ -653,6 +711,15 @@ export async function updateWorkoutRoutine(
 
     // Replace exercises if provided
     if (exercises) {
+      // Get gym_id from the routine for resolving exercise IDs
+      const { data: routine } = await supabase
+        .from('workout_routines')
+        .select('gym_id')
+        .eq('id', routineId)
+        .single();
+
+      const gymId = routine?.gym_id;
+
       // Delete existing exercises
       const { error: deleteError } = await supabase
         .from('routine_exercises')
@@ -663,12 +730,17 @@ export async function updateWorkoutRoutine(
 
       // Insert new exercises
       if (exercises.length > 0) {
+        // Resolve exercise IDs (auto-create missing ones)
+        const resolvedIds = gymId
+          ? await resolveExerciseIds(supabase, gymId, exercises)
+          : exercises.map((ex) => ex.exerciseId);
+
         const { error: insertError } = await supabase
           .from('routine_exercises')
           .insert(
             exercises.map((ex, index) => ({
               routine_id: routineId,
-              exercise_id: ex.exerciseId,
+              exercise_id: resolvedIds[index],
               order_index: index,
               sets: ex.sets,
               reps: ex.reps,

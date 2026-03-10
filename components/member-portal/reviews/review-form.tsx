@@ -70,7 +70,7 @@ export function ReviewForm({ gymId, memberId, existingReview }: ReviewFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-6">
+      <div className="rounded-2xl glass p-6 space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-white">
             {isEditing ? 'Edit Your Review' : 'Leave a Review'}
@@ -128,7 +128,7 @@ export function ReviewForm({ gymId, memberId, existingReview }: ReviewFormProps)
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
             placeholder="Tell us about your experience..."
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand-cyan-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500 resize-none"
+            className="w-full rounded-lg glass-input px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand-cyan-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500 resize-none"
           />
         </div>
 

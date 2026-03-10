@@ -22,8 +22,24 @@ export async function generateMetadata({ params }: GymPageProps) {
   }
 
   return {
-    title: `${gym.name} - Inkuity`,
-    description: gym.description || `Welcome to ${gym.name}`,
+    title: `${gym.name} — Member Portal | Inkuity`,
+    description: gym.description || `Welcome to ${gym.name}. Check in, track workouts, follow diet plans, and build your fitness streak. Powered by Inkuity — the free gym management platform.`,
+    openGraph: {
+      title: `${gym.name} — Gym Member Portal`,
+      description: gym.description || `Join ${gym.name} on Inkuity. QR check-ins, workout tracking, nutrition planning, and more.`,
+      url: `https://inkuity.com/${gym.slug}`,
+      siteName: 'Inkuity',
+      type: 'website',
+      ...(gym.logo_url ? { images: [{ url: gym.logo_url }] } : {}),
+    },
+    twitter: {
+      card: 'summary',
+      title: `${gym.name} — Powered by Inkuity`,
+      description: gym.description || `Join ${gym.name}. Track workouts, follow diet plans, and build streaks.`,
+    },
+    alternates: {
+      canonical: `https://inkuity.com/${gym.slug}`,
+    },
   }
 }
 

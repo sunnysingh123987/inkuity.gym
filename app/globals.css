@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* Dark theme as default */
-    --background: 222 47% 5%;
+    --background: 222 47% 3%;
     --foreground: 210 40% 98%;
     --card: 217 33% 10%;
     --card-foreground: 210 40% 98%;
@@ -25,10 +25,23 @@
     --input: 217 33% 18%;
     --ring: 189 94% 43%;
     --radius: 0.75rem;
+
+    /* Glass-specific properties (rgba for direct use) */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-bg-hover: rgba(255, 255, 255, 0.08);
+    --glass-bg-strong: rgba(255, 255, 255, 0.10);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-light: rgba(255, 255, 255, 0.12);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --mesh-cyan: rgba(6, 182, 212, 0.12);
+    --mesh-purple: rgba(168, 85, 247, 0.10);
+    --mesh-pink: rgba(236, 72, 153, 0.08);
+    --mesh-blue: rgba(37, 99, 235, 0.08);
   }
 
   .dark {
-    --background: 222 47% 5%;
+    --background: 222 47% 3%;
     --foreground: 210 40% 98%;
     --card: 217 33% 10%;
     --card-foreground: 210 40% 98%;
@@ -86,9 +99,149 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-cyan-400 via-brand-purple-400 to-brand-pink-400;
   }
 
-  /* Dark Glass Effect */
+  /* Legacy alias */
   .glass-dark {
     @apply bg-slate-900/80 backdrop-blur-xl border border-slate-700/50;
+  }
+
+  /* ─── Liquid Glass Utility System ─── */
+
+  /* Cards, containers */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Prominent cards, modals */
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: var(--glass-shadow-lg);
+  }
+
+  /* Header & bottom nav */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(32px) saturate(1.4);
+    -webkit-backdrop-filter: blur(32px) saturate(1.4);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  /* Bottom sheets */
+  .glass-sheet {
+    background: rgba(10, 15, 30, 0.85);
+    backdrop-filter: blur(40px) saturate(1.5);
+    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+    border-top: 1px solid var(--glass-border-light);
+    box-shadow: var(--glass-shadow-lg);
+  }
+
+  /* Dialogs */
+  .glass-modal {
+    background: rgba(10, 15, 30, 0.88);
+    backdrop-filter: blur(32px) saturate(1.3);
+    -webkit-backdrop-filter: blur(32px) saturate(1.3);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: var(--glass-shadow-lg);
+  }
+
+  /* Form fields */
+  .glass-input {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .glass-input:focus,
+  .glass-input:focus-within {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--glass-border-light);
+  }
+
+  /* Badges, pills */
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Quick action buttons */
+  .glass-action {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    transition: background 0.2s ease;
+  }
+  .glass-action:hover {
+    background: var(--glass-bg-hover);
+  }
+
+  /* Hover state modifier */
+  .glass-hover {
+    transition: background 0.2s ease;
+  }
+  .glass-hover:hover {
+    background: var(--glass-bg-hover);
+  }
+
+  /* Top light refraction edge */
+  .glass-edge {
+    position: relative;
+  }
+  .glass-edge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    pointer-events: none;
+  }
+
+  /* Overlay behind sheets/modals */
+  .glass-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* Fixed gradient mesh background */
+  .gradient-mesh {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, var(--mesh-cyan), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 10%, var(--mesh-purple), transparent),
+      radial-gradient(ellipse 50% 60% at 60% 80%, var(--mesh-pink), transparent),
+      radial-gradient(ellipse 70% 50% at 10% 70%, var(--mesh-blue), transparent);
+  }
+  .gradient-mesh::before,
+  .gradient-mesh::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+  .gradient-mesh::before {
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 50%, var(--mesh-cyan), transparent);
+    animation: mesh-drift-1 20s ease-in-out infinite alternate;
+  }
+  .gradient-mesh::after {
+    background:
+      radial-gradient(ellipse 50% 50% at 70% 40%, var(--mesh-purple), transparent);
+    animation: mesh-drift-2 25s ease-in-out infinite alternate;
   }
 
   /* Glow Focus Ring */
@@ -110,5 +263,36 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Mesh drift animations */
+@keyframes mesh-drift-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(5%, 3%) scale(1.05); }
+}
+
+@keyframes mesh-drift-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-4%, 5%) scale(1.08); }
+}
+
+/* Reduced motion: disable blur and animations */
+@media (prefers-reduced-motion: reduce) {
+  .glass,
+  .glass-strong,
+  .glass-nav,
+  .glass-sheet,
+  .glass-modal,
+  .glass-input,
+  .glass-pill,
+  .glass-action,
+  .glass-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .gradient-mesh::before,
+  .gradient-mesh::after {
+    animation: none !important;
   }
 }

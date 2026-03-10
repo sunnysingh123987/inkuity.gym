@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -14,6 +15,7 @@ import {
   MoreVertical,
   ToggleLeft,
   ToggleRight,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -386,15 +388,15 @@ function SwipeableRoutineTab({
       case 'completed':
         return 'bg-emerald-500/10 border-emerald-500/30';
       case 'skipped':
-        return 'bg-slate-800/50 border-slate-700/50 opacity-60';
+        return 'glass opacity-60';
       case 'no-exercise':
-        return 'bg-slate-800/30 border-slate-700/30 opacity-40';
+        return 'glass opacity-40';
       case 'today':
-        return 'bg-slate-900 border-brand-cyan-500/40 shadow-lg shadow-brand-cyan-500/10';
+        return 'glass border-brand-cyan-500/40 shadow-lg shadow-brand-cyan-500/10';
       case 'future':
-        return 'bg-slate-900/60 border-slate-800/60';
+        return 'glass';
       default:
-        return 'bg-slate-900 border-slate-800';
+        return 'glass';
     }
   };
 
@@ -415,8 +417,8 @@ function SwipeableRoutineTab({
               </button>
               <button
                 onClick={handleCancelSkip}
-                className="px-4 py-2 bg-slate-700 text-slate-300 text-sm font-semibold rounded-lg
-                           hover:bg-slate-600 transition-colors"
+                className="px-4 py-2 glass text-slate-300 text-sm font-semibold rounded-lg
+                           glass-hover transition-colors"
               >
                 Cancel
               </button>
@@ -554,16 +556,16 @@ function EmptyDayCard({ day }: { day: CalendarDay }) {
     <div
       className={`rounded-xl border p-3.5 ${
         day.isToday
-          ? 'bg-slate-900/60 border-slate-800'
+          ? 'glass'
           : day.isPast
-          ? 'bg-slate-800/20 border-slate-800/30 opacity-40'
-          : 'bg-slate-900/40 border-slate-800/40'
+          ? 'glass opacity-40'
+          : 'glass'
       }`}
     >
       <div className="flex items-center gap-3">
         <div
           className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center
-          ${day.isToday ? 'bg-slate-800' : 'bg-slate-800/50'}`}
+          ${day.isToday ? 'glass' : 'glass'}`}
         >
           <Dumbbell className={`h-5 w-5 ${day.isToday ? 'text-slate-500' : 'text-slate-700'}`} />
         </div>
@@ -595,6 +597,10 @@ export function RoutineCalendarView({
   const [localSkippedDates, setLocalSkippedDates] = useState(skippedDates);
   const [deletingRoutine, setDeletingRoutine] = useState<string | null>(null);
   const [togglingRoutine, setTogglingRoutine] = useState<string | null>(null);
+  const [showConfirmSheet, setShowConfirmSheet] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete'; routineId: string; routineName: string } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -613,22 +619,59 @@ export function RoutineCalendarView({
     }
   }, []);
 
+  // Animate confirm sheet in/out
+  useEffect(() => {
+    if (showConfirmSheet) {
+      requestAnimationFrame(() => setSheetVisible(true));
+    } else {
+      setSheetVisible(false);
+    }
+  }, [showConfirmSheet]);
+
   const handleSkipComplete = () => {
     // Refresh the page to get updated data
     router.refresh();
   };
 
-  const handleDeleteRoutine = async (routineId: string) => {
-    if (!confirm('Are you sure you want to delete this routine?')) return;
-    setDeletingRoutine(routineId);
-    const result = await deleteWorkoutRoutine(routineId);
-    if (result.success) {
-      toast.success('Routine deleted');
-      router.refresh();
-    } else {
-      toast.error('Failed to delete routine');
+  const handleDeleteRoutine = (routineId: string, routineName: string) => {
+    setConfirmAction({ type: 'delete', routineId, routineName });
+    setShowConfirmSheet(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    setConfirming(true);
+
+    if (confirmAction.type === 'delete') {
+      setDeletingRoutine(confirmAction.routineId);
+      const result = await deleteWorkoutRoutine(confirmAction.routineId);
+      if (result.success) {
+        toast.success('Routine deleted');
+        setSheetVisible(false);
+        setTimeout(() => {
+          setShowConfirmSheet(false);
+          setConfirmAction(null);
+          setConfirming(false);
+          setDeletingRoutine(null);
+          router.refresh();
+        }, 300);
+        return;
+      } else {
+        toast.error('Failed to delete routine');
+      }
+      setDeletingRoutine(null);
     }
-    setDeletingRoutine(null);
+
+    setConfirming(false);
+  };
+
+  const handleDismissConfirmSheet = () => {
+    if (confirming) return;
+    setSheetVisible(false);
+    setTimeout(() => {
+      setShowConfirmSheet(false);
+      setConfirmAction(null);
+    }, 300);
   };
 
   const handleToggleActive = async (routine: any) => {
@@ -680,7 +723,7 @@ export function RoutineCalendarView({
                   ${
                     routine.is_active
                       ? 'bg-brand-cyan-500/10 border-brand-cyan-500/30 text-brand-cyan-400'
-                      : 'bg-slate-800/50 border-slate-700/50 text-slate-500'
+                      : 'glass-pill text-slate-500'
                   }`}
               >
                 <img src={categorySvg} alt="" className="h-3.5 w-3.5 invert opacity-60" />
@@ -716,7 +759,7 @@ export function RoutineCalendarView({
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleDeleteRoutine(routine.id)}
+                      onClick={() => handleDeleteRoutine(routine.id, routine.name)}
                       disabled={deletingRoutine === routine.id}
                       className="text-red-600"
                     >
@@ -841,6 +884,55 @@ export function RoutineCalendarView({
             );
           })}
         </div>
+      )}
+
+      {/* Confirmation Bottom Sheet — portaled to body */}
+      {showConfirmSheet && confirmAction && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+          {/* Backdrop */}
+          <div
+            className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sheetVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleDismissConfirmSheet}
+          />
+          {/* Sheet */}
+          <div
+            className={`relative w-full max-w-md mx-auto glass-sheet rounded-t-2xl p-6 pb-8 transition-transform duration-300 ease-out ${sheetVisible ? 'translate-y-0' : 'translate-y-full'}`}
+          >
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">
+                {confirmAction.type === 'delete' ? 'Delete Routine' : 'Confirm'}
+              </h3>
+              <p className="text-sm text-slate-400">
+                {confirmAction.type === 'delete'
+                  ? <>Are you sure you want to delete <span className="text-white font-medium">{confirmAction.routineName}</span>? This action cannot be undone.</>
+                  : 'Are you sure you want to proceed?'}
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                className="flex-1 px-4 py-3 rounded-xl glass text-slate-300 font-semibold text-sm glass-hover transition-colors"
+                onClick={handleDismissConfirmSheet}
+                disabled={confirming}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors disabled:opacity-50"
+                onClick={handleConfirmAction}
+                disabled={confirming}
+              >
+                {confirming
+                  ? confirmAction.type === 'delete' ? 'Deleting...' : 'Confirming...'
+                  : confirmAction.type === 'delete' ? 'Delete' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -24,7 +24,7 @@ export function WeeklyActivityBar({ data }: HourlyTrafficChartProps) {
   const hasData = data.some((d) => d.count > 0);
 
   return (
-    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+    <div className="glass rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-slate-400">Gym Traffic</span>
         <span className="text-[10px] text-slate-500">Avg per hour (30d)</span>

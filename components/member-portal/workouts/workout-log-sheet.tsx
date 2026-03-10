@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronDown, ChevronUp, Zap, AlertTriangle } from 'lucide-react';
 import { ExerciseSetLogger } from '@/components/member-portal/sessions/exercise-set-logger';
 import {
@@ -230,20 +231,20 @@ export function WorkoutLogSheet({
           exercise_sets: [],
         }));
 
-  return (
-    <div className="fixed inset-0 z-50">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999]">
       {/* Backdrop */}
       <div
         onClick={handleBackdropClick}
-        className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
+        className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
       {/* Conflict warning modal */}
       {conflict && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full space-y-4">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center glass-backdrop px-4">
+          <div className="glass-modal rounded-2xl p-6 max-w-sm w-full space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
                 <AlertTriangle className="h-5 w-5 text-amber-400" />
@@ -256,7 +257,7 @@ export function WorkoutLogSheet({
             <div className="flex gap-3">
               <button
                 onClick={() => setConflict(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
+                className="flex-1 py-2.5 rounded-xl glass text-slate-300 text-sm font-medium glass-hover transition-colors"
               >
                 Cancel
               </button>
@@ -274,14 +275,14 @@ export function WorkoutLogSheet({
 
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 rounded-t-2xl transition-transform duration-300 ease-out ${
+        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: '75vh' }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-700" />
+          <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
 
         {/* Header */}
@@ -294,7 +295,7 @@ export function WorkoutLogSheet({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-800 transition-colors flex-shrink-0"
+            className="p-2 rounded-lg glass-hover transition-colors flex-shrink-0"
           >
             <X className="h-5 w-5 text-slate-400" />
           </button>
@@ -321,8 +322,8 @@ export function WorkoutLogSheet({
                     key={sessionExercise.id}
                     className={`rounded-xl border transition-colors ${
                       isExpanded
-                        ? 'bg-slate-900 border-slate-700'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                        ? 'glass border-white/[0.08]'
+                        : 'glass border-white/[0.04] hover:border-white/[0.08]'
                     }`}
                   >
                     {/* Exercise header */}
@@ -382,7 +383,7 @@ export function WorkoutLogSheet({
 
         {/* Done button */}
         {!loading && (
-          <div className="px-4 pb-6 pt-2 border-t border-slate-800">
+          <div className="px-4 pb-6 pt-2 border-t border-white/[0.06]">
             <button
               type="button"
               onClick={onClose}
@@ -393,6 +394,7 @@ export function WorkoutLogSheet({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

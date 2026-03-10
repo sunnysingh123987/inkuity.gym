@@ -122,7 +122,7 @@ export function SettingsPageContent({
           />
         )}
         {activeTab === 'notifications' && (
-          <Card className="bg-slate-900 border-slate-800">
+          <Card>
             <CardHeader>
               <CardTitle className="text-white">Notification Preferences</CardTitle>
             </CardHeader>
@@ -231,7 +231,7 @@ function MenuSection({ title, children }: { title: string; children: React.React
       <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
         {title}
       </h3>
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 divide-y divide-slate-700/50 overflow-hidden">
+      <div className="glass rounded-xl divide-y divide-white/[0.06] overflow-hidden">
         {children}
       </div>
     </div>
@@ -250,7 +250,7 @@ function MenuItem({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-slate-700/30 active:bg-slate-700/40 transition-colors"
+      className="w-full flex items-center gap-3.5 px-4 py-3.5 glass-hover active:bg-white/[0.08] transition-colors"
     >
       <span className="text-slate-400">{icon}</span>
       <span className="flex-1 text-left text-sm font-medium text-slate-200">{label}</span>
@@ -278,7 +278,7 @@ function PaymentsContent({ payments }: { payments: any[] }) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="flex justify-center mb-1.5">
             <div className="p-1.5 rounded-lg bg-emerald-500/10">
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -287,7 +287,7 @@ function PaymentsContent({ payments }: { payments: any[] }) {
           <p className="text-lg font-bold text-white">{formatCurrency(totalPaid)}</p>
           <p className="text-[11px] text-slate-500">Total Paid</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="flex justify-center mb-1.5">
             <div className="p-1.5 rounded-lg bg-amber-500/10">
               <Clock className="h-4 w-4 text-amber-400" />
@@ -296,7 +296,7 @@ function PaymentsContent({ payments }: { payments: any[] }) {
           <p className="text-lg font-bold text-white">{formatCurrency(pendingAmount)}</p>
           <p className="text-[11px] text-slate-500">Pending</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="flex justify-center mb-1.5">
             <div className="p-1.5 rounded-lg bg-brand-cyan-500/10">
               <IndianRupee className="h-4 w-4 text-brand-cyan-400" />
@@ -321,7 +321,7 @@ function PaymentsContent({ payments }: { payments: any[] }) {
               {pendingPayments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between gap-3 p-3 bg-slate-900 rounded-lg border border-slate-800"
+                  className="flex items-center justify-between gap-3 p-3 glass rounded-lg"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-white truncate">
@@ -342,14 +342,14 @@ function PaymentsContent({ payments }: { payments: any[] }) {
       )}
 
       {/* Payment History */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold text-white">All Payments</CardTitle>
         </CardHeader>
         <CardContent>
           {allPayments.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
                 <IndianRupee className="h-8 w-8 text-slate-500" />
               </div>
               <h3 className="text-sm font-medium text-white mb-1">No payments yet</h3>
@@ -362,7 +362,7 @@ function PaymentsContent({ payments }: { payments: any[] }) {
               {allPayments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="p-3 rounded-lg bg-slate-800/50 border border-slate-700 space-y-2"
+                  className="p-3 rounded-lg glass space-y-2"
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">

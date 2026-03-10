@@ -113,6 +113,9 @@ const config: Config = {
         'glow-pink': '0 0 20px rgba(236, 72, 153, 0.35), 0 0 60px rgba(236, 72, 153, 0.15)',
         'glow-purple': '0 0 20px rgba(168, 85, 247, 0.35), 0 0 60px rgba(168, 85, 247, 0.15)',
         'glow-brand': '0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(236, 72, 153, 0.2)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'glass-lg': '0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+        'glass-glow-cyan': '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 20px rgba(6, 182, 212, 0.2)',
       },
       keyframes: {
         'accordion-down': {
@@ -131,12 +134,22 @@ const config: Config = {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
         },
+        'mesh-drift-1': {
+          '0%': { transform: 'translate(0, 0) scale(1)' },
+          '100%': { transform: 'translate(5%, 3%) scale(1.05)' },
+        },
+        'mesh-drift-2': {
+          '0%': { transform: 'translate(0, 0) scale(1)' },
+          '100%': { transform: 'translate(-4%, 5%) scale(1.08)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
         'shimmer': 'shimmer 3s ease-in-out infinite',
+        'mesh-drift-1': 'mesh-drift-1 20s ease-in-out infinite alternate',
+        'mesh-drift-2': 'mesh-drift-2 25s ease-in-out infinite alternate',
       },
     },
   },

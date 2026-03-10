@@ -25,7 +25,7 @@ export function PortalHeader({ gym, member, streak = 0 }: PortalHeaderProps) {
   const slug = gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <header className="bg-transparent sticky top-0 z-50">
+    <header className="glass-nav sticky top-0 z-50">
       <div className="max-w-md mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Avatar — links to settings/profile page */}
@@ -49,7 +49,7 @@ export function PortalHeader({ gym, member, streak = 0 }: PortalHeaderProps) {
           {/* Streak pill — center */}
           <div className="flex-1 flex justify-center">
             <Link href={`/${slug}/portal/streak`}>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-800/80 border border-slate-700/50 px-4 py-1.5">
+              <div className="inline-flex items-center gap-1.5 rounded-full glass-pill px-4 py-1.5">
                 <Flame className={`h-4 w-4 ${streak > 0 ? 'text-amber-400' : 'text-slate-500'}`} />
                 <span className="text-sm font-semibold text-white">{streak} day streak</span>
               </div>

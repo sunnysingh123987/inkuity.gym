@@ -261,7 +261,7 @@ export function AiDietWizard({
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full rounded-md glass-input px-3 py-2 text-sm text-white"
                   >
                     <option value="">Select</option>
                     <option value="male">Male</option>
@@ -385,7 +385,7 @@ export function AiDietWizard({
                   className={`px-3 py-1.5 rounded-full text-sm transition-all ${
                     cuisinePreferences.includes(c)
                       ? 'bg-brand-cyan-500 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : 'bg-white/20 text-slate-300 glass-hover'
                   }`}
                 >
                   {c}
@@ -407,7 +407,7 @@ export function AiDietWizard({
       )}
 
       {/* Navigation */}
-      <div className="flex gap-3 pt-4 border-t border-slate-700">
+      <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
         <Button
           type="button"
           variant="outline"

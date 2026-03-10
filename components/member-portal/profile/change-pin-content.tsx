@@ -67,7 +67,7 @@ export function ChangePinContent({ memberId, gymSlug }: ChangePinContentProps) {
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Security
         </h3>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 space-y-4">
+        <div className="glass rounded-xl p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <KeyRound className="h-4 w-4 text-brand-cyan-400" />
             <span className="text-sm font-medium text-white">Update your 4-digit login PIN</span>
@@ -146,7 +146,7 @@ function FieldRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-1 border-b border-slate-700/30 last:border-0">
+    <div className="flex items-center justify-between gap-4 py-1 border-b border-white/[0.05] last:border-0">
       <span className="text-sm text-slate-400 shrink-0">{label}</span>
       <div className="flex justify-end">{children}</div>
     </div>

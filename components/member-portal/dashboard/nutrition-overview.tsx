@@ -54,7 +54,7 @@ const trendColors = { up: 'text-emerald-400', down: 'text-red-400', same: 'text-
 
 export function NutritionOverview() {
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-white">
           <Activity className="h-5 w-5 text-brand-cyan-400" />
@@ -67,7 +67,7 @@ export function NutritionOverview() {
           {MOCK_WEEKLY_METRICS.map((metric) => {
             const TrendIcon = trendIcons[metric.trend];
             return (
-              <div key={metric.label} className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+              <div key={metric.label} className="p-3 rounded-lg glass">
                 <p className="text-xs text-slate-400 uppercase tracking-wide">
                   {metric.label}
                 </p>

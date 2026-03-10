@@ -204,7 +204,7 @@ export function DietPlanForm({
 
         {/* Macro Summary */}
         {totalMacroCals > 0 && (
-          <div className="bg-slate-800 rounded-lg p-3 text-sm">
+          <div className="glass rounded-lg p-3 text-sm">
             <p className="text-slate-300">
               Total from macros:{' '}
               <span className="font-semibold">{totalMacroCals} calories</span>
@@ -252,7 +252,7 @@ export function DietPlanForm({
       </div>
 
       {/* Active Status */}
-      <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
+      <div className="flex items-center justify-between p-4 glass rounded-lg">
         <div>
           <Label htmlFor="active" className="font-semibold">
             Set as Active Plan
@@ -271,7 +271,7 @@ export function DietPlanForm({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4 border-t border-slate-700">
+      <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
         <Button
           type="button"
           variant="outline"

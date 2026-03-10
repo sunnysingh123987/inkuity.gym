@@ -124,7 +124,7 @@ export function MealCalendar({
   };
 
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Weekly Meal Plan</CardTitle>
@@ -152,7 +152,7 @@ export function MealCalendar({
               <div
                 key={index}
                 className={`border rounded-lg p-3 ${
-                  today ? 'bg-brand-cyan-500/10 border-brand-cyan-500/30' : 'bg-slate-900 border-slate-700'
+                  today ? 'bg-brand-cyan-500/10 border-brand-cyan-500/30' : 'glass'
                 }`}
               >
                 <div className="text-center mb-3">
@@ -186,7 +186,7 @@ export function MealCalendar({
                                 className={`p-2 rounded-md text-xs ${
                                   meal.completed
                                     ? 'bg-emerald-500/10 border border-emerald-500/30'
-                                    : 'bg-slate-800 border border-slate-700'
+                                    : 'glass'
                                 } ${today ? 'hover:shadow-sm transition-shadow' : 'opacity-80'}`}
                               >
                                 <div className="flex items-center gap-1 mb-1">
@@ -220,13 +220,13 @@ export function MealCalendar({
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <button
-                                    className="absolute top-1 right-1 p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white"
+                                    className="absolute top-1 right-1 p-1 rounded glass-hover text-slate-400 hover:text-white"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <MoreVertical className="h-3 w-3" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                                <DropdownMenuContent align="end" className="glass-modal">
                                   <DropdownMenuItem
                                     className="text-xs cursor-pointer"
                                     onClick={() => onEditMeal?.(meal)}
@@ -260,7 +260,7 @@ export function MealCalendar({
 
                 {/* Daily Summary */}
                 {dayMeals.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-700">
+                  <div className="mt-3 pt-3 border-t border-white/[0.06]">
                     <p className="text-xs text-slate-400">
                       Total:{' '}
                       <span className="font-semibold">

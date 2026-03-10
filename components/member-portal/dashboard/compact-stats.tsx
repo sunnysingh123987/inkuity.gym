@@ -24,7 +24,7 @@ export function CompactStats({ totalCheckIns, workoutCount, routineCount }: Comp
       {stats.map((stat) => (
         <div
           key={stat.key}
-          className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex flex-col items-center gap-1"
+          className="glass rounded-xl p-3 flex flex-col items-center gap-1"
         >
           <stat.icon className={`h-5 w-5 ${stat.color}`} />
           <span className="text-xl font-bold text-white">{values[stat.key]}</span>

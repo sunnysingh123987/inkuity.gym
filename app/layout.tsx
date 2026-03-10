@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/next'
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
+  display: 'swap',
   variable: '--font-sans',
 })
 

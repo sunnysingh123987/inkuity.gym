@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,8 +112,7 @@ export function RoutineForm({
     for (const ex of exercises) {
       const norm = normalizeName(ex.name);
       const localMatch = localByName.get(norm);
-      // Skip library exercise if a local exercise with equipment exists for the same base name
-      if (localMatch && localMatch.equipment.length > 0) continue;
+      // Keep library exercise (valid DB UUID) but attach equipment data from local if available
       libraryMap.set(ex.id, {
         id: ex.id,
         name: ex.name,
@@ -274,15 +274,15 @@ export function RoutineForm({
 
     setSaving(true);
 
-    const exercisesPayload = selectedExercises
-      .filter((ex) => !ex.exerciseId.startsWith('local-'))
-      .map((ex) => ({
-        exerciseId: ex.exerciseId,
-        sets: ex.sets,
-        reps: ex.reps,
-        rest_seconds: ex.rest_seconds,
-        notes: ex.notes || undefined,
-      }));
+    const exercisesPayload = selectedExercises.map((ex) => ({
+      exerciseId: ex.exerciseId,
+      name: ex.name,
+      category: ex.category,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest_seconds: ex.rest_seconds,
+      notes: ex.notes || undefined,
+    }));
 
     let result;
     if (isEditing) {
@@ -337,7 +337,7 @@ export function RoutineForm({
               {selectedExercises.map((exercise, index) => (
                 <div
                   key={exercise.exerciseId}
-                  className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3"
+                  className="glass rounded-xl p-3.5 space-y-3"
                 >
                   {/* Exercise header */}
                   <div className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export function RoutineForm({
             variant="outline"
             onClick={() => router.back()}
             disabled={saving}
-            className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            className="border-slate-700 text-slate-300 glass-hover"
           >
             Cancel
           </Button>
@@ -409,26 +409,26 @@ export function RoutineForm({
       </form>
 
       {/* ---- Exercise picker bottom sheet ---- */}
-      {(sheetOpen || sheetVisible) && (
-        <div className="fixed inset-0 z-50">
+      {(sheetOpen || sheetVisible) && createPortal(
+        <div className="fixed inset-0 z-[9999]">
           {/* Backdrop */}
           <div
             onClick={closeSheet}
-            className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
+            className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
               sheetVisible ? 'opacity-100' : 'opacity-0'
             }`}
           />
 
           {/* Sheet */}
           <div
-            className={`absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 rounded-t-2xl transition-transform duration-300 ease-out ${
+            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
               sheetVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{ maxHeight: '75vh' }}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-slate-700" />
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
 
             {/* Header */}
@@ -446,7 +446,7 @@ export function RoutineForm({
                 <button
                   type="button"
                   onClick={closeSheet}
-                  className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg glass-hover transition-colors"
                 >
                   <X className="h-5 w-5 text-slate-400" />
                 </button>
@@ -462,7 +462,7 @@ export function RoutineForm({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search exercises..."
-                  className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-brand-cyan-500 transition-colors"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-lg glass-input text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-brand-cyan-500 transition-colors"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export function RoutineForm({
                   className={`text-xs px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
                     muscleFilter === group
                       ? 'bg-brand-cyan-500/20 border-brand-cyan-500/50 text-brand-cyan-300'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      : 'glass-pill text-slate-400 hover:text-white'
                   }`}
                 >
                   {group.charAt(0).toUpperCase() + group.slice(1).replace('-', ' ')}
@@ -508,8 +508,8 @@ export function RoutineForm({
                     return (
                       <div key={exercise.id}>
                         <div
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-900/80 transition-colors ${
-                            isExpanded ? 'bg-slate-900/60' : ''
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg glass-hover transition-colors ${
+                            isExpanded ? 'glass' : ''
                           }`}
                         >
                           {/* Category icon */}
@@ -554,7 +554,7 @@ export function RoutineForm({
                               className={`h-8 w-8 flex items-center justify-center rounded-full border transition-colors flex-shrink-0 ${
                                 isExpanded
                                   ? 'border-brand-cyan-500/60 text-brand-cyan-300 bg-brand-cyan-500/10'
-                                  : 'border-slate-600 text-slate-400 hover:bg-slate-800 hover:text-white'
+                                  : 'border-slate-600 text-slate-400 glass-hover hover:text-white'
                               }`}
                             >
                               <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -585,7 +585,7 @@ export function RoutineForm({
                                   className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                                     variantAdded
                                       ? 'bg-brand-cyan-500/20 border-brand-cyan-500/50 text-brand-cyan-300'
-                                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                      : 'glass border-white/[0.06] text-slate-300 glass-hover hover:text-white'
                                   }`}
                                 >
                                   {equip}
@@ -616,7 +616,8 @@ export function RoutineForm({
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

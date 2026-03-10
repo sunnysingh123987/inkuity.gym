@@ -22,7 +22,7 @@ export function RecentActivity({
 
 
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card>
       <CardHeader>
         <CardTitle className="text-white">Recent Activity</CardTitle>
       </CardHeader>
@@ -44,7 +44,7 @@ export function RecentActivity({
                   return (
                     <div
                       key={workout.id}
-                      className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition-colors"
+                      className="flex items-center justify-between p-3 glass rounded-lg glass-hover transition-colors"
                     >
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 rounded-lg bg-brand-purple-500/10 flex items-center justify-center">
@@ -78,7 +78,7 @@ export function RecentActivity({
                 {recentCheckIns.map((checkIn, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg"
+                    className="flex items-center justify-between p-2 glass rounded-lg"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="h-8 w-8 rounded-lg bg-brand-cyan-500/10 flex items-center justify-center">
@@ -97,7 +97,7 @@ export function RecentActivity({
           {/* Empty State */}
           {recentWorkouts.length === 0 && recentCheckIns.length === 0 && (
             <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-slate-800 mb-3">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full glass mb-3">
                 <Calendar className="h-6 w-6 text-slate-400" />
               </div>
               <p className="text-sm text-slate-300">No recent activity</p>

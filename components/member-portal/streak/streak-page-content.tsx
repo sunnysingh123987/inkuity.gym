@@ -81,7 +81,7 @@ export function StreakPageContent({
       <div className="flex items-center h-12 relative">
         <button
           onClick={() => router.back()}
-          className="absolute left-0 h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-800/50 transition-colors"
+          className="absolute left-0 h-10 w-10 flex items-center justify-center rounded-full glass-hover transition-colors"
         >
           <ChevronLeft className="h-5 w-5 text-white" />
         </button>
@@ -89,7 +89,7 @@ export function StreakPageContent({
       </div>
 
       {/* Motivational banner */}
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 px-5 py-4 text-center">
+      <div className="glass-strong rounded-2xl px-5 py-4 text-center">
         <p className="text-sm text-slate-300">
           {streak === 0
             ? "Lost the streak? Don't lose the drive. Let's start fresh!"
@@ -109,12 +109,12 @@ export function StreakPageContent({
       </div>
 
       {/* Calendar */}
-      <div className={`bg-slate-800/30 rounded-2xl border border-slate-700/50 p-5 ${isPending ? 'opacity-60' : ''} transition-opacity`}>
+      <div className={`glass rounded-2xl p-5 ${isPending ? 'opacity-60' : ''} transition-opacity`}>
         {/* Month nav */}
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigateMonth(-1)}
-            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-700/50 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-full glass-hover transition-colors"
           >
             <ChevronLeft className="h-4 w-4 text-slate-400" />
           </button>
@@ -124,7 +124,7 @@ export function StreakPageContent({
           <button
             onClick={() => navigateMonth(1)}
             disabled={!canGoForward}
-            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-700/50 transition-colors disabled:opacity-30"
+            className="h-8 w-8 flex items-center justify-center rounded-full glass-hover transition-colors disabled:opacity-30"
           >
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </button>
@@ -177,7 +177,7 @@ export function StreakPageContent({
       </div>
 
       {/* How streaks work */}
-      <div className="bg-slate-800/30 rounded-2xl border border-slate-700/50 p-6 space-y-4">
+      <div className="glass rounded-2xl p-6 space-y-4">
         <p className="text-base font-bold text-white">How to increase your streak</p>
         <ul className="space-y-3 text-sm text-slate-300">
           <li className="flex gap-2">
@@ -193,7 +193,7 @@ export function StreakPageContent({
             <span>Missing a single day resets your streak back to zero.</span>
           </li>
         </ul>
-        <div className="border-t border-slate-700/50 pt-4 mt-4">
+        <div className="border-t border-white/[0.06] pt-4 mt-4">
           <p className="text-xs text-slate-500">
             Note: You must check in before you can log a workout. Workouts can only be recorded after a successful check-in for the day.
           </p>

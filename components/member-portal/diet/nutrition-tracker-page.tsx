@@ -498,7 +498,7 @@ export function NutritionTrackerPage({
       />
 
       {/* Section 6: How Does This Work */}
-      <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 space-y-4">
+      <div className="rounded-xl glass p-5 space-y-4">
         <h3 className="text-base font-semibold text-white">How does this work?</h3>
         <div className="space-y-3">
           <div className="flex gap-3">
@@ -538,21 +538,21 @@ export function NutritionTrackerPage({
           {/* Backdrop */}
           <div
             onClick={closeTargetsSheet}
-            className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
+            className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
               targetsSheetVisible ? 'opacity-100' : 'opacity-0'
             }`}
           />
 
           {/* Sheet */}
           <div
-            className={`absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 rounded-t-2xl transition-transform duration-300 ease-out ${
+            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
               targetsSheetVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{ maxHeight: '85vh' }}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-slate-700" />
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
 
             {/* Header with close (X) and save (tick) */}
@@ -560,7 +560,7 @@ export function NutritionTrackerPage({
               <button
                 type="button"
                 onClick={closeTargetsSheet}
-                className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg glass-hover transition-colors"
               >
                 <X className="h-5 w-5 text-slate-400" />
               </button>
@@ -585,18 +585,18 @@ export function NutritionTrackerPage({
                   <Label className="text-slate-300 text-sm font-semibold">Calculate your BMR</Label>
                   <div className="group relative">
                     <Info className="h-3.5 w-3.5 text-slate-500" />
-                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-56 p-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300 z-10">
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-56 p-2 glass rounded-lg text-xs text-slate-300 z-10">
                       BMR (Basal Metabolic Rate) is the calories your body burns at rest. Calculated using the Mifflin-St Jeor equation.
                     </div>
                   </div>
                 </div>
 
                 {/* Scroll pickers row — 4 equal columns */}
-                <div className="flex bg-slate-900 border border-slate-800 rounded-xl px-1 py-2">
+                <div className="flex glass rounded-xl px-1 py-2">
                   <ScrollPicker label="Weight" suffix="kg" values={Array.from({ length: 171 }, (_, i) => 30 + i)} value={bmrWeight} onChange={setBmrWeight} />
-                  <div className="w-px bg-slate-800 self-stretch" />
+                  <div className="w-px bg-white/[0.06] self-stretch" />
                   <ScrollPicker label="Age" suffix="yr" values={Array.from({ length: 66 }, (_, i) => 15 + i)} value={bmrAge} onChange={setBmrAge} />
-                  <div className="w-px bg-slate-800 self-stretch" />
+                  <div className="w-px bg-white/[0.06] self-stretch" />
                   <ScrollPicker
                     label="Height"
                     values={heightOptions.map((h) => h.value)}
@@ -604,7 +604,7 @@ export function NutritionTrackerPage({
                     onChange={setBmrHeightIdx}
                     displayValues={heightOptions.map((h) => h.label)}
                   />
-                  <div className="w-px bg-slate-800 self-stretch" />
+                  <div className="w-px bg-white/[0.06] self-stretch" />
                   <ScrollPicker
                     label="Gender"
                     values={['male', 'female'] as string[]}
@@ -616,12 +616,12 @@ export function NutritionTrackerPage({
 
                 {/* BMR & Maintenance results */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center">
+                  <div className="glass rounded-xl p-3 text-center">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
                       <span className="text-[11px] text-slate-500">BMR</span>
                       <div className="group relative">
                         <Info className="h-3 w-3 text-slate-600" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-44 p-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300 z-10">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-44 p-2 glass rounded-lg text-xs text-slate-300 z-10">
                           Calories burned at complete rest
                         </div>
                       </div>
@@ -634,7 +634,7 @@ export function NutritionTrackerPage({
                       <span className="text-[11px] text-amber-400/80">Maintenance</span>
                       <div className="group relative">
                         <Info className="h-3 w-3 text-amber-500/50" />
-                        <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300 z-10">
+                        <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 p-2 glass rounded-lg text-xs text-slate-300 z-10">
                           BMR x 1.55 (moderate activity). Eat below to cut, above to bulk.
                         </div>
                       </div>
@@ -658,7 +658,7 @@ export function NutritionTrackerPage({
                         min="0"
                         value={targetForm.protein}
                         onChange={(e) => setTargetForm({ ...targetForm, protein: parseInt(e.target.value) || 0 })}
-                        className="bg-slate-900 border-slate-800 text-white h-10"
+                        className="glass-input text-white h-10"
                       />
                     </div>
                     <span className="text-xs text-slate-500 w-14 text-right flex-shrink-0">{targetForm.protein * 4} cal</span>
@@ -672,7 +672,7 @@ export function NutritionTrackerPage({
                         min="0"
                         value={targetForm.carbs}
                         onChange={(e) => setTargetForm({ ...targetForm, carbs: parseInt(e.target.value) || 0 })}
-                        className="bg-slate-900 border-slate-800 text-white h-10"
+                        className="glass-input text-white h-10"
                       />
                     </div>
                     <span className="text-xs text-slate-500 w-14 text-right flex-shrink-0">{targetForm.carbs * 4} cal</span>
@@ -686,7 +686,7 @@ export function NutritionTrackerPage({
                         min="0"
                         value={targetForm.fat}
                         onChange={(e) => setTargetForm({ ...targetForm, fat: parseInt(e.target.value) || 0 })}
-                        className="bg-slate-900 border-slate-800 text-white h-10"
+                        className="glass-input text-white h-10"
                       />
                     </div>
                     <span className="text-xs text-slate-500 w-14 text-right flex-shrink-0">{targetForm.fat * 9} cal</span>
@@ -695,7 +695,7 @@ export function NutritionTrackerPage({
               </div>
 
               {/* Total Daily Calories metric */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+              <div className="glass rounded-xl p-4 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <span className="text-sm text-slate-400 font-medium">Total Daily Calories</span>
                   <span className="text-[10px] text-slate-600">(P x 4 + C x 4 + F x 9)</span>
@@ -705,7 +705,7 @@ export function NutritionTrackerPage({
               </div>
 
               {/* Instructions */}
-              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="glass rounded-xl p-4 space-y-2">
                 <p className="text-xs font-semibold text-slate-400">How to set your targets</p>
                 <ul className="text-xs text-slate-500 space-y-1.5 list-disc list-inside">
                   <li><span className="text-blue-400">Protein:</span> 1.6 - 2.2g per kg of body weight for muscle building</li>

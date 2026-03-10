@@ -145,7 +145,7 @@ export function FeedbackChat({
                 <div key={msg.id}>
                   {showDate && (
                     <div className="flex justify-center my-3">
-                      <span className="text-[10px] text-slate-600 bg-slate-800/80 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[10px] text-slate-600 glass-pill px-2.5 py-0.5 rounded-full">
                         {formatDateLabel(msg.created_at)}
                       </span>
                     </div>
@@ -157,7 +157,7 @@ export function FeedbackChat({
                       className={`max-w-[80%] px-3 py-2 text-sm leading-relaxed ${
                         isMe
                           ? `bg-brand-cyan-500/15 text-slate-100 ${showTail ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-br-md'}`
-                          : `bg-slate-800 text-slate-200 ${showTail ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-bl-md'}`
+                          : `glass text-slate-200 ${showTail ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-bl-md'}`
                       }`}
                     >
                       {!isMe && showTail && (
@@ -183,7 +183,7 @@ export function FeedbackChat({
       </div>
 
       {/* Input bar */}
-      <div className="shrink-0 border-t border-slate-800 pt-3">
+      <div className="shrink-0 border-t border-white/[0.06] pt-3">
         {limitReached ? (
           <p className="text-xs text-amber-400/80 text-center py-2">
             Please wait for a reply before sending more messages.
@@ -198,7 +198,7 @@ export function FeedbackChat({
                 onKeyDown={handleKeyDown}
                 placeholder="Type your feedback..."
                 rows={1}
-                className="flex-1 resize-none rounded-xl border border-slate-700 bg-slate-800/50 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500/50 max-h-[120px]"
+                className="flex-1 resize-none rounded-xl glass-input px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500/50 max-h-[120px]"
               />
               <button
                 onClick={handleSend}

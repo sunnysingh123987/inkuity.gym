@@ -262,7 +262,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
   // Render
   // -----------------------------------------------------------------------
   return (
-    <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+    <Card className="overflow-hidden">
       <CardContent className="p-0">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -278,7 +278,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
             }}
           >
             {/* Sticky weekday header */}
-            <div className="sticky top-0 z-10 bg-slate-900 pb-1">
+            <div className="sticky top-0 z-10 bg-background pb-1">
               <div className="grid grid-cols-7 gap-[3px]">
                 {WEEKDAY_INITIALS.map((d, i) => (
                   <div
@@ -362,8 +362,8 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
                               'aspect-square rounded-md flex items-center justify-center transition-colors relative cursor-default',
                               hasActivity
                                 ? `${style!.bg} hover:brightness-125`
-                                : 'bg-slate-800/40',
-                              isToday && 'ring-[1.5px] ring-brand-cyan-500 ring-offset-1 ring-offset-slate-900'
+                                : 'bg-white/[0.04]',
+                              isToday && 'ring-[1.5px] ring-brand-cyan-500 ring-offset-1 ring-offset-background'
                             )}
                           >
                             {hasActivity && IconComponent ? (
@@ -387,7 +387,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
                           {hasActivity && tooltipText && (
                             <div
                               className={cn(
-                                'absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-slate-800 border border-slate-700 shadow-lg pointer-events-none whitespace-nowrap',
+                                'absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md glass shadow-lg pointer-events-none whitespace-nowrap',
                                 'text-[10px] leading-tight text-slate-200',
                                 // Show on hover or active tap
                                 isTooltipActive
@@ -406,7 +406,7 @@ export function CheckInCalendar({ memberId, gymId }: CheckInCalendarProps) {
                               </div>
                               {/* Arrow */}
                               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                                <div className="w-2 h-2 bg-slate-800 border-r border-b border-slate-700 rotate-45 -translate-y-1" />
+                                <div className="w-2 h-2 glass border-r border-b border-white/[0.06] rotate-45 -translate-y-1" />
                               </div>
                             </div>
                           )}

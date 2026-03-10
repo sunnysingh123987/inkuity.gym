@@ -103,7 +103,7 @@ export function AiDietPreview({
                   {day.meals.map((meal, i) => (
                     <div
                       key={i}
-                      className="bg-slate-800 rounded p-2 text-sm"
+                      className="glass rounded p-2 text-sm"
                     >
                       <p className={`text-xs font-semibold uppercase ${MEAL_TYPE_COLORS[meal.meal_type] || 'text-slate-400'}`}>
                         {meal.meal_type}
@@ -124,7 +124,7 @@ export function AiDietPreview({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4 border-t border-slate-700">
+      <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
         <Button variant="outline" onClick={onDiscard} className="flex-1">
           <Trash2 className="h-4 w-4 mr-2" />
           Discard

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { PortalHeader } from '@/components/member-portal/layout/portal-header';
 import { PortalNav } from '@/components/member-portal/layout/portal-nav';
+import { RouteLoadingBar } from '@/components/ui/route-loading-bar';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
 import { SetCurrentGymCookie } from '@/components/pwa/set-current-gym-cookie';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
@@ -74,19 +75,23 @@ export default async function PortalLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <PortalHeader gym={gym} member={member} streak={currentStreak} />
+    <div className="min-h-screen relative">
+      <RouteLoadingBar />
+      <div className="gradient-mesh" aria-hidden="true" />
+      <div className="relative z-10">
+        <PortalHeader gym={gym} member={member} streak={currentStreak} />
 
-      <div className="flex justify-center">
-        <PortalNav gymSlug={params.slug} />
+        <div className="flex justify-center">
+          <PortalNav gymSlug={params.slug} />
 
-        <main className="w-full max-w-md p-4 pb-24">
-          {children}
-        </main>
+          <main className="w-full max-w-md p-4 pb-24">
+            {children}
+          </main>
+        </div>
+
+        <SetCurrentGymCookie slug={params.slug} />
+        <InstallPrompt />
       </div>
-
-      <SetCurrentGymCookie slug={params.slug} />
-      <InstallPrompt />
     </div>
   );
 }

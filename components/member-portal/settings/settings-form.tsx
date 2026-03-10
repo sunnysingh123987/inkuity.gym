@@ -92,7 +92,7 @@ export function SettingsForm({
     <div className="space-y-6">
       {/* Email Notifications */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 glass rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailCheckin"
@@ -113,7 +113,7 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 glass rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailWorkout"
@@ -134,7 +134,7 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 glass rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailDiet"
@@ -155,7 +155,7 @@ export function SettingsForm({
           />
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 glass rounded-lg">
           <div className="flex-1 mr-4">
             <Label
               htmlFor="emailWeeklyReport"
@@ -187,7 +187,7 @@ export function SettingsForm({
         </div>
 
         {!isSupported ? (
-          <div className="p-4 bg-slate-800 rounded-lg">
+          <div className="p-4 glass rounded-lg">
             <div className="flex items-center gap-2 text-slate-400">
               <BellOff className="h-4 w-4" />
               <p className="text-sm">
@@ -198,7 +198,7 @@ export function SettingsForm({
         ) : (
           <>
             {/* Master Push Toggle */}
-            <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
+            <div className="flex items-center justify-between p-4 glass-input rounded-lg">
               <div className="flex-1 mr-4">
                 <Label
                   htmlFor="pushEnabled"
@@ -221,7 +221,7 @@ export function SettingsForm({
             {/* Individual Push Preferences (only when subscribed) */}
             {isSubscribed && (
               <div className="space-y-3 pl-4 border-l-2 border-brand-cyan-500/30">
-                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                <div className="flex items-center justify-between p-4 glass rounded-lg">
                   <div className="flex-1 mr-4">
                     <Label
                       htmlFor="pushMeal"
@@ -242,7 +242,7 @@ export function SettingsForm({
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                <div className="flex items-center justify-between p-4 glass rounded-lg">
                   <div className="flex-1 mr-4">
                     <Label
                       htmlFor="pushWorkout"
@@ -263,7 +263,7 @@ export function SettingsForm({
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-slate-800/60 rounded-lg">
+                <div className="flex items-center justify-between p-4 glass rounded-lg">
                   <div className="flex-1 mr-4">
                     <Label
                       htmlFor="pushTracker"
@@ -290,7 +290,7 @@ export function SettingsForm({
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end pt-4 border-t border-slate-700">
+      <div className="flex justify-end pt-4 border-t border-white/[0.06]">
         <Button onClick={handleSave} disabled={loading}>
           {loading ? (
             <>

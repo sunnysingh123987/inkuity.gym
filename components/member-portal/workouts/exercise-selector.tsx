@@ -97,7 +97,7 @@ export function ExerciseSelector({
       </div>
 
       {/* Exercise List */}
-      <div className="max-h-96 overflow-y-auto border border-slate-700 rounded-lg">
+      <div className="max-h-96 overflow-y-auto border border-white/[0.06] rounded-lg">
         {filteredExercises.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <Dumbbell className="h-8 w-8 mx-auto mb-2 text-slate-500" />
@@ -108,11 +108,11 @@ export function ExerciseSelector({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-white/[0.06]">
             {filteredExercises.map((exercise) => (
               <div
                 key={exercise.id}
-                className="p-3 hover:bg-slate-800 transition-colors"
+                className="p-3 glass-hover transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">

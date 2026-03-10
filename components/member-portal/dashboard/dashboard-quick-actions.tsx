@@ -210,28 +210,28 @@ export function DashboardQuickActions({
 
       {/* Workouts history bottom sheet (portal to body) */}
       {(showWorkouts || workoutsVisible) && createPortal(
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[9999]">
           <div
             onClick={closeWorkoutsSheet}
-            className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
+            className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
               workoutsVisible ? 'opacity-100' : 'opacity-0'
             }`}
           />
           <div
-            className={`absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 rounded-t-2xl transition-transform duration-300 ease-out ${
+            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
               workoutsVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{ maxHeight: '75vh' }}
           >
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-slate-700" />
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
             <div className="flex items-center justify-between px-4 pb-3">
               <h2 className="text-lg font-bold text-white">Recent Workouts</h2>
               <button
                 type="button"
                 onClick={closeWorkoutsSheet}
-                className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg glass-hover transition-colors"
               >
                 <X className="h-5 w-5 text-slate-400" />
               </button>
@@ -278,10 +278,10 @@ export function DashboardQuickActions({
                       (ex.exercise_sets || []).some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0))
                     );
                     return (
-                      <div key={session.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
+                      <div key={session.id} className="glass rounded-xl overflow-hidden">
                         <button
                           onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                          className="w-full p-4 flex items-center gap-4 hover:bg-slate-800/80 transition-colors text-left"
+                          className="w-full p-4 flex items-center gap-4 glass-hover transition-colors text-left"
                         >
                           <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
                             <Dumbbell className="h-5 w-5 text-purple-400" />
@@ -303,7 +303,7 @@ export function DashboardQuickActions({
                           <ChevronDown className={`h-4 w-4 text-slate-500 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                         {isExpanded && exercises.length > 0 && (
-                          <div className="border-t border-slate-700/50 px-4 py-3 space-y-2">
+                          <div className="border-t border-white/[0.06] px-4 py-3 space-y-2">
                             {exercises
                               .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
                               .map((ex: any) => {
@@ -356,10 +356,10 @@ export function DashboardQuickActions({
         document.body
       )}
 
-      {/* Check-out confirmation modal */}
-      {showCheckoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full space-y-4">
+      {/* Check-out confirmation modal (portaled to body) */}
+      {showCheckoutConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-backdrop px-4">
+          <div className="glass-modal rounded-2xl p-6 max-w-sm w-full space-y-4">
             <h3 className="text-lg font-semibold text-white text-center">Check Out?</h3>
             <p className="text-sm text-slate-400 text-center">
               Are you sure you want to check out of the gym?
@@ -367,7 +367,7 @@ export function DashboardQuickActions({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCheckoutConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-colors"
+                className="flex-1 py-2.5 rounded-xl glass text-slate-300 text-sm font-medium glass-hover transition-colors"
               >
                 Cancel
               </button>
@@ -380,7 +380,8 @@ export function DashboardQuickActions({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

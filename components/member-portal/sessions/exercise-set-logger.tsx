@@ -212,12 +212,12 @@ export function ExerciseSetLogger({
               {savingSets[set.setNumber] === 'saved' && <Check className="h-3 w-3 text-emerald-400" />}
             </div>
 
-            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden">
+            <div className="flex items-center rounded-lg glass-input overflow-hidden">
               <button
                 type="button"
                 onClick={() => updateSet(index, 'weight', -2.5)}
                 disabled={locked}
-                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-white/[0.06] active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -228,18 +228,18 @@ export function ExerciseSetLogger({
                 type="button"
                 onClick={() => updateSet(index, 'weight', 2.5)}
                 disabled={locked}
-                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-white/[0.06] active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden">
+            <div className="flex items-center rounded-lg glass-input overflow-hidden">
               <button
                 type="button"
                 onClick={() => updateSet(index, 'reps', -1)}
                 disabled={locked}
-                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-white/[0.06] active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -250,7 +250,7 @@ export function ExerciseSetLogger({
                 type="button"
                 onClick={() => updateSet(index, 'reps', 1)}
                 disabled={locked}
-                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-3 text-slate-400 hover:text-white hover:bg-white/[0.06] active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>

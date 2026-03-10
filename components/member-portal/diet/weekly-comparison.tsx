@@ -34,7 +34,7 @@ export function WeeklyComparison({ metrics }: WeeklyComparisonProps) {
       {metrics.map((metric) => {
         const TrendIcon = trendIcons[metric.trend];
         return (
-          <Card key={metric.label} className="bg-slate-900 border-slate-800">
+          <Card key={metric.label}>
             <CardContent className="p-4">
               <p className="text-xs text-slate-400 uppercase tracking-wide">
                 {metric.label}

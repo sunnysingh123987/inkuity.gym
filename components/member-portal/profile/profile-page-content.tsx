@@ -73,7 +73,7 @@ export function ProfilePageContent({
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Account Info
         </h3>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 divide-y divide-slate-700/50 overflow-hidden">
+        <div className="glass rounded-xl divide-y divide-white/[0.06] overflow-hidden">
           <ReadOnlyRow
             icon={<Mail className="h-4 w-4" />}
             label="Email"
@@ -100,7 +100,7 @@ export function ProfilePageContent({
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Personal Details
         </h3>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 space-y-4">
+        <div className="glass rounded-xl p-4 space-y-4">
           <FieldRow label="Full Name">
             <input
               value={form.full_name}
@@ -249,7 +249,7 @@ function FieldRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-1 border-b border-slate-700/30 last:border-0">
+    <div className="flex items-center justify-between gap-4 py-1 border-b border-white/[0.05] last:border-0">
       <span className="text-sm text-slate-400 shrink-0">{label}</span>
       <div className="flex justify-end">{children}</div>
     </div>

@@ -170,7 +170,7 @@ export function MealPhotoCapture({
         {mode === 'capture' && (
           <div className="space-y-4">
             {/* Camera View */}
-            <div className="relative aspect-[4/3] bg-slate-800 rounded-lg overflow-hidden">
+            <div className="relative aspect-[4/3] glass rounded-lg overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
@@ -222,7 +222,7 @@ export function MealPhotoCapture({
         {/* Preview Mode */}
         {mode === 'preview' && (
           <div className="space-y-4">
-            <div className="relative aspect-[4/3] bg-slate-800 rounded-lg overflow-hidden">
+            <div className="relative aspect-[4/3] glass rounded-lg overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imagePreview}
@@ -271,7 +271,7 @@ export function MealPhotoCapture({
         {mode === 'results' && result && (
           <div className="space-y-4">
             {/* Thumbnail */}
-            <div className="relative h-32 bg-slate-800 rounded-lg overflow-hidden">
+            <div className="relative h-32 glass rounded-lg overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imagePreview}
@@ -291,7 +291,7 @@ export function MealPhotoCapture({
                   {result.items.map((item, i) => (
                     <div
                       key={i}
-                      className="flex justify-between text-sm bg-slate-800 rounded px-3 py-1.5"
+                      className="flex justify-between text-sm glass rounded px-3 py-1.5"
                     >
                       <span className="text-white">
                         {item.name}{' '}

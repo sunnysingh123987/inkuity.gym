@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Play, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Play, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
 import { deleteWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
 import { toast } from 'sonner';
@@ -25,18 +26,25 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const exerciseCount = routine.routine_exercises?.length || 0;
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this routine?')) {
-      return;
+  useEffect(() => {
+    if (showDeleteSheet) {
+      requestAnimationFrame(() => setSheetVisible(true));
+    } else {
+      setSheetVisible(false);
     }
+  }, [showDeleteSheet]);
 
+  const handleDelete = async () => {
     setDeleting(true);
     const result = await deleteWorkoutRoutine(routine.id);
 
     if (result.success) {
+      setShowDeleteSheet(false);
       toast.success('Routine deleted successfully');
       router.refresh();
     } else {
@@ -92,7 +100,8 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
   );
 
   return (
-    <Card className={`bg-slate-900 border-slate-800 ${!routine.is_active ? 'opacity-60' : ''}`}>
+    <>
+    <Card className={`${!routine.is_active ? 'opacity-60' : ''}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="text-lg text-white">{routine.name}</CardTitle>
@@ -128,7 +137,7 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleDelete}
+                onClick={() => setShowDeleteSheet(true)}
                 disabled={deleting}
                 className="text-red-600"
               >
@@ -214,5 +223,58 @@ export function RoutineCard({ routine, gymSlug }: RoutineCardProps) {
         </Button>
       </CardFooter>
     </Card>
+
+    {/* Delete Confirmation Bottom Sheet — portaled to body */}
+    {showDeleteSheet && createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sheetVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => {
+            if (!deleting) {
+              setSheetVisible(false);
+              setTimeout(() => setShowDeleteSheet(false), 300);
+            }
+          }}
+        />
+        {/* Sheet */}
+        <div
+          className={`relative w-full max-w-md mx-auto glass-sheet rounded-t-2xl p-6 pb-8 transition-transform duration-300 ease-out ${sheetVisible ? 'translate-y-0' : 'translate-y-full'}`}
+        >
+          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-red-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Delete Routine</h3>
+            <p className="text-sm text-slate-400">
+              Are you sure you want to delete <span className="text-white font-medium">{routine.name}</span>? This action cannot be undone.
+            </p>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setSheetVisible(false);
+                setTimeout(() => setShowDeleteSheet(false), 300);
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => handleDelete()}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

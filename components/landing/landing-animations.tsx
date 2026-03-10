@@ -60,16 +60,23 @@ export function LandingAnimations() {
         scrollTrigger: { trigger: '[data-features-heading]', start: 'top 85%', once: true },
       })
 
-      // Feature cards
-      gsap.from('[data-feature-card]', {
-        y: 50,
-        opacity: 0,
-        scale: 0.95,
-        stagger: 0.15,
-        duration: 0.7,
-        ease: 'power2.out',
-        scrollTrigger: { trigger: '[data-feature-card]', start: 'top 85%', once: true },
+      // Feature cards - use batch for reliable mobile triggering
+      ScrollTrigger.batch('[data-feature-card]', {
+        onEnter: (batch) => {
+          gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            stagger: 0.15,
+            duration: 0.7,
+            ease: 'power2.out',
+          })
+        },
+        start: 'top 95%',
+        once: true,
       })
+      // Set initial state for feature cards
+      gsap.set('[data-feature-card]', { opacity: 0, y: 50, scale: 0.95 })
 
       // Feature labels
       gsap.from('[data-feature-label]', {
@@ -162,7 +169,15 @@ export function LandingAnimations() {
       })
     })
 
-    return () => ctx.revert()
+    // Recalculate ScrollTrigger positions after layout settles (fixes mobile)
+    const rafId = requestAnimationFrame(() => {
+      ScrollTrigger.refresh()
+    })
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      ctx.revert()
+    }
   }, [])
 
   return null

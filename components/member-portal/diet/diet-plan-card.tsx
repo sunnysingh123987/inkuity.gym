@@ -43,7 +43,7 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
   const endDate = formatDate(plan.end_date);
 
   return (
-    <Card className={`bg-slate-900 border-slate-800 ${isActive ? 'border-brand-cyan-500/30 bg-brand-cyan-500/5' : ''}`}>
+    <Card className={`${isActive ? 'border-brand-cyan-500/30 bg-brand-cyan-500/5' : ''}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -90,7 +90,7 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
         <div className="space-y-4">
           {/* Macros Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <div className="glass rounded-lg p-3">
               <div className="flex items-center gap-2 text-orange-400 mb-1">
                 <Flame className="h-4 w-4" />
                 <span className="text-xs font-medium">Calories</span>
@@ -99,21 +99,21 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
                 {plan.target_calories || 0}
               </p>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <div className="glass rounded-lg p-3">
               <div className="flex items-center gap-2 text-blue-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Protein</span>
               </div>
               <p className="text-lg font-bold text-white">{plan.target_protein || 0}g</p>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <div className="glass rounded-lg p-3">
               <div className="flex items-center gap-2 text-yellow-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Carbs</span>
               </div>
               <p className="text-lg font-bold text-white">{plan.target_carbs || 0}g</p>
             </div>
-            <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+            <div className="glass rounded-lg p-3">
               <div className="flex items-center gap-2 text-emerald-400 mb-1">
                 <Target className="h-4 w-4" />
                 <span className="text-xs font-medium">Fat</span>
@@ -138,7 +138,7 @@ export function DietPlanCard({ plan, gymSlug, onDelete }: DietPlanCardProps) {
                 View Meals
               </Link>
             </Button>
-            <Button asChild variant="outline" className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
+            <Button asChild variant="outline" className="flex-1 border-slate-700 text-slate-300 glass-hover hover:text-white">
               <Link href={`/${gymSlug}/portal/diet/${plan.id}`}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Plan

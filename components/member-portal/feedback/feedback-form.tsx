@@ -52,7 +52,7 @@ export function FeedbackForm({ feedbackRequest }: FeedbackFormProps) {
 
   if (message?.type === 'success') {
     return (
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6">
+      <div className="rounded-2xl glass p-6">
         <div className="rounded-lg px-4 py-3 text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
           {message.text}
         </div>
@@ -62,7 +62,7 @@ export function FeedbackForm({ feedbackRequest }: FeedbackFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-6">
+      <div className="rounded-2xl glass p-6 space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-white">Share Your Feedback</h2>
           <p className="text-sm text-slate-400 mt-1">
@@ -116,7 +116,7 @@ export function FeedbackForm({ feedbackRequest }: FeedbackFormProps) {
             value={responseText}
             onChange={(e) => setResponseText(e.target.value)}
             placeholder="What did you like? What could we improve?"
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand-cyan-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500 resize-none"
+            className="w-full rounded-lg glass-input px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand-cyan-500 focus:outline-none focus:ring-1 focus:ring-brand-cyan-500 resize-none"
           />
         </div>
 

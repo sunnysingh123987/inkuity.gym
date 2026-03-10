@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,23 +79,23 @@ function BottomSheet({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999]">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
       />
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-slate-950 rounded-t-2xl transition-transform duration-300 ease-out ${
+        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: '85vh' }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-700" />
+          <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
         {/* Header: [X] title [check] */}
         <div className="flex items-center justify-between px-4 pb-3">
@@ -119,7 +120,8 @@ function BottomSheet({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -272,7 +274,7 @@ export function FoodLog({
 
   return (
     <>
-      <Card className="bg-slate-900 border-slate-800">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-white">
@@ -296,7 +298,7 @@ export function FoodLog({
                 <button
                   key={entry.id}
                   onClick={() => openEditSheet(entry)}
-                  className="flex items-center w-full gap-3 px-3 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-left transition-colors active:bg-slate-700/40"
+                  className="flex items-center w-full gap-3 px-3 py-2.5 rounded-lg glass text-left transition-colors active:bg-white/[0.04]"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">
@@ -383,7 +385,7 @@ export function FoodLog({
 
           {/* Quantity picker when food selected */}
           {selectedFood && (
-            <div className="p-4 rounded-xl border-2 border-brand-cyan-500/60 bg-slate-800/60 space-y-4">
+            <div className="p-4 rounded-xl border-2 border-brand-cyan-500/60 glass space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-base font-semibold text-white">{selectedFood.name}</p>
                 <button
@@ -440,12 +442,12 @@ export function FoodLog({
 
           {/* Food database list */}
           {!selectedFood && (
-            <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-700/40">
+            <div className="glass rounded-xl overflow-hidden">
+              <div className="max-h-64 overflow-y-auto divide-y divide-white/[0.06]">
                 {filteredFoods.map((food) => (
                   <div
                     key={food.id}
-                    className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-700/30 active:bg-slate-700/40 transition-colors"
+                    className="flex items-center justify-between px-4 py-3.5 glass-hover active:bg-white/[0.04] transition-colors"
                   >
                     <button
                       onClick={() => handleSelectFood(food)}
@@ -502,7 +504,7 @@ export function FoodLog({
                   Add Custom Item
                 </button>
               ) : (
-                <div className="rounded-xl border border-purple-500/30 bg-slate-800/60 overflow-hidden">
+                <div className="rounded-xl border border-purple-500/30 glass overflow-hidden">
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 bg-purple-500/8 border-b border-purple-500/20">
                     <p className="text-sm font-semibold text-white flex items-center gap-2">

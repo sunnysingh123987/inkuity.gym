@@ -18,38 +18,38 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       title: 'Start Workout',
       description: 'Begin a new workout session',
       svgIcon: getUiSvg('workouts'),
-      bgColor: 'bg-slate-800',
-      hoverColor: 'hover:bg-slate-700',
+      bgColor: 'glass-action',
+      hoverColor: 'glass-hover',
       onClick: () => router.push(`/${gymSlug}/portal/trackers`),
     },
     {
       title: 'Create Routine',
       description: 'Design a new workout routine',
       svgIcon: getUiSvg('workouts'),
-      bgColor: 'bg-slate-800',
-      hoverColor: 'hover:bg-slate-700',
+      bgColor: 'glass-action',
+      hoverColor: 'glass-hover',
       onClick: () => router.push(`/${gymSlug}/portal/workouts/new`),
     },
     {
       title: 'Track Meals',
       description: 'Log food and track macros',
       svgIcon: getUiSvg('diet'),
-      bgColor: 'bg-slate-800',
-      hoverColor: 'hover:bg-slate-700',
+      bgColor: 'glass-action',
+      hoverColor: 'glass-hover',
       onClick: () => router.push(`/${gymSlug}/portal/meals`),
     },
     {
       title: 'PR Tracker',
       description: 'Track your personal records',
       svgIcon: getUiSvg('personal-record'),
-      bgColor: 'bg-slate-800',
-      hoverColor: 'hover:bg-slate-700',
+      bgColor: 'glass-action',
+      hoverColor: 'glass-hover',
       onClick: () => router.push(`/${gymSlug}/portal/trackers?tab=prs`),
     },
   ];
 
   return (
-    <Card className="bg-slate-900 border-slate-800">
+    <Card>
       <CardHeader>
         <CardTitle className="text-white">Quick Actions</CardTitle>
       </CardHeader>
@@ -78,10 +78,10 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
           })}
         </div>
 
-        <div className="mt-6 pt-6 border-t border-slate-800">
+        <div className="mt-6 pt-6 border-t border-white/[0.06]">
           <Button
             variant="outline"
-            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="w-full border-slate-700 text-slate-300 glass-hover hover:text-white"
             onClick={() => router.push(`/${gymSlug}`)}
           >
             Back to Gym Page

@@ -58,7 +58,7 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
   return (
     <>
       {/* Bottom Navigation — always shown (mobile-app style) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 glass-nav z-50" style={{ borderTop: '1px solid var(--glass-border)', borderBottom: 'none' }}>
         <div className="max-w-md mx-auto grid grid-cols-4 gap-1 px-2 py-2">
           {navItems.map((item) => {
             const active = isActive(item);
@@ -72,7 +72,7 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
                   'flex flex-col items-center justify-center p-2 rounded-md transition-colors',
                   active
                     ? 'text-brand-cyan-400 bg-brand-cyan-500/10'
-                    : 'text-slate-500 hover:bg-slate-800'
+                    : 'text-slate-500 glass-hover'
                 )}
               >
                 <Icon className="h-5 w-5 mb-1" />

@@ -125,7 +125,7 @@ export function ActiveSessionTracker({
         <button
           type="button"
           onClick={() => router.push(`/${gymSlug}/portal/trackers`)}
-          className="p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded-lg glass-hover transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-slate-400" />
         </button>
@@ -150,8 +150,8 @@ export function ActiveSessionTracker({
               key={sessionExercise.id}
               className={`rounded-xl border transition-colors ${
                 isExpanded
-                  ? 'bg-slate-900 border-slate-700'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  ? 'glass border-white/[0.08]'
+                  : 'glass border-white/[0.04] hover:border-white/[0.08]'
               }`}
             >
               {/* Exercise header (always visible) */}
@@ -181,7 +181,7 @@ export function ActiveSessionTracker({
                       <div
                         role="button"
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1 rounded hover:bg-slate-800 transition-colors"
+                        className="p-1 rounded glass-hover transition-colors"
                       >
                         <MoreVertical className="h-4 w-4 text-slate-400" />
                       </div>
@@ -217,7 +217,7 @@ export function ActiveSessionTracker({
 
       {/* Add Exercise picker */}
       {showPicker && (
-        <div className="rounded-xl border border-slate-700 bg-slate-900 p-4 space-y-3">
+        <div className="rounded-xl glass p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-white">Add Exercise</h3>
             <button
