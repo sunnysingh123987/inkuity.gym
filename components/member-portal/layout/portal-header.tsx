@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bell, Flame } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Bell } from 'lucide-react';
+import { AnimatedFire } from '@/components/member-portal/streak/animated-fire';
 
 interface PortalHeaderProps {
   gym: {
@@ -18,11 +21,42 @@ interface PortalHeaderProps {
     avatar_url?: string | null;
   };
   streak?: number;
+  checkedInToday?: boolean;
 }
 
-export function PortalHeader({ gym, member, streak = 0 }: PortalHeaderProps) {
+export function PortalHeader({ gym, member, streak = 0, checkedInToday = false }: PortalHeaderProps) {
+  const pathname = usePathname();
   const initial = (member.full_name || 'M').charAt(0).toUpperCase();
   const slug = gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-');
+  const atRisk = streak > 0 && !checkedInToday;
+  const isStreakPage = pathname?.endsWith('/streak');
+  const sweepRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sweepRef.current;
+    if (!el) return;
+    let timeout: ReturnType<typeof setTimeout>;
+
+    function triggerSweep() {
+      el!.style.transition = 'none';
+      el!.style.opacity = '0';
+      el!.style.transform = 'translateX(-100%) skewX(-20deg)';
+
+      requestAnimationFrame(() => {
+        el!.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease';
+        el!.style.opacity = '1';
+        el!.style.transform = 'translateX(200%) skewX(-20deg)';
+      });
+
+      // Random interval between 4s and 12s
+      const next = 4000 + Math.random() * 8000;
+      timeout = setTimeout(triggerSweep, next);
+    }
+
+    // First sweep after a random 2-6s delay
+    timeout = setTimeout(triggerSweep, 2000 + Math.random() * 4000);
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <header className="glass-nav sticky top-0 z-50">
@@ -46,14 +80,27 @@ export function PortalHeader({ gym, member, streak = 0 }: PortalHeaderProps) {
             )}
           </Link>
 
-          {/* Streak pill — center */}
+          {/* Streak pill — center (hidden on streak page) */}
           <div className="flex-1 flex justify-center">
-            <Link href={`/${slug}/portal/streak`}>
-              <div className="inline-flex items-center gap-1.5 rounded-full glass-pill px-4 py-1.5">
-                <Flame className={`h-4 w-4 ${streak > 0 ? 'text-amber-400' : 'text-slate-500'}`} />
-                <span className="text-sm font-semibold text-white">{streak} day streak</span>
-              </div>
-            </Link>
+            {!isStreakPage && (
+              <Link href={`/${slug}/portal/streak`}>
+                <div className="relative inline-flex items-center gap-1 rounded-full glass-pill px-4 py-1.5 overflow-hidden">
+                  {/* Light sweep */}
+                  <div
+                    ref={sweepRef}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      opacity: 0,
+                      transform: 'translateX(-100%) skewX(-20deg)',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 40%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 60%, transparent 100%)',
+                      width: '45%',
+                    }}
+                  />
+                  <AnimatedFire streak={streak} atRisk={atRisk} className="h-5 w-5 relative z-[1]" />
+                  <span className="text-sm font-semibold text-white relative z-[1]">{streak} {streak === 1 ? 'day' : 'days'} streak</span>
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* Bell icon — right */}

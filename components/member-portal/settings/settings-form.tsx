@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { updateMemberPreferences } from '@/lib/actions/members-portal';
 import { usePushNotifications } from '@/lib/hooks/use-push-notifications';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Loader2, Bell, BellOff, Smartphone } from 'lucide-react';
 
 interface SettingsFormProps {

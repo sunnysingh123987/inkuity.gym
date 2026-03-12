@@ -37,7 +37,7 @@ import {
 } from 'lucide-react'
 import { updateMember } from '@/lib/actions/gyms'
 import { createPayment, uploadPaymentQR, savePaymentQRUrl, saveMembershipPlans } from '@/lib/actions/payments'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 import { DatePicker } from '@/components/ui/date-picker'
 
 interface PaymentsManagerProps {
@@ -413,13 +413,8 @@ export function PaymentsManager({ members: initialMembers, payments: initialPaym
       if (member?.phone) {
         const receiptLink = buildWhatsAppReceiptLink(member, result.data)
         if (receiptLink) {
-          toast('Share receipt on WhatsApp?', {
-            action: {
-              label: 'Share',
-              onClick: () => window.open(receiptLink, '_blank'),
-            },
-            duration: 8000,
-          })
+          window.open(receiptLink, '_blank')
+          toast.success('Opening WhatsApp receipt')
         }
       }
     } else {

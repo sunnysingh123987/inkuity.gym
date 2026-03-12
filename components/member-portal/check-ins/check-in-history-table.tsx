@@ -15,7 +15,7 @@ import {
 import { Download, Search, Calendar, Clock } from 'lucide-react';
 import { getUiSvg } from '@/lib/svg-icons';
 import { exportCheckInsToCSV } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface CheckInHistoryTableProps {
   checkIns: any[];

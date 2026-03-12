@@ -15,7 +15,7 @@ import {
   Dumbbell,
   Weight,
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { addPersonalRecord, deletePersonalRecord } from '@/lib/actions/personal-records';
 import { useRouter } from 'next/navigation';
 import type { PersonalRecord } from '@/types/database';

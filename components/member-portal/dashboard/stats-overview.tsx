@@ -1,5 +1,8 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Flame, Dumbbell, ListChecks, Apple } from 'lucide-react';
+import { Calendar, Dumbbell, ListChecks, Apple } from 'lucide-react';
+import { AnimatedFire } from '@/components/member-portal/streak/animated-fire';
 
 interface StatsOverviewProps {
   stats: {
@@ -45,7 +48,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
       title: 'Current Streak',
       value: `${stats.currentStreak} ${stats.currentStreak === 1 ? 'day' : 'days'}`,
       description: stats.currentStreak > 0 ? 'Keep it up!' : 'Start your streak today',
-      icon: Flame,
+      icon: null,
       color: 'text-amber-400',
       bgColor: 'bg-amber-500/10',
     },
@@ -79,6 +82,10 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {statCards.map((stat) => {
         const Icon = stat.icon;
+        const isStreakCard = stat.title === 'Current Streak';
+        const checkedInToday = stats.lastCheckIn
+          ? new Date(stats.lastCheckIn).toDateString() === new Date().toDateString()
+          : false;
         return (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -86,7 +93,15 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
                 {stat.title}
               </CardTitle>
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
+                {isStreakCard ? (
+                  <AnimatedFire
+                    streak={stats.currentStreak}
+                    atRisk={stats.currentStreak > 0 && !checkedInToday}
+                    className="h-5 w-5"
+                  />
+                ) : Icon ? (
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                ) : null}
               </div>
             </CardHeader>
             <CardContent>

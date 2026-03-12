@@ -20,5 +20,5 @@ export default async function StartWorkoutPage({
   }
 
   // If session creation failed, go back to routines
-  redirect(`/${params.slug}/portal/trackers`);
+  redirect(`/${params.slug}/portal/routines`);
 }

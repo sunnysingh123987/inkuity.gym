@@ -35,7 +35,7 @@ import {
   Crown,
 } from 'lucide-react'
 import { inviteUser, updateRole, removeRole } from '@/lib/actions/gym-roles'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 
 // ============================================================
 // TYPES

@@ -17,6 +17,43 @@ const authRoutes = ['/login', '/register', '/reset-password']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const host = request.headers.get('host') || ''
+  const isAdminSubdomain = host.startsWith('admin.')
+
+  // --- Admin subdomain handling ---
+  if (isAdminSubdomain) {
+    // Rewrite root to /admin/feedback so admin.inkuity.com opens feedback inbox
+    if (pathname === '/') {
+      const { response, user } = await updateSession(request)
+      if (!user) {
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirectTo', '/admin/feedback')
+        return NextResponse.redirect(loginUrl)
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/feedback'
+      const rewriteResponse = NextResponse.rewrite(url)
+      response.cookies.getAll().forEach(cookie => {
+        rewriteResponse.cookies.set(cookie)
+      })
+      return rewriteResponse
+    }
+
+    // Auth route fix: authenticated users on /login redirect to / (which rewrites to feedback)
+    if (pathname.startsWith('/login')) {
+      const { response, user } = await updateSession(request)
+      if (user) {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+      return response
+    }
+
+    // Allow /admin/* paths through (will be handled by normal auth below)
+    // Block all other non-admin paths on the admin subdomain
+    if (!pathname.startsWith('/admin') && !authRoutes.some(r => pathname.startsWith(r))) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
 
   // Update the session and get current user from Supabase
   const { response, user } = await updateSession(request)
@@ -40,7 +77,9 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth routes
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // On admin subdomain, redirect to / (which rewrites to feedback inbox)
+    const redirectTarget = isAdminSubdomain ? '/' : '/dashboard'
+    return NextResponse.redirect(new URL(redirectTarget, request.url))
   }
 
   // For authenticated users on protected routes, check onboarding status
@@ -90,6 +129,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|sw\.js|manifest\.json|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sw\.js|manifest\.json|admin-manifest\.json|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

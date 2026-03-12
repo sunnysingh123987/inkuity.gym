@@ -42,7 +42,7 @@ import { updateProfile } from '@/lib/actions/profile'
 import { updateGym } from '@/lib/actions/gyms'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { QRCodeCard } from '@/components/dashboard/qr-code-card'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 
 interface SettingsFormProps {
   profile: Profile

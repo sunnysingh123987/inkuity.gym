@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, ChevronUp, Zap, AlertTriangle } from 'lucide-react';
-import { ExerciseSetLogger } from '@/components/member-portal/sessions/exercise-set-logger';
+import { X, ChevronDown, ChevronUp, Zap, AlertTriangle, Loader2 } from 'lucide-react';
+import { ExerciseSetLogger, type ExerciseSetLoggerHandle } from '@/components/member-portal/sessions/exercise-set-logger';
 import {
   getActiveWorkoutSession,
   ensureWorkoutSession,
   deleteWorkoutSession,
 } from '@/lib/actions/members-portal';
 import { getActiveCheckIn, getTodayCheckInStatus } from '@/lib/actions/checkin-flow';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface WorkoutLogSheetProps {
   routine: any;
@@ -54,14 +54,19 @@ export function WorkoutLogSheet({
   const [checkInStatus, setCheckInStatus] = useState<'loading' | 'active' | 'checked-out' | 'none'>('loading');
   const [checkOutAt, setCheckOutAt] = useState<string | undefined>();
   const sessionCreatedRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const loggerRefs = useRef<Map<string, ExerciseSetLoggerHandle>>(new Map());
 
-  // Animate in/out
+  // Animate in/out + lock body scroll
   useEffect(() => {
     if (open) {
+      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => setVisible(true));
     } else {
       setVisible(false);
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   // Load existing session (if any) when sheet opens — NO eager creation
@@ -196,9 +201,42 @@ export function WorkoutLogSheet({
     setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
   };
 
-  const handleBackdropClick = () => {
-    onClose();
+  // When toggling exercises, flush the collapsing logger before unmounting it
+  const handleToggleExercise = async (exerciseId: string) => {
+    if (expandedId === exerciseId) {
+      // Collapsing — flush this logger's dirty sets
+      const loggerRef = loggerRefs.current.get(exerciseId);
+      if (loggerRef) {
+        setSaving(true);
+        await loggerRef.flush();
+        setSaving(false);
+      }
+      setExpandedId(null);
+    } else {
+      // Flush the previously expanded logger before switching
+      if (expandedId) {
+        const prevRef = loggerRefs.current.get(expandedId);
+        if (prevRef) {
+          setSaving(true);
+          await prevRef.flush();
+          setSaving(false);
+        }
+      }
+      setExpandedId(exerciseId);
+    }
   };
+
+  const handleClose = useCallback(async () => {
+    // Flush all dirty sets to DB before closing
+    const refs = Array.from(loggerRefs.current.values());
+    const hasDirty = refs.length > 0;
+    if (hasDirty) {
+      setSaving(true);
+      await Promise.all(refs.map((r) => r.flush()));
+      setSaving(false);
+    }
+    onClose();
+  }, [onClose]);
 
   // Reset state when closing
   useEffect(() => {
@@ -232,10 +270,11 @@ export function WorkoutLogSheet({
         }));
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999]">
+    <div className="fixed inset-0 z-[9999] overscroll-none touch-none">
       {/* Backdrop */}
       <div
-        onClick={handleBackdropClick}
+        onClick={saving ? undefined : handleClose}
+        onTouchMove={(e) => e.preventDefault()}
         className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
@@ -275,7 +314,7 @@ export function WorkoutLogSheet({
 
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
+        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out touch-auto overscroll-contain ${
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: '75vh' }}
@@ -294,8 +333,9 @@ export function WorkoutLogSheet({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="p-2 rounded-lg glass-hover transition-colors flex-shrink-0"
+            onClick={handleClose}
+            disabled={saving}
+            className="p-2 rounded-lg glass-hover transition-colors flex-shrink-0 disabled:opacity-40"
           >
             <X className="h-5 w-5 text-slate-400" />
           </button>
@@ -329,12 +369,9 @@ export function WorkoutLogSheet({
                     {/* Exercise header */}
                     <button
                       type="button"
-                      onClick={() =>
-                        setExpandedId((prev) =>
-                          prev === sessionExercise.id ? null : sessionExercise.id
-                        )
-                      }
-                      className="w-full flex items-center justify-between p-4 text-left"
+                      onClick={() => handleToggleExercise(sessionExercise.id)}
+                      disabled={saving}
+                      className="w-full flex items-center justify-between p-4 text-left disabled:opacity-60"
                     >
                       <h3 className="font-semibold text-white text-base">
                         {exercise?.name || 'Exercise'}
@@ -362,6 +399,13 @@ export function WorkoutLogSheet({
                     {isExpanded && (
                       <div className="px-4 pb-4">
                         <ExerciseSetLogger
+                          ref={(handle) => {
+                            if (handle) {
+                              loggerRefs.current.set(sessionExercise.id, handle);
+                            } else {
+                              loggerRefs.current.delete(sessionExercise.id);
+                            }
+                          }}
                           sessionExerciseId={session ? sessionExercise.id : null}
                           exerciseId={exercise?.id}
                           existingSets={getTodaySets(sessionExercise.exercise_sets || [])}
@@ -381,15 +425,23 @@ export function WorkoutLogSheet({
           )}
         </div>
 
-        {/* Done button */}
+        {/* Done button / Saving loader */}
         {!loading && (
           <div className="px-4 pb-6 pt-2 border-t border-white/[0.06]">
             <button
               type="button"
-              onClick={onClose}
-              className="w-full py-3 rounded-xl bg-brand-cyan-500 text-white font-semibold text-base hover:bg-brand-cyan-600 transition-colors flex items-center justify-center"
+              onClick={handleClose}
+              disabled={saving}
+              className="w-full py-3 rounded-xl bg-brand-cyan-500 text-white font-semibold text-base hover:bg-brand-cyan-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Done
+              {saving ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Done'
+              )}
             </button>
           </div>
         )}

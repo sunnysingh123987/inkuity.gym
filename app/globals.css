@@ -277,6 +277,69 @@
   100% { transform: translate(-4%, 5%) scale(1.08); }
 }
 
+/* ---- Toast animations ---- */
+
+/* Circle/shape draw-in */
+@keyframes toast-circle {
+  to { stroke-dashoffset: 0; }
+}
+.animate-toast-circle {
+  animation: toast-circle 0.55s cubic-bezier(0.35, 0, 0.25, 1) 0.1s forwards;
+}
+
+/* Checkmark draw */
+@keyframes toast-check {
+  to { stroke-dashoffset: 0; }
+}
+.animate-toast-check {
+  animation: toast-check 0.35s cubic-bezier(0.35, 0, 0.25, 1) 0.45s forwards;
+}
+
+/* X lines draw */
+@keyframes toast-x {
+  to { stroke-dashoffset: 0; }
+}
+.animate-toast-x {
+  animation: toast-x 0.3s cubic-bezier(0.35, 0, 0.25, 1) 0.45s forwards;
+}
+
+/* Error shake */
+@keyframes toast-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-3px); }
+  30% { transform: translateX(3px); }
+  45% { transform: translateX(-2px); }
+  60% { transform: translateX(2px); }
+  75% { transform: translateX(-1px); }
+  90% { transform: translateX(1px); }
+}
+.animate-toast-shake {
+  animation: toast-shake 0.5s ease-in-out 0.6s;
+}
+
+/* Info/warning line fade in */
+@keyframes toast-info-line {
+  to { opacity: 1; }
+}
+.animate-toast-info-line {
+  animation: toast-info-line 0.3s ease 0.5s forwards;
+}
+
+/* Border countdown — full perimeter to zero */
+@keyframes toast-border {
+  from {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+  }
+}
+.animate-toast-border {
+  animation: toast-border linear forwards;
+}
+
 /* Reduced motion: disable blur and animations */
 @media (prefers-reduced-motion: reduce) {
   .glass,

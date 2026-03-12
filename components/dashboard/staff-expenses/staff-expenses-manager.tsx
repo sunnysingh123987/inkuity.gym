@@ -42,7 +42,7 @@ import {
   getFinancialSummary,
   getExpenses,
 } from '@/lib/actions/staff-expenses'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 import { DatePicker } from '@/components/ui/date-picker'
 
 // ─── Constants ───────────────────────────────────────────────

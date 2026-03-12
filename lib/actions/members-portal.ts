@@ -664,7 +664,7 @@ export async function createWorkoutRoutine(input: CreateRoutineInput) {
       if (exercisesError) throw exercisesError;
     }
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true, data: routine };
   } catch (error: any) {
@@ -753,7 +753,7 @@ export async function updateWorkoutRoutine(
       }
     }
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true, data: null };
   } catch (error: any) {
@@ -776,7 +776,7 @@ export async function deleteWorkoutRoutine(routineId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true };
   } catch (error: any) {
@@ -832,7 +832,7 @@ export async function addExerciseToRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true, data };
   } catch (error: any) {
@@ -857,7 +857,7 @@ export async function removeExerciseFromRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true };
   } catch (error: any) {
@@ -1291,6 +1291,48 @@ export async function logExerciseSet(
   } catch (error: any) {
     console.error('Error logging exercise set:', error);
     return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
+ * Delete an exercise set by session_exercise_id and set_number.
+ * Respects the same 1.5-hour lock window as logExerciseSet.
+ */
+export async function deleteExerciseSet(
+  sessionExerciseId: string,
+  setNumber: number
+) {
+  try {
+    const supabase = createAdminSupabaseClient();
+
+    const { data: existing, error: findError } = await supabase
+      .from('exercise_sets')
+      .select('id, created_at')
+      .eq('session_exercise_id', sessionExerciseId)
+      .eq('set_number', setNumber)
+      .maybeSingle();
+
+    if (findError) throw findError;
+    if (!existing) {
+      return { success: true }; // Nothing to delete
+    }
+
+    const ageMs = Date.now() - new Date(existing.created_at).getTime();
+    const LOCK_MS = 1.5 * 60 * 60 * 1000;
+    if (ageMs > LOCK_MS) {
+      return { success: false, error: 'Set is locked after 1.5 hours' };
+    }
+
+    const { error } = await supabase
+      .from('exercise_sets')
+      .delete()
+      .eq('id', existing.id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting exercise set:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -2219,7 +2261,7 @@ export async function skipRoutineForToday(
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/portal/routines');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2324,7 +2366,7 @@ export async function createFoodItem(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2364,7 +2406,7 @@ export async function updateFoodItem(
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2384,7 +2426,7 @@ export async function deleteFoodItem(foodItemId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true };
   } catch (error: any) {
@@ -2454,7 +2496,7 @@ export async function addFoodLogEntry(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2496,7 +2538,7 @@ export async function updateFoodLogEntry(
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2516,7 +2558,7 @@ export async function deleteFoodLogEntry(entryId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true };
   } catch (error: any) {
@@ -2556,7 +2598,7 @@ export async function updateDietPlanTargets(
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/diet');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2626,7 +2668,7 @@ export async function createCustomTracker(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2664,7 +2706,7 @@ export async function updateCustomTracker(
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2684,7 +2726,7 @@ export async function deleteCustomTracker(trackerId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true };
   } catch (error: any) {
@@ -2705,7 +2747,7 @@ export async function deleteAllCustomTrackers(memberId: string, gymId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true };
   } catch (error: any) {
@@ -2743,7 +2785,7 @@ export async function updateTrackerValue(
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2765,7 +2807,7 @@ export async function resetAllTrackerValues(memberId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/meals');
+    revalidatePath('/portal/trackers');
 
     return { success: true };
   } catch (error: any) {

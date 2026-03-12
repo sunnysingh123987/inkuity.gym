@@ -28,9 +28,14 @@ export default async function StreakPage({
     getCheckInCalendarData(memberId, gymId, currentMonth, currentYear),
   ]);
 
+  const todayKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const calData: Record<string, number> = calendarResult.data || {};
+  const checkedInToday = (calData[todayKey] || 0) > 0;
+
   return (
     <StreakPageContent
       streak={streakResult.streak}
+      checkedInToday={checkedInToday}
       initialCheckInDays={calendarResult.data || {}}
       memberId={memberId}
       gymId={gymId}

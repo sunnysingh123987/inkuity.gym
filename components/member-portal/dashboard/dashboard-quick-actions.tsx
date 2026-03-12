@@ -7,7 +7,7 @@ import { ScanLine, Dumbbell, ListChecks, Loader2, Check, LogOut, X, Calendar, Ch
 import { recordQRCheckIn, checkOutMember } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMemberInfo } from '@/lib/actions/pin-auth';
 import { getWorkoutSessionHistory } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface DashboardQuickActionsProps {
   gymSlug: string;
@@ -43,10 +43,13 @@ export function DashboardQuickActions({
   // Animate sheet in/out
   useEffect(() => {
     if (showWorkouts) {
+      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => setWorkoutsVisible(true));
     } else {
       setWorkoutsVisible(false);
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [showWorkouts]);
 
   const openWorkoutsSheet = async () => {
@@ -173,7 +176,7 @@ export function DashboardQuickActions({
       icon: ListChecks,
       color: 'bg-blue-500/15 text-blue-400',
       iconClass: 'h-6 w-6',
-      onClick: () => router.push(`/${gymSlug}/portal/trackers`),
+      onClick: () => router.push(`/${gymSlug}/portal/routines`),
       disabled: false,
     },
   ];
@@ -210,15 +213,16 @@ export function DashboardQuickActions({
 
       {/* Workouts history bottom sheet (portal to body) */}
       {(showWorkouts || workoutsVisible) && createPortal(
-        <div className="fixed inset-0 z-[9999]">
+        <div className="fixed inset-0 z-[9999] overscroll-none touch-none">
           <div
             onClick={closeWorkoutsSheet}
+            onTouchMove={(e) => e.preventDefault()}
             className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
               workoutsVisible ? 'opacity-100' : 'opacity-0'
             }`}
           />
           <div
-            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
+            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out touch-auto overscroll-contain ${
               workoutsVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{ maxHeight: '75vh' }}
@@ -259,7 +263,7 @@ export function DashboardQuickActions({
                   <button
                     onClick={() => {
                       closeWorkoutsSheet();
-                      router.push(`/${gymSlug}/portal/trackers`);
+                      router.push(`/${gymSlug}/portal/routines`);
                     }}
                     className="mt-3 px-4 py-2 rounded-lg bg-brand-cyan-500/15 text-brand-cyan-400 text-sm font-medium hover:bg-brand-cyan-500/25 transition-colors"
                   >
@@ -358,7 +362,7 @@ export function DashboardQuickActions({
 
       {/* Check-out confirmation modal (portaled to body) */}
       {showCheckoutConfirm && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-backdrop px-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-backdrop px-4 overscroll-none touch-none">
           <div className="glass-modal rounded-2xl p-6 max-w-sm w-full space-y-4">
             <h3 className="text-lg font-semibold text-white text-center">Check Out?</h3>
             <p className="text-sm text-slate-400 text-center">

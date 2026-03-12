@@ -34,7 +34,7 @@ import {
   deleteAnnouncement,
   type MemberStatusTag,
 } from '@/lib/actions/announcements'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 import { DatePicker } from '@/components/ui/date-picker'
 
 interface AnnouncementsManagerProps {

@@ -29,7 +29,7 @@ import {
   deleteWorkoutRoutine,
   updateWorkoutRoutine,
 } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import Link from 'next/link';
 
 // ============================================================
@@ -619,13 +619,16 @@ export function RoutineCalendarView({
     }
   }, []);
 
-  // Animate confirm sheet in/out
+  // Animate confirm sheet in/out + lock body scroll
   useEffect(() => {
     if (showConfirmSheet) {
+      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => setSheetVisible(true));
     } else {
       setSheetVisible(false);
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [showConfirmSheet]);
 
   const handleSkipComplete = () => {
@@ -888,15 +891,16 @@ export function RoutineCalendarView({
 
       {/* Confirmation Bottom Sheet — portaled to body */}
       {showConfirmSheet && confirmAction && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center overscroll-none touch-none">
           {/* Backdrop */}
           <div
             className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sheetVisible ? 'opacity-100' : 'opacity-0'}`}
             onClick={handleDismissConfirmSheet}
+            onTouchMove={(e) => e.preventDefault()}
           />
           {/* Sheet */}
           <div
-            className={`relative w-full max-w-md mx-auto glass-sheet rounded-t-2xl p-6 pb-8 transition-transform duration-300 ease-out ${sheetVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`relative w-full max-w-md mx-auto glass-sheet rounded-t-2xl p-6 pb-8 transition-transform duration-300 ease-out touch-auto overscroll-contain ${sheetVisible ? 'translate-y-0' : 'translate-y-full'}`}
           >
             <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
             <div className="flex flex-col items-center text-center gap-3">

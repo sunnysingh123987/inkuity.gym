@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { updateReferralStatus } from '@/lib/actions/referrals';
 import type { ReferralWithMembers } from '@/types/database';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface ReferralsManagerProps {
   referrals: ReferralWithMembers[];

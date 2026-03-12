@@ -4,8 +4,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RoutineCardRedesigned } from '@/components/member-portal/workouts/routine-card-redesigned';
 import { WorkoutLogSheet } from '@/components/member-portal/workouts/workout-log-sheet';
-import { Dumbbell, ClipboardList, Plus, MousePointerClick, GripVertical, Pencil, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { CreateRoutineSheet } from '@/components/member-portal/workouts/create-routine-sheet';
+import { Dumbbell, ClipboardList, Plus, MousePointerClick, Pencil } from 'lucide-react';
 
 interface RoutinesPageContentProps {
   routines: any[];
@@ -26,6 +26,7 @@ export function RoutinesPageContent({
 }: RoutinesPageContentProps) {
   const router = useRouter();
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
   // Keyed by routine ID so progress persists after sheet closes
   const [liveProgressMap, setLiveProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
 
@@ -86,11 +87,12 @@ export function RoutinesPageContent({
           <h1 className="text-xl font-bold text-white">My routines</h1>
           <ClipboardList className="h-5 w-5 text-brand-cyan-400" />
         </div>
-        <Link href={`/${gymSlug}/portal/workouts/new`}>
-          <button className="h-9 w-9 rounded-xl bg-brand-cyan-500/15 flex items-center justify-center text-brand-cyan-400 hover:bg-brand-cyan-500/25 transition-colors">
-            <Plus className="h-5 w-5" />
-          </button>
-        </Link>
+        <button
+          onClick={() => setShowCreateSheet(true)}
+          className="h-9 w-9 rounded-xl bg-brand-cyan-500/15 flex items-center justify-center text-brand-cyan-400 hover:bg-brand-cyan-500/25 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Routine list */}
@@ -164,6 +166,15 @@ export function RoutinesPageContent({
         open={!!selectedRoutine}
         onClose={handleSheetClose}
         onProgressChange={handleProgressChange}
+      />
+
+      {/* Create routine bottom sheet */}
+      <CreateRoutineSheet
+        open={showCreateSheet}
+        onClose={() => setShowCreateSheet(false)}
+        memberId={memberId}
+        gymId={gymId}
+        gymSlug={gymSlug}
       />
     </div>
   );

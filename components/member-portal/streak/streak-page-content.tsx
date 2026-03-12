@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
-  Flame,
 } from 'lucide-react';
+import { AnimatedFire } from '@/components/member-portal/streak/animated-fire';
 import { getCheckInCalendarData } from '@/lib/actions/members-portal';
 
 interface StreakPageContentProps {
   streak: number;
+  checkedInToday?: boolean;
   initialCheckInDays: Record<string, number>;
   memberId: string;
   gymId: string;
@@ -25,10 +26,12 @@ const WEEKDAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export function StreakPageContent({
   streak,
+  checkedInToday = false,
   initialCheckInDays,
   memberId,
   gymId,
 }: StreakPageContentProps) {
+  const atRisk = streak > 0 && !checkedInToday;
   const router = useRouter();
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1);
@@ -76,7 +79,7 @@ export function StreakPageContent({
   const canGoForward = !(currentMonth === todayMonth && currentYear === todayYear);
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-3 pb-8">
       {/* Header */}
       <div className="flex items-center h-12 relative">
         <button
@@ -88,24 +91,20 @@ export function StreakPageContent({
         <h1 className="text-lg font-bold text-white w-full text-center">My Streak</h1>
       </div>
 
-      {/* Motivational banner */}
-      <div className="glass-strong rounded-2xl px-5 py-4 text-center">
-        <p className="text-sm text-slate-300">
-          {streak === 0
-            ? "Lost the streak? Don't lose the drive. Let's start fresh!"
-            : "You're on fire! Keep the momentum going!"}
-        </p>
-      </div>
+      {/* Motivational text */}
+      <p className="text-sm text-slate-400 text-center">
+        {streak === 0
+          ? "Lost the streak? Don't lose the drive. Let's start fresh!"
+          : "You're on fire! Keep the momentum going!"}
+      </p>
 
       {/* Streak hero */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-3">
-          <div className="w-16 h-16 rounded-full border-2 border-slate-600 flex items-center justify-center">
-            <span className="text-4xl font-black text-white">{streak}</span>
-          </div>
-          <Flame className="h-8 w-8 text-amber-400" />
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center gap-2">
+          <span className="text-5xl font-black text-white">{streak}</span>
+          <AnimatedFire streak={streak} atRisk={atRisk} className="h-12 w-12" />
         </div>
-        <span className="text-base font-semibold text-white">days streak</span>
+        <span className="text-base font-semibold text-slate-400">{streak === 1 ? 'day' : 'days'} streak</span>
       </div>
 
       {/* Calendar */}
@@ -177,26 +176,21 @@ export function StreakPageContent({
       </div>
 
       {/* How streaks work */}
-      <div className="glass rounded-2xl p-6 space-y-4">
-        <p className="text-base font-bold text-white">How to increase your streak</p>
-        <ul className="space-y-3 text-sm text-slate-300">
-          <li className="flex gap-2">
-            <span className="text-brand-cyan-400 font-bold shrink-0">1.</span>
-            <span>Check in at the gym every day by scanning the QR code at the front desk.</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-brand-cyan-400 font-bold shrink-0">2.</span>
-            <span>Each consecutive day you check in adds one to your streak.</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-brand-cyan-400 font-bold shrink-0">3.</span>
-            <span>Missing a single day resets your streak back to zero.</span>
-          </li>
-        </ul>
-        <div className="border-t border-white/[0.06] pt-4 mt-4">
-          <p className="text-xs text-slate-500">
-            Note: You must check in before you can log a workout. Workouts can only be recorded after a successful check-in for the day.
-          </p>
+      <div className="mt-6 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">How streaks work</h4>
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-3">
+            <ChevronRight className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Check in at the gym every day by scanning the QR code at the front desk</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <ChevronRight className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Each consecutive day you check in adds one to your streak</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <ChevronRight className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Missing a single day resets your streak back to zero</p>
+          </div>
         </div>
       </div>
     </div>

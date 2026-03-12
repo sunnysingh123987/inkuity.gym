@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateMemberInfo } from '@/lib/actions/members-portal';
 
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { ArrowLeft, Loader2, Mail, Calendar, Check } from 'lucide-react';
 
 interface ProfilePageContentProps {

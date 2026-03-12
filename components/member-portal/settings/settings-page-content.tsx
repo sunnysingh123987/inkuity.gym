@@ -24,7 +24,7 @@ import { SettingsForm } from '@/components/member-portal/settings/settings-form'
 import { ReviewForm } from '@/components/member-portal/reviews/review-form';
 import { FeedbackChat } from '@/components/member-portal/feedback/feedback-chat';
 import { signOut } from '@/lib/actions/pin-auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import type { GymReview, FeedbackRequest, FeedbackMessage } from '@/types/database';
 
 interface SettingsPageContentProps {

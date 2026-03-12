@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { saveWorkoutFocus } from '@/lib/actions/checkin-flow';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Loader2, Check } from 'lucide-react';
 
 interface WorkoutFocusSelectorProps {

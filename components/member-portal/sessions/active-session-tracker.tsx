@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -8,13 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, History, MoreVertical, Zap, Plus, Search, X } from 'lucide-react';
-import { ExerciseSetLogger } from './exercise-set-logger';
+import { ArrowLeft, History, MoreVertical, Zap, Plus, Search, X, Loader2 } from 'lucide-react';
+import { ExerciseSetLogger, type ExerciseSetLoggerHandle } from './exercise-set-logger';
 import {
   getExerciseLibrary,
   addSessionExercise,
 } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface ActiveSessionTrackerProps {
   session: any;
@@ -43,6 +43,8 @@ export function ActiveSessionTracker({
   );
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const loggerRefs = useRef<Map<string, ExerciseSetLoggerHandle>>(new Map());
 
   // Initialize sets count from existing data (today only)
   const [setsCount, setSetsCount] = useState<Record<string, number>>(() => {
@@ -67,8 +69,28 @@ export function ActiveSessionTracker({
     ? session.workout_routines[0]?.name
     : session.workout_routines?.name;
 
-  const toggleExercise = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+  const toggleExercise = async (id: string) => {
+    if (expandedId === id) {
+      // Collapsing — flush dirty sets
+      const loggerRef = loggerRefs.current.get(id);
+      if (loggerRef) {
+        setSaving(true);
+        await loggerRef.flush();
+        setSaving(false);
+      }
+      setExpandedId(null);
+    } else {
+      // Flush previously expanded logger before switching
+      if (expandedId) {
+        const prevRef = loggerRefs.current.get(expandedId);
+        if (prevRef) {
+          setSaving(true);
+          await prevRef.flush();
+          setSaving(false);
+        }
+      }
+      setExpandedId(id);
+    }
   };
 
   const handleSetsChange = (exerciseId: string, count: number) => {
@@ -124,7 +146,7 @@ export function ActiveSessionTracker({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push(`/${gymSlug}/portal/trackers`)}
+          onClick={() => router.push(`/${gymSlug}/portal/routines`)}
           className="p-1.5 rounded-lg glass-hover transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-slate-400" />
@@ -158,7 +180,8 @@ export function ActiveSessionTracker({
               <button
                 type="button"
                 onClick={() => toggleExercise(sessionExercise.id)}
-                className="w-full flex items-center justify-between p-4 text-left"
+                disabled={saving}
+                className="w-full flex items-center justify-between p-4 text-left disabled:opacity-60"
               >
                 <h3 className="font-semibold text-white text-lg">
                   {exercise?.name || 'Exercise'}
@@ -202,6 +225,13 @@ export function ActiveSessionTracker({
               {isExpanded && (
                 <div className="px-4 pb-4">
                   <ExerciseSetLogger
+                    ref={(handle) => {
+                      if (handle) {
+                        loggerRefs.current.set(sessionExercise.id, handle);
+                      } else {
+                        loggerRefs.current.delete(sessionExercise.id);
+                      }
+                    }}
                     sessionExerciseId={sessionExercise.id}
                     existingSets={getTodaySets(sessionExercise.exercise_sets || [])}
                     onSetsChange={(count) =>

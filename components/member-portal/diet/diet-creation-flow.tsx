@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { DietCreationChoice } from './diet-creation-choice';
 import { AiDietWizard } from './ai-diet-wizard';
 import { AiDietGenerating } from './ai-diet-generating';

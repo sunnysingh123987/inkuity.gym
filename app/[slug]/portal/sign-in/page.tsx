@@ -17,7 +17,7 @@ import {
   registerNewMember,
 } from '@/lib/actions/pin-auth';
 import { recordQRCheckIn } from '@/lib/actions/checkin-flow';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Building2, Loader2, Mail, Lock, UserPlus, ShieldCheck } from 'lucide-react';
 
 interface SignInPageProps {

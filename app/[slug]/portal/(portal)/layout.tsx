@@ -54,12 +54,14 @@ export default async function PortalLayout({
     .limit(30);
 
   let currentStreak = 0;
+  let checkedInToday = false;
   if (recentCheckIns && recentCheckIns.length > 0) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lastDate = new Date(recentCheckIns[0].check_in_at);
     lastDate.setHours(0, 0, 0, 0);
     const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    checkedInToday = daysDiff === 0;
     if (daysDiff <= 1) {
       currentStreak = 1;
       let prevDate = lastDate;
@@ -79,7 +81,7 @@ export default async function PortalLayout({
       <RouteLoadingBar />
       <div className="gradient-mesh" aria-hidden="true" />
       <div className="relative z-10">
-        <PortalHeader gym={gym} member={member} streak={currentStreak} />
+        <PortalHeader gym={gym} member={member} streak={currentStreak} checkedInToday={checkedInToday} />
 
         <div className="flex justify-center">
           <PortalNav gymSlug={params.slug} />

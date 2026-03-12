@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Gift, Copy, Check, Share2, Users, Clock, CheckCircle2, Award } from 'lucide-react';
 import { getUiSvg } from '@/lib/svg-icons';
 import type { ReferralWithMembers } from '@/types/database';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface ReferralTrackerProps {
   memberId: string;

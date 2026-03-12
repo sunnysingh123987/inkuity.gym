@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getAuthenticatedMemberInfo, signOut } from '@/lib/actions/pin-auth';
 import { recordQRCheckIn, validateCheckInLocation, getActiveCheckIn, isLocationRequiredForCheckIn } from '@/lib/actions/checkin-flow';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Building2, Loader2, MapPinOff, LogOut } from 'lucide-react';
 import { checkOutMember } from '@/lib/actions/checkin-flow';
 

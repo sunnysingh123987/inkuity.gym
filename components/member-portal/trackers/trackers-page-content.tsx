@@ -38,7 +38,7 @@ export function TrackersPageContent({
   const defaultTab = VALID_TABS.includes(initialTab || '') ? initialTab! : 'routines';
 
   const handleTabChange = (value: string) => {
-    router.replace(`/${gymSlug}/portal/trackers?tab=${value}`, { scroll: false });
+    router.replace(`/${gymSlug}/portal/routines?tab=${value}`, { scroll: false });
   };
 
   const activeRoutines = routines.filter((r) => r.is_active);

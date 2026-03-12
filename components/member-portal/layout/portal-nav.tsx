@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Home, Dumbbell, UtensilsCrossed, Settings } from 'lucide-react';
+import { Home, Dumbbell, UtensilsCrossed, Activity } from 'lucide-react';
 
 interface PortalNavProps {
   gymSlug: string;
@@ -21,10 +21,10 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
     },
     {
       name: 'Routines',
-      href: `/${gymSlug}/portal/trackers`,
+      href: `/${gymSlug}/portal/routines`,
       icon: Dumbbell,
       matchPaths: [
-        `/${gymSlug}/portal/trackers`,
+        `/${gymSlug}/portal/routines`,
         `/${gymSlug}/portal/workouts`,
         `/${gymSlug}/portal/sessions`,
         `/${gymSlug}/portal/personal-records`,
@@ -32,20 +32,15 @@ export function PortalNav({ gymSlug }: PortalNavProps) {
     },
     {
       name: 'Diet',
-      href: `/${gymSlug}/portal/meals`,
+      href: `/${gymSlug}/portal/diet`,
       icon: UtensilsCrossed,
-      matchPaths: [`/${gymSlug}/portal/meals`],
+      matchPaths: [`/${gymSlug}/portal/diet`],
     },
     {
-      name: 'Settings',
-      href: `/${gymSlug}/portal/settings`,
-      icon: Settings,
-      matchPaths: [
-        `/${gymSlug}/portal/settings`,
-        `/${gymSlug}/portal/payments`,
-        `/${gymSlug}/portal/review`,
-        `/${gymSlug}/portal/feedback`,
-      ],
+      name: 'Trackers',
+      href: `/${gymSlug}/portal/trackers`,
+      icon: Activity,
+      matchPaths: [`/${gymSlug}/portal/trackers`],
     },
   ];
 

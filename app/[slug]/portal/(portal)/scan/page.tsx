@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { QRCodeScanner } from '@/components/qr-scanner/qr-code-scanner';
 import { recordQRCheckIn } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMemberInfo } from '@/lib/actions/pin-auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Loader2 } from 'lucide-react';
 
 export default function ScanPage({ params }: { params: { slug: string } }) {

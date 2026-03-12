@@ -8,7 +8,7 @@ import { recordQRCheckIn, getLiveGymTraffic } from '@/lib/actions/checkin-flow';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { MemberInfoForm } from '@/components/member-portal/check-in/member-info-form';
 import { checkMemberInfoCollected } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import {
   Loader2,
   AlertTriangle,

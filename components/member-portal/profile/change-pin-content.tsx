@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { changeMemberPIN } from '@/lib/actions/pin-auth';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { ArrowLeft, Loader2, KeyRound } from 'lucide-react';
 
 interface ChangePinContentProps {

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createWorkoutRoutine, updateWorkoutRoutine } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import { Loader2, Save, Plus, Minus, Search, X, Dumbbell, ChevronDown, Check } from 'lucide-react';
 import { getCategorySvg } from '@/lib/svg-icons';
 import {
@@ -83,13 +83,16 @@ export function RoutineForm({
       });
   });
 
-  // Animate sheet in/out
+  // Animate sheet in/out + lock body scroll
   useEffect(() => {
     if (sheetOpen) {
+      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => setSheetVisible(true));
     } else {
       setSheetVisible(false);
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [sheetOpen]);
 
   // Merge gym library + local exercises
@@ -301,7 +304,7 @@ export function RoutineForm({
 
     if (result.success) {
       toast.success(isEditing ? 'Routine updated!' : 'Routine created!');
-      router.push(`/${gymSlug}/portal/trackers`);
+      router.push(`/${gymSlug}/portal/routines`);
     } else {
       toast.error(result.error || (isEditing ? 'Failed to update routine' : 'Failed to create routine'));
       setSaving(false);
@@ -410,10 +413,11 @@ export function RoutineForm({
 
       {/* ---- Exercise picker bottom sheet ---- */}
       {(sheetOpen || sheetVisible) && createPortal(
-        <div className="fixed inset-0 z-[9999]">
+        <div className="fixed inset-0 z-[9999] overscroll-none touch-none">
           {/* Backdrop */}
           <div
             onClick={closeSheet}
+            onTouchMove={(e) => e.preventDefault()}
             className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${
               sheetVisible ? 'opacity-100' : 'opacity-0'
             }`}
@@ -421,7 +425,7 @@ export function RoutineForm({
 
           {/* Sheet */}
           <div
-            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
+            className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out touch-auto overscroll-contain ${
               sheetVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{ maxHeight: '75vh' }}

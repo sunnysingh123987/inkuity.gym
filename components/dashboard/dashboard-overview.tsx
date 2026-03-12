@@ -22,7 +22,7 @@ import { FeedbackResponses } from '@/components/dashboard/feedback/feedback-resp
 import { type DashboardWidgetSettings } from '@/lib/dashboard-settings'
 import { Badge } from '@/components/ui/badge'
 import { updateMember } from '@/lib/actions/gyms'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 
 interface DashboardOverviewProps {
   gym: Gym | null

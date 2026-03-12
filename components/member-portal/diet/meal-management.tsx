@@ -7,7 +7,7 @@ import { MealFormDialog } from './meal-form-dialog';
 import { MealAddChoice } from './meal-add-choice';
 import { MealPhotoCapture } from './meal-photo-capture';
 import { saveMeal, toggleMealCompletion, getMealsForWeek, checkMealExists } from '@/lib/actions/members-portal';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import {
   Dialog,
   DialogContent,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { checkOutMember } from '@/lib/actions/checkin-flow';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface AutoCheckoutWarningProps {
   checkInTime: string;

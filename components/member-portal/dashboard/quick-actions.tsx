@@ -20,7 +20,7 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       svgIcon: getUiSvg('workouts'),
       bgColor: 'glass-action',
       hoverColor: 'glass-hover',
-      onClick: () => router.push(`/${gymSlug}/portal/trackers`),
+      onClick: () => router.push(`/${gymSlug}/portal/routines`),
     },
     {
       title: 'Create Routine',
@@ -36,7 +36,7 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       svgIcon: getUiSvg('diet'),
       bgColor: 'glass-action',
       hoverColor: 'glass-hover',
-      onClick: () => router.push(`/${gymSlug}/portal/meals`),
+      onClick: () => router.push(`/${gymSlug}/portal/diet`),
     },
     {
       title: 'PR Tracker',
@@ -44,7 +44,7 @@ export function QuickActions({ gymSlug }: QuickActionsProps) {
       svgIcon: getUiSvg('personal-record'),
       bgColor: 'glass-action',
       hoverColor: 'glass-hover',
-      onClick: () => router.push(`/${gymSlug}/portal/trackers?tab=prs`),
+      onClick: () => router.push(`/${gymSlug}/portal/routines?tab=prs`),
     },
   ];
 

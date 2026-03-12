@@ -12,7 +12,7 @@ import { ArrowLeft, User, Mail, Phone, Calendar, Ruler, Weight, ShieldAlert, Hea
 import { blacklistMember, unblacklistMember } from '@/lib/actions/blacklist'
 import { updateMember } from '@/lib/actions/gyms'
 import { DatePicker } from '@/components/ui/date-picker'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 
 const PLAN_MONTHS: Record<string, number> = {
   '1_month': 1,

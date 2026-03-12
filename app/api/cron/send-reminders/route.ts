@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         const payload: PushPayload = {
           title: `Today's ${mealLabel}`,
           body: meal.name || `Don't forget your ${mealLabel.toLowerCase()} today`,
-          url: `/${gymId}/portal/meals`,
+          url: `/${gymId}/portal/diet`,
           tag: `meal-${meal.id}`,
         };
 
@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
         const payload: PushPayload = {
           title: 'Tracker Reminder',
           body,
-          url: `/${top.gymId}/portal/trackers`,
+          url: `/${top.gymId}/portal/routines`,
           tag: `tracker-${memberId}-${today}`,
         };
 

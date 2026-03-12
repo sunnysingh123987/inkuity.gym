@@ -63,13 +63,15 @@ function BottomSheet({
 
   useEffect(() => {
     if (open) {
-      // Trigger slide-up animation on next frame
+      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true));
       });
     } else {
       setVisible(false);
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   const handleClose = useCallback(() => {
@@ -80,15 +82,16 @@ function BottomSheet({
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999]">
+    <div className="fixed inset-0 z-[9999] overscroll-none touch-none">
       {/* Backdrop */}
       <div
         className={`absolute inset-0 glass-backdrop transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
       {/* Sheet */}
       <div
-        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out ${
+        className={`absolute bottom-0 left-0 right-0 glass-sheet rounded-t-2xl transition-transform duration-300 ease-out touch-auto overscroll-contain ${
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: '85vh' }}

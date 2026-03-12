@@ -16,7 +16,7 @@ import {
 } from '@/lib/actions/reviews';
 import type { FeedbackConversation } from '@/lib/actions/reviews';
 import type { FeedbackMessage } from '@/types/database';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 
 interface FeedbackInboxProps {
   conversations: FeedbackConversation[];

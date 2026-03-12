@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SendHorizontal, Loader2, MessageSquare } from 'lucide-react';
 import { sendFeedbackMessage, getFeedbackMessages } from '@/lib/actions/reviews';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toaster';
 import type { FeedbackMessage } from '@/types/database';
 
 interface FeedbackChatProps {

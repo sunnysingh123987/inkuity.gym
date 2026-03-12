@@ -19,7 +19,7 @@ import {
 import { Plus, Users, Search, TrendingUp, Clock, Loader2, MessageCircle, IndianRupee, Mail, Upload, UserPlus } from 'lucide-react'
 import { sendFeedbackRequest } from '@/lib/actions/reviews'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toaster'
 
 interface MemberWithStats extends Omit<Member, 'gym'> {
   stats: {

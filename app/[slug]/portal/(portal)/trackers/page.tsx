@@ -1,11 +1,7 @@
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { redirect } from 'next/navigation';
-import {
-  getWorkoutRoutines,
-  getLastSessionDates,
-  getActiveWorkoutSession,
-} from '@/lib/actions/members-portal';
-import { RoutinesPageContent } from '@/components/member-portal/trackers/routines-page-content';
+import { getCustomTrackers } from '@/lib/actions/members-portal';
+import { TrackersStandalonePage } from '@/components/member-portal/trackers/trackers-standalone-page';
 
 export default async function TrackersPage({
   params,
@@ -16,44 +12,29 @@ export default async function TrackersPage({
   if (!authResult.success || !authResult.data) {
     redirect(`/${params.slug}/portal/sign-in`);
   }
+
   const { memberId, gymId } = authResult.data;
 
-  const [routinesResult, lastSessionDates, activeSessionResult] = await Promise.all([
-    getWorkoutRoutines(memberId, gymId),
-    getLastSessionDates(memberId, gymId),
-    getActiveWorkoutSession(memberId, gymId),
-  ]);
+  const trackersResult = await getCustomTrackers(memberId, gymId);
 
-  const activeSessionData = activeSessionResult.success ? activeSessionResult.data : null;
-  let activeSession = null;
-  if (activeSessionData) {
-    const sessionExercises = activeSessionData.session_exercises || [];
-    // Only count exercises that have at least one valid set (non-zero weight or reps)
-    const exercisesWithValidSets = sessionExercises.filter((e: any) => {
-      const sets = e.exercise_sets || [];
-      return sets.some((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0));
-    });
-    const totalExercises = sessionExercises.length;
-    const completedExercises = exercisesWithValidSets.length;
-    // Only show active session if at least one exercise has valid sets
-    if (completedExercises > 0) {
-      activeSession = {
-        routineId: activeSessionData.routine_id,
-        sessionId: activeSessionData.id,
-        totalExercises,
-        completedExercises,
-      };
-    }
-  }
+  const trackers = (trackersResult.data || []).map((tracker: any) => {
+    const todayLog = tracker.tracker_daily_log?.[0];
+    return {
+      id: tracker.id,
+      name: tracker.name,
+      unit: tracker.unit,
+      dailyTarget: tracker.daily_target,
+      current: todayLog?.current_value || 0,
+      icon: tracker.icon,
+      color: tracker.color,
+    };
+  });
 
   return (
-    <RoutinesPageContent
-      routines={routinesResult.data || []}
-      lastSessionDates={lastSessionDates}
-      gymSlug={params.slug}
+    <TrackersStandalonePage
       memberId={memberId}
       gymId={gymId}
-      activeSession={activeSession}
+      initialTrackers={trackers}
     />
   );
 }

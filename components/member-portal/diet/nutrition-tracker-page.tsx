@@ -4,10 +4,9 @@ import { useState, useMemo, useTransition, useEffect, useRef, useCallback } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pencil, Check, X, Info } from 'lucide-react';
+import { Pencil, Check, X, Info, Search, BarChart3 } from 'lucide-react';
 import { NutritionTracker, type NutritionTargets } from './nutrition-tracker';
 import { FoodLog, type FoodItem, type LoggedFoodEntry } from './food-log';
-import { CustomTrackers, type CustomTracker } from './custom-trackers';
 import {
   updateDietPlanTargets,
   addFoodLogEntry,
@@ -15,12 +14,6 @@ import {
   deleteFoodLogEntry,
   updateFoodItem,
   createFoodItem,
-  createCustomTracker,
-  updateCustomTracker,
-  deleteCustomTracker,
-  deleteAllCustomTrackers,
-  updateTrackerValue,
-  resetAllTrackerValues,
 } from '@/lib/actions/members-portal';
 
 // ─── Scroll Picker ───────────────────────────────────────────────────────────
@@ -137,7 +130,6 @@ interface NutritionTrackerPageProps {
   targets: NutritionTargets;
   initialFoodDatabase: FoodItem[];
   initialFoodLog: LoggedFoodEntry[];
-  initialTrackers: CustomTracker[];
   memberWeightKg?: number | null;
   memberHeightFeet?: number | null;
   memberHeightInches?: number | null;
@@ -151,14 +143,12 @@ export function NutritionTrackerPage({
   targets,
   initialFoodDatabase,
   initialFoodLog,
-  initialTrackers,
   memberWeightKg,
   memberHeightFeet,
   memberHeightInches,
   memberGender,
 }: NutritionTrackerPageProps) {
   const [foodLog, setFoodLog] = useState<LoggedFoodEntry[]>(initialFoodLog);
-  const [trackers, setTrackers] = useState<CustomTracker[]>(initialTrackers);
   const [foodDatabase, setFoodDatabase] = useState<FoodItem[]>(initialFoodDatabase);
   const [isPending, startTransition] = useTransition();
 
@@ -360,95 +350,6 @@ export function NutritionTrackerPage({
     });
   };
 
-  const handleIncrementTracker = (trackerId: string) => {
-    let newValue = 0;
-    setTrackers((prev) =>
-      prev.map((t) => {
-        if (t.id === trackerId) {
-          newValue = t.current + 1;
-          return { ...t, current: newValue };
-        }
-        return t;
-      })
-    );
-    startTransition(async () => {
-      await updateTrackerValue(trackerId, memberId, newValue);
-    });
-  };
-
-  const handleDecrementTracker = (trackerId: string) => {
-    let newValue = 0;
-    setTrackers((prev) =>
-      prev.map((t) => {
-        if (t.id === trackerId) {
-          newValue = Math.max(0, t.current - 1);
-          return { ...t, current: newValue };
-        }
-        return t;
-      })
-    );
-    startTransition(async () => {
-      await updateTrackerValue(trackerId, memberId, newValue);
-    });
-  };
-
-  const handleAddTracker = (tracker: Omit<CustomTracker, 'id' | 'current'>) => {
-    const tempTracker = { ...tracker, id: `temp-${Date.now()}`, current: 0 };
-    setTrackers((prev) => [...prev, tempTracker]);
-    startTransition(async () => {
-      const result = await createCustomTracker({
-        memberId,
-        gymId,
-        name: tracker.name,
-        unit: tracker.unit,
-        dailyTarget: tracker.dailyTarget,
-        icon: tracker.icon,
-        color: tracker.color,
-      });
-      if (result.success && result.data) {
-        setTrackers((prev) =>
-          prev.map((t) => (t.id === tempTracker.id ? { ...t, id: result.data.id } : t))
-        );
-      }
-    });
-  };
-
-  const handleDeleteTracker = (trackerId: string) => {
-    setTrackers((prev) => prev.filter((t) => t.id !== trackerId));
-    startTransition(async () => {
-      await deleteCustomTracker(trackerId);
-    });
-  };
-
-  const handleEditTracker = (trackerId: string, updates: Partial<CustomTracker>) => {
-    setTrackers((prev) =>
-      prev.map((t) => (t.id === trackerId ? { ...t, ...updates } : t))
-    );
-    startTransition(async () => {
-      await updateCustomTracker(trackerId, {
-        name: updates.name,
-        unit: updates.unit,
-        dailyTarget: updates.dailyTarget,
-        icon: updates.icon,
-        color: updates.color,
-      });
-    });
-  };
-
-  const handleResetAll = () => {
-    setTrackers((prev) => prev.map((t) => ({ ...t, current: 0 })));
-    startTransition(async () => {
-      await resetAllTrackerValues(memberId);
-    });
-  };
-
-  const handleDeleteAll = () => {
-    setTrackers([]);
-    startTransition(async () => {
-      await deleteAllCustomTrackers(memberId, gymId);
-    });
-  };
-
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -472,7 +373,7 @@ export function NutritionTrackerPage({
       </div>
 
       {/* Section 2: Today's Nutrition Counters */}
-      <NutritionTracker targets={activeTargets} consumed={todayNutrition} />
+      <NutritionTracker targets={activeTargets} consumed={todayNutrition} maintenanceCalories={maintenanceCalories} />
 
       {/* Section 4: Food Log */}
       <FoodLog
@@ -485,49 +386,21 @@ export function NutritionTrackerPage({
         onEditDatabaseFood={handleEditDatabaseFood}
       />
 
-      {/* Section 5: Custom Trackers */}
-      <CustomTrackers
-        trackers={trackers}
-        onIncrement={handleIncrementTracker}
-        onDecrement={handleDecrementTracker}
-        onAddTracker={handleAddTracker}
-        onDeleteTracker={handleDeleteTracker}
-        onEditTracker={handleEditTracker}
-        onResetAll={handleResetAll}
-        onDeleteAll={handleDeleteAll}
-      />
-
-      {/* Section 6: How Does This Work */}
-      <div className="rounded-xl glass p-5 space-y-4">
-        <h3 className="text-base font-semibold text-white">How does this work?</h3>
-        <div className="space-y-3">
-          <div className="flex gap-3">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-cyan-600/15 text-brand-cyan-400 text-xs font-bold shrink-0 mt-0.5">1</div>
-            <div>
-              <p className="text-sm font-medium text-white">Set your nutrition targets</p>
-              <p className="text-xs text-slate-400 mt-0.5">Tap the edit icon on the nutrition rings to set your daily calorie, protein, carbs, and fat goals.</p>
-            </div>
+      {/* Section 5: How Does This Work */}
+      <div className="mt-6 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">How it works</h4>
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-3">
+            <Pencil className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Set your daily calorie, protein, carbs, and fat goals using the edit icon</p>
           </div>
-          <div className="flex gap-3">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-cyan-600/15 text-brand-cyan-400 text-xs font-bold shrink-0 mt-0.5">2</div>
-            <div>
-              <p className="text-sm font-medium text-white">Log your meals</p>
-              <p className="text-xs text-slate-400 mt-0.5">Tap &quot;Add Meal&quot; to search from the food database or add a custom food item with its nutritional values.</p>
-            </div>
+          <div className="flex items-start gap-3">
+            <Search className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Log meals by searching the food database or adding custom items</p>
           </div>
-          <div className="flex gap-3">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-cyan-600/15 text-brand-cyan-400 text-xs font-bold shrink-0 mt-0.5">3</div>
-            <div>
-              <p className="text-sm font-medium text-white">Track your progress</p>
-              <p className="text-xs text-slate-400 mt-0.5">The nutrition rings update in real-time as you log food. Tap any logged entry to edit or delete it.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-brand-cyan-600/15 text-brand-cyan-400 text-xs font-bold shrink-0 mt-0.5">4</div>
-            <div>
-              <p className="text-sm font-medium text-white">Use custom trackers</p>
-              <p className="text-xs text-slate-400 mt-0.5">Add custom trackers for water intake, supplements, or anything else you want to monitor daily.</p>
-            </div>
+          <div className="flex items-start gap-3">
+            <BarChart3 className="h-4 w-4 text-brand-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-slate-500">Your nutrition tracker updates in real-time as you log food</p>
           </div>
         </div>
       </div>
