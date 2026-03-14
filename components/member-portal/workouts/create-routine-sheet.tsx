@@ -10,6 +10,7 @@ import { getCategorySvg } from '@/lib/svg-icons';
 import {
   getExerciseLibrary,
   createWorkoutRoutine,
+  updateWorkoutRoutine,
 } from '@/lib/actions/members-portal';
 import {
   EXERCISES as LOCAL_EXERCISES,
@@ -24,6 +25,8 @@ interface CreateRoutineSheetProps {
   memberId: string;
   gymId: string;
   gymSlug: string;
+  /** Pass a routine object to open in edit mode */
+  editRoutine?: any;
 }
 
 interface SelectedExercise {
@@ -55,15 +58,18 @@ export function CreateRoutineSheet({
   memberId,
   gymId,
   gymSlug,
+  editRoutine,
 }: CreateRoutineSheetProps) {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState<Step>('name');
+  const isEditing = !!editRoutine;
 
   // Form state
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [saving, setSaving] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   // Exercise picker state
   const [libraryExercises, setLibraryExercises] = useState<any[]>([]);
@@ -72,6 +78,32 @@ export function CreateRoutineSheet({
   const [query, setQuery] = useState('');
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
   const [expandedEquipmentId, setExpandedEquipmentId] = useState<string | null>(null);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (open && editRoutine && !initialized) {
+      setName(editRoutine.name || '');
+      const exercises: SelectedExercise[] = (editRoutine.routine_exercises || [])
+        .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+        .map((re: any) => {
+          const lib = Array.isArray(re.exercise_library)
+            ? re.exercise_library[0]
+            : re.exercise_library;
+          return {
+            exerciseId: lib?.id || re.exercise_id || re.id,
+            name: lib?.name || 'Exercise',
+            category: lib?.category || 'other',
+            sets: re.sets || 3,
+            reps: re.reps || 10,
+            rest_seconds: re.rest_seconds || 60,
+            notes: re.notes || '',
+            source: 'library' as const,
+          };
+        });
+      setSelectedExercises(exercises);
+      setInitialized(true);
+    }
+  }, [open, editRoutine, initialized]);
 
   // Animate in/out + scroll lock
   useEffect(() => {
@@ -249,13 +281,13 @@ export function CreateRoutineSheet({
     setVisible(false);
     setTimeout(() => {
       onClose();
-      // Reset state after close animation
       setStep('name');
       setName('');
       setSelectedExercises([]);
       setQuery('');
       setMuscleFilter(null);
       setExpandedEquipmentId(null);
+      setInitialized(false);
     }, 300);
   };
 
@@ -288,15 +320,23 @@ export function CreateRoutineSheet({
       notes: ex.notes || undefined,
     }));
 
-    const result = await createWorkoutRoutine({
-      memberId,
-      gymId,
-      name: name.trim(),
-      exercises: exercisesPayload,
-    });
+    let result;
+    if (isEditing) {
+      result = await updateWorkoutRoutine(editRoutine.id, {
+        name: name.trim(),
+        exercises: exercisesPayload,
+      });
+    } else {
+      result = await createWorkoutRoutine({
+        memberId,
+        gymId,
+        name: name.trim(),
+        exercises: exercisesPayload,
+      });
+    }
 
     if (result.success) {
-      toast.success('Routine created!');
+      toast.success(isEditing ? 'Routine updated!' : 'Routine created!');
       setVisible(false);
       setTimeout(() => {
         onClose();
@@ -306,10 +346,11 @@ export function CreateRoutineSheet({
         setQuery('');
         setMuscleFilter(null);
         setExpandedEquipmentId(null);
+        setInitialized(false);
         router.refresh();
       }, 300);
     } else {
-      toast.error(result.error || 'Failed to create routine');
+      toast.error(result.error || (isEditing ? 'Failed to update routine' : 'Failed to create routine'));
     }
     setSaving(false);
   };
@@ -352,7 +393,7 @@ export function CreateRoutineSheet({
               </button>
             )}
             <h2 className="text-lg font-bold text-white">
-              {step === 'name' ? 'New Routine' : 'Add Exercises'}
+              {step === 'name' ? (isEditing ? 'Edit Routine' : 'New Routine') : 'Add Exercises'}
             </h2>
           </div>
           <button
@@ -440,12 +481,12 @@ export function CreateRoutineSheet({
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
+                    {isEditing ? 'Saving...' : 'Creating...'}
                   </>
                 ) : (
                   <>
                     <Check className="h-4 w-4" />
-                    Create Routine
+                    {isEditing ? 'Save Changes' : 'Create Routine'}
                   </>
                 )}
               </button>

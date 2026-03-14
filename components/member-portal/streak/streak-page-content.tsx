@@ -12,6 +12,7 @@ import { getCheckInCalendarData } from '@/lib/actions/members-portal';
 interface StreakPageContentProps {
   streak: number;
   checkedInToday?: boolean;
+  streakAtRisk?: boolean;
   initialCheckInDays: Record<string, number>;
   memberId: string;
   gymId: string;
@@ -27,11 +28,12 @@ const WEEKDAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export function StreakPageContent({
   streak,
   checkedInToday = false,
+  streakAtRisk = false,
   initialCheckInDays,
   memberId,
   gymId,
 }: StreakPageContentProps) {
-  const atRisk = streak > 0 && !checkedInToday;
+  const atRisk = streakAtRisk;
   const router = useRouter();
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1);
@@ -92,10 +94,12 @@ export function StreakPageContent({
       </div>
 
       {/* Motivational text */}
-      <p className="text-sm text-slate-400 text-center">
+      <p className={`text-sm text-center ${atRisk ? 'text-amber-400' : 'text-slate-400'}`}>
         {streak === 0
           ? "Lost the streak? Don't lose the drive. Let's start fresh!"
-          : "You're on fire! Keep the momentum going!"}
+          : atRisk
+            ? "Your streak is at risk! Check in today to keep it alive."
+            : "You're on fire! Keep the momentum going!"}
       </p>
 
       {/* Streak hero */}
@@ -104,7 +108,9 @@ export function StreakPageContent({
           <span className="text-5xl font-black text-white">{streak}</span>
           <AnimatedFire streak={streak} atRisk={atRisk} className="h-12 w-12" />
         </div>
-        <span className="text-base font-semibold text-slate-400">{streak === 1 ? 'day' : 'days'} streak</span>
+        <span className={`text-base font-semibold ${atRisk ? 'text-amber-400' : 'text-slate-400'}`}>
+          {streak === 1 ? 'day' : 'days'} streak{atRisk ? ' at risk' : ''}
+        </span>
       </div>
 
       {/* Calendar */}

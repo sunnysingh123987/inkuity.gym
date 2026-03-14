@@ -126,11 +126,25 @@ export async function getMemberCheckInStats(memberId: string, gymId: string) {
 }
 
 /**
- * Calculate current streak
+ * Get the local date string (YYYY-MM-DD) for a UTC timestamp in a given timezone.
+ */
+function toLocalDateString(utcTimestamp: string, timeZone: string): string {
+  return new Date(utcTimestamp).toLocaleDateString('en-CA', { timeZone });
+}
+
+/**
+ * Calculate current streak (timezone-aware using gym's timezone)
  */
 export async function getMemberStreak(memberId: string, gymId: string) {
   try {
     const supabase = createAdminSupabaseClient();
+
+    // Get gym timezone
+    let tz = 'Asia/Kolkata';
+    try {
+      const { data: gym } = await supabase.from('gyms').select('timezone').eq('id', gymId).single();
+      if (gym?.timezone) tz = gym.timezone;
+    } catch {}
 
     const { data: recentCheckIns } = await supabase
       .from('check_ins')
@@ -141,49 +155,58 @@ export async function getMemberStreak(memberId: string, gymId: string) {
       .limit(60); // Get last 60 check-ins
 
     if (!recentCheckIns || recentCheckIns.length === 0) {
-      return { success: true, streak: 0 };
+      return { success: true, streak: 0, checkedInToday: false, atRisk: false };
     }
 
-    let currentStreak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Get today's date in gym's timezone
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    const lastCheckInStr = toLocalDateString(recentCheckIns[0].check_in_at, tz);
 
-    const lastCheckInDate = new Date(recentCheckIns[0].check_in_at);
-    lastCheckInDate.setHours(0, 0, 0, 0);
-
-    // Check if last check-in was today or yesterday
-    const daysDiff = Math.floor(
-      (today.getTime() - lastCheckInDate.getTime()) / (1000 * 60 * 60 * 24)
+    // Calculate day difference using date strings (avoids timezone drift)
+    const todayMs = new Date(todayStr).getTime();
+    const lastCheckInMs = new Date(lastCheckInStr).getTime();
+    const daysDiff = Math.round((todayMs - lastCheckInMs) / (1000 * 60 * 60 * 24));
+    const checkedInToday = daysDiff === 0;
+    // "yesterday" in gym timezone
+    const yesterdayStr = new Date(todayMs - 86400000).toLocaleDateString('en-CA', { timeZone: 'UTC' });
+    const checkedInYesterday = recentCheckIns.some(
+      (ci) => toLocalDateString(ci.check_in_at, tz) === yesterdayStr
     );
+
+    let currentStreak = 0;
 
     if (daysDiff <= 1) {
       currentStreak = 1;
-      let prevDate = lastCheckInDate;
+      let prevDateStr = lastCheckInStr;
 
       for (let i = 1; i < recentCheckIns.length; i++) {
-        const checkInDate = new Date(recentCheckIns[i].check_in_at);
-        checkInDate.setHours(0, 0, 0, 0);
+        const checkInStr = toLocalDateString(recentCheckIns[i].check_in_at, tz);
 
-        const diff = Math.floor(
-          (prevDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diff === 0) {
+        if (checkInStr === prevDateStr) {
           // Same day duplicate, skip
           continue;
-        } else if (diff === 1) {
+        }
+
+        const prevMs = new Date(prevDateStr).getTime();
+        const currMs = new Date(checkInStr).getTime();
+        const diff = Math.round((prevMs - currMs) / (1000 * 60 * 60 * 24));
+
+        if (diff === 1) {
           currentStreak++;
-          prevDate = checkInDate;
+          prevDateStr = checkInStr;
         } else {
           break;
         }
       }
     }
 
-    return { success: true, streak: currentStreak };
+    // atRisk = has a streak, skipped yesterday, and hasn't checked in today
+    const atRisk = currentStreak > 0 && !checkedInYesterday && !checkedInToday;
+
+    return { success: true, streak: currentStreak, checkedInToday, atRisk };
   } catch (error: any) {
     console.error('Error calculating streak:', error);
-    return { success: false, error: error.message, streak: 0 };
+    return { success: false, error: error.message, streak: 0, checkedInToday: false, atRisk: false };
   }
 }
 
@@ -664,7 +687,7 @@ export async function createWorkoutRoutine(input: CreateRoutineInput) {
       if (exercisesError) throw exercisesError;
     }
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true, data: routine };
   } catch (error: any) {
@@ -753,7 +776,7 @@ export async function updateWorkoutRoutine(
       }
     }
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true, data: null };
   } catch (error: any) {
@@ -776,7 +799,7 @@ export async function deleteWorkoutRoutine(routineId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -832,7 +855,7 @@ export async function addExerciseToRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -857,7 +880,7 @@ export async function removeExerciseFromRoutine(
 
     if (error) throw error;
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -934,7 +957,7 @@ export async function startWorkoutSession(
       }
     }
 
-    revalidatePath('/portal/sessions');
+    revalidatePath('/[slug]/portal/sessions', 'page');
 
     return { success: true, data: session };
   } catch (error: any) {
@@ -1100,6 +1123,54 @@ export async function deleteWorkoutSession(sessionId: string) {
  * Ensure a workout session exists for a routine. Handles conflict detection.
  * Returns the session if it exists/created, or a conflict object if another routine is active today.
  */
+/**
+ * Sync routine exercises into an existing session — adds any exercises
+ * present in the routine but missing from the session.
+ */
+async function syncSessionExercises(sessionId: string, routineId: string) {
+  const supabase = createAdminSupabaseClient();
+
+  // Get current routine exercises
+  const { data: routineExercises } = await supabase
+    .from('routine_exercises')
+    .select('exercise_id, order_index')
+    .eq('routine_id', routineId)
+    .order('order_index');
+
+  if (!routineExercises || routineExercises.length === 0) return;
+
+  // Get current session exercises
+  const { data: sessionExercises } = await supabase
+    .from('session_exercises')
+    .select('exercise_id')
+    .eq('session_id', sessionId);
+
+  const existingIds = new Set((sessionExercises || []).map((se) => se.exercise_id));
+
+  // Find missing exercises
+  const missing = routineExercises.filter((re) => !existingIds.has(re.exercise_id));
+  if (missing.length === 0) return;
+
+  // Get max order_index in the session
+  const { data: maxOrder } = await supabase
+    .from('session_exercises')
+    .select('order_index')
+    .eq('session_id', sessionId)
+    .order('order_index', { ascending: false })
+    .limit(1);
+
+  let nextOrder = (maxOrder && maxOrder.length > 0 ? maxOrder[0].order_index : -1) + 1;
+
+  const inserts = missing.map((re) => ({
+    session_id: sessionId,
+    exercise_id: re.exercise_id,
+    order_index: nextOrder++,
+    completed: false,
+  }));
+
+  await supabase.from('session_exercises').insert(inserts);
+}
+
 export async function ensureWorkoutSession(
   memberId: string,
   gymId: string,
@@ -1117,9 +1188,14 @@ export async function ensureWorkoutSession(
     const recorded = await getTodayRecordedSession(memberId, gymId);
 
     if (recorded.success && recorded.data) {
-      // Same routine — reuse
+      // Same routine — reuse, but sync any new exercises from the routine
       if (recorded.data.routineId === routineId) {
         const existing = await getActiveWorkoutSession(memberId, gymId, routineId);
+        if (existing.data) {
+          await syncSessionExercises(existing.data.id, routineId);
+          const refreshed = await getActiveWorkoutSession(memberId, gymId, routineId);
+          return { success: true, data: refreshed.data, conflict: false };
+        }
         return { success: true, data: existing.data, conflict: false };
       }
 
@@ -1136,7 +1212,9 @@ export async function ensureWorkoutSession(
     // No recorded session today — check if there's an empty session for this routine
     const existing = await getActiveWorkoutSession(memberId, gymId, routineId);
     if (existing.success && existing.data) {
-      return { success: true, data: existing.data, conflict: false };
+      await syncSessionExercises(existing.data.id, routineId);
+      const refreshed = await getActiveWorkoutSession(memberId, gymId, routineId);
+      return { success: true, data: refreshed.data, conflict: false };
     }
 
     // Create new session
@@ -1197,7 +1275,7 @@ export async function addSessionExercise(
 
     if (error) throw error;
 
-    revalidatePath('/portal/sessions');
+    revalidatePath('/[slug]/portal/sessions', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -1470,9 +1548,11 @@ export async function getActiveDietPlan(memberId: string, gymId: string) {
       .eq('member_id', memberId)
       .eq('gym_id', gymId)
       .eq('is_active', true)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
 
     return { success: true, data: data || null };
   } catch (error: any) {
@@ -1502,6 +1582,16 @@ export async function createDietPlan(input: CreateDietPlanInput) {
   try {
     const supabase = createAdminSupabaseClient();
 
+    // Deactivate any existing active plans for this member
+    if (input.isActive !== false) {
+      await supabase
+        .from('diet_plans')
+        .update({ is_active: false })
+        .eq('member_id', input.memberId)
+        .eq('gym_id', input.gymId)
+        .eq('is_active', true);
+    }
+
     const { data, error } = await supabase
       .from('diet_plans')
       .insert({
@@ -1522,7 +1612,7 @@ export async function createDietPlan(input: CreateDietPlanInput) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -1670,7 +1760,7 @@ export async function saveMeal(mealData: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -1695,7 +1785,7 @@ export async function toggleMealCompletion(mealId: string, completed: boolean) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -1784,7 +1874,7 @@ export async function updateMemberPreferences(
 
     if (error) throw error;
 
-    revalidatePath('/portal/settings');
+    revalidatePath('/[slug]/portal/settings', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2261,7 +2351,7 @@ export async function skipRoutineForToday(
 
     if (error) throw error;
 
-    revalidatePath('/portal/routines');
+    revalidatePath('/[slug]/portal/routines', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2366,7 +2456,7 @@ export async function createFoodItem(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2406,7 +2496,7 @@ export async function updateFoodItem(
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2426,7 +2516,7 @@ export async function deleteFoodItem(foodItemId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -2496,7 +2586,7 @@ export async function addFoodLogEntry(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2538,7 +2628,7 @@ export async function updateFoodLogEntry(
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2558,7 +2648,7 @@ export async function deleteFoodLogEntry(entryId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -2598,7 +2688,7 @@ export async function updateDietPlanTargets(
 
     if (error) throw error;
 
-    revalidatePath('/portal/diet');
+    revalidatePath('/[slug]/portal/diet', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2668,7 +2758,7 @@ export async function createCustomTracker(input: {
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2706,7 +2796,7 @@ export async function updateCustomTracker(
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2726,7 +2816,7 @@ export async function deleteCustomTracker(trackerId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -2747,7 +2837,7 @@ export async function deleteAllCustomTrackers(memberId: string, gymId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -2785,7 +2875,7 @@ export async function updateTrackerValue(
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true, data };
   } catch (error: any) {
@@ -2807,7 +2897,7 @@ export async function resetAllTrackerValues(memberId: string) {
 
     if (error) throw error;
 
-    revalidatePath('/portal/trackers');
+    revalidatePath('/[slug]/portal/trackers', 'page');
 
     return { success: true };
   } catch (error: any) {
@@ -2836,26 +2926,35 @@ export async function seedDefaultFoodItems(memberId: string, gymId: string) {
     }
 
     const defaults = [
-      { name: 'Chicken Breast', serving_size: '100g', calories_per_serving: 165, protein: 31, carbs: 0, fat: 4 },
-      { name: 'Brown Rice', serving_size: '1 cup cooked', calories_per_serving: 216, protein: 5, carbs: 45, fat: 2 },
-      { name: 'Broccoli', serving_size: '1 cup', calories_per_serving: 55, protein: 4, carbs: 11, fat: 1 },
-      { name: 'Salmon Fillet', serving_size: '100g', calories_per_serving: 208, protein: 20, carbs: 0, fat: 13 },
+      // Indian staples
+      { name: 'Roti / Chapati', serving_size: '1 piece', calories_per_serving: 104, protein: 3, carbs: 18, fat: 3 },
+      { name: 'White Rice', serving_size: '1 katori', calories_per_serving: 180, protein: 4, carbs: 40, fat: 0 },
+      { name: 'Dal (Moong/Masoor)', serving_size: '1 katori', calories_per_serving: 120, protein: 9, carbs: 15, fat: 2 },
+      { name: 'Paneer', serving_size: '100g', calories_per_serving: 265, protein: 18, carbs: 4, fat: 20 },
+      { name: 'Curd / Dahi', serving_size: '1 katori', calories_per_serving: 98, protein: 6, carbs: 5, fat: 5 },
+      { name: 'Milk (Toned)', serving_size: '1 glass (200ml)', calories_per_serving: 120, protein: 6, carbs: 10, fat: 6 },
+      { name: 'Paratha', serving_size: '1 piece', calories_per_serving: 180, protein: 4, carbs: 25, fat: 7 },
+      { name: 'Idli', serving_size: '2 pieces', calories_per_serving: 130, protein: 4, carbs: 26, fat: 1 },
+      { name: 'Dosa (Plain)', serving_size: '1 piece', calories_per_serving: 133, protein: 4, carbs: 22, fat: 3 },
+      { name: 'Poha', serving_size: '1 katori', calories_per_serving: 180, protein: 4, carbs: 32, fat: 5 },
+      { name: 'Upma', serving_size: '1 katori', calories_per_serving: 195, protein: 5, carbs: 28, fat: 7 },
+      { name: 'Rajma', serving_size: '1 katori', calories_per_serving: 140, protein: 9, carbs: 18, fat: 3 },
+      { name: 'Chole / Chana', serving_size: '1 katori', calories_per_serving: 160, protein: 9, carbs: 22, fat: 4 },
+      { name: 'Sabzi (Mixed Veg)', serving_size: '1 katori', calories_per_serving: 90, protein: 3, carbs: 10, fat: 4 },
+      { name: 'Chai', serving_size: '1 cup', calories_per_serving: 50, protein: 2, carbs: 6, fat: 2 },
+      // Common proteins
       { name: 'Eggs', serving_size: '1 large', calories_per_serving: 72, protein: 6, carbs: 0, fat: 5 },
-      { name: 'Greek Yogurt', serving_size: '1 cup', calories_per_serving: 130, protein: 22, carbs: 8, fat: 1 },
-      { name: 'Banana', serving_size: '1 medium', calories_per_serving: 105, protein: 1, carbs: 27, fat: 0 },
-      { name: 'Oatmeal', serving_size: '1 cup cooked', calories_per_serving: 154, protein: 5, carbs: 27, fat: 3 },
-      { name: 'Sweet Potato', serving_size: '1 medium', calories_per_serving: 103, protein: 2, carbs: 24, fat: 0 },
-      { name: 'Almonds', serving_size: '1 oz (23 nuts)', calories_per_serving: 164, protein: 6, carbs: 6, fat: 14 },
-      { name: 'Avocado', serving_size: '1/2 medium', calories_per_serving: 120, protein: 2, carbs: 6, fat: 11 },
-      { name: 'Whole Wheat Bread', serving_size: '1 slice', calories_per_serving: 81, protein: 4, carbs: 14, fat: 1 },
+      { name: 'Chicken Breast', serving_size: '100g', calories_per_serving: 165, protein: 31, carbs: 0, fat: 4 },
       { name: 'Protein Shake', serving_size: '1 scoop', calories_per_serving: 120, protein: 24, carbs: 3, fat: 1 },
+      // Fruits & snacks
+      { name: 'Banana', serving_size: '1 medium', calories_per_serving: 105, protein: 1, carbs: 27, fat: 0 },
       { name: 'Apple', serving_size: '1 medium', calories_per_serving: 95, protein: 0, carbs: 25, fat: 0 },
-      { name: 'Cottage Cheese', serving_size: '1 cup', calories_per_serving: 206, protein: 28, carbs: 6, fat: 9 },
-      { name: 'Turkey Breast', serving_size: '100g', calories_per_serving: 135, protein: 30, carbs: 0, fat: 1 },
-      { name: 'Quinoa', serving_size: '1 cup cooked', calories_per_serving: 222, protein: 8, carbs: 39, fat: 4 },
-      { name: 'Spinach', serving_size: '2 cups raw', calories_per_serving: 14, protein: 2, carbs: 2, fat: 0 },
-      { name: 'Peanut Butter', serving_size: '2 tbsp', calories_per_serving: 190, protein: 7, carbs: 7, fat: 16 },
-      { name: 'Tuna (canned)', serving_size: '1 can (85g)', calories_per_serving: 100, protein: 22, carbs: 0, fat: 1 },
+      { name: 'Almonds', serving_size: '1 handful (15g)', calories_per_serving: 87, protein: 3, carbs: 3, fat: 7 },
+      { name: 'Peanut Butter', serving_size: '1 tbsp', calories_per_serving: 95, protein: 4, carbs: 3, fat: 8 },
+      // Grains & others
+      { name: 'Oats', serving_size: '1 katori cooked', calories_per_serving: 154, protein: 5, carbs: 27, fat: 3 },
+      { name: 'Brown Rice', serving_size: '1 katori', calories_per_serving: 216, protein: 5, carbs: 45, fat: 2 },
+      { name: 'Whole Wheat Bread', serving_size: '1 slice', calories_per_serving: 81, protein: 4, carbs: 14, fat: 1 },
     ];
 
     const rows = defaults.map((d) => ({

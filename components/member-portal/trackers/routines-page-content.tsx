@@ -27,6 +27,7 @@ export function RoutinesPageContent({
   const router = useRouter();
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
   const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState<any>(null);
   // Keyed by routine ID so progress persists after sheet closes
   const [liveProgressMap, setLiveProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
 
@@ -115,6 +116,7 @@ export function RoutinesPageContent({
                   : (activeSession && routine.id === activeSession.routineId ? { total: activeSession.totalExercises, completed: activeSession.completedExercises } : undefined)
               }
               onSelect={(r) => setSelectedRoutine(r)}
+              onEdit={(r) => setEditingRoutine(r)}
             />
           ))}
         </div>
@@ -175,6 +177,16 @@ export function RoutinesPageContent({
         memberId={memberId}
         gymId={gymId}
         gymSlug={gymSlug}
+      />
+
+      {/* Edit routine bottom sheet */}
+      <CreateRoutineSheet
+        open={!!editingRoutine}
+        onClose={() => setEditingRoutine(null)}
+        memberId={memberId}
+        gymId={gymId}
+        gymSlug={gymSlug}
+        editRoutine={editingRoutine}
       />
     </div>
   );

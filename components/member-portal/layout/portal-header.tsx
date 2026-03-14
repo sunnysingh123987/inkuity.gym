@@ -22,13 +22,14 @@ interface PortalHeaderProps {
   };
   streak?: number;
   checkedInToday?: boolean;
+  streakAtRisk?: boolean;
 }
 
-export function PortalHeader({ gym, member, streak = 0, checkedInToday = false }: PortalHeaderProps) {
+export function PortalHeader({ gym, member, streak = 0, checkedInToday = false, streakAtRisk = false }: PortalHeaderProps) {
   const pathname = usePathname();
   const initial = (member.full_name || 'M').charAt(0).toUpperCase();
   const slug = gym.slug || gym.name.toLowerCase().replace(/\s+/g, '-');
-  const atRisk = streak > 0 && !checkedInToday;
+  const atRisk = streakAtRisk;
   const isStreakPage = pathname?.endsWith('/streak');
   const sweepRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +98,9 @@ export function PortalHeader({ gym, member, streak = 0, checkedInToday = false }
                     }}
                   />
                   <AnimatedFire streak={streak} atRisk={atRisk} className="h-5 w-5 relative z-[1]" />
-                  <span className="text-sm font-semibold text-white relative z-[1]">{streak} {streak === 1 ? 'day' : 'days'} streak</span>
+                  <span className={`text-sm font-semibold relative z-[1] ${atRisk ? 'text-amber-400' : 'text-white'}`}>
+                    {streak} {streak === 1 ? 'day' : 'days'} streak{atRisk ? ' at risk' : ''}
+                  </span>
                 </div>
               </Link>
             )}

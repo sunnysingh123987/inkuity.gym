@@ -8,7 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, History, MoreVertical, Zap, Plus, Search, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, History, MoreVertical, Plus, Search, X, Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import electricPower from '@/public/icons/animated/electric-power.json';
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 import { ExerciseSetLogger, type ExerciseSetLoggerHandle } from './exercise-set-logger';
 import {
   getExerciseLibrary,
@@ -19,6 +23,23 @@ import { toast } from '@/components/ui/toaster';
 interface ActiveSessionTrackerProps {
   session: any;
   gymSlug: string;
+}
+
+function boltColor(index: number, total: number): [number, number, number] {
+  const setNum = total - index;
+  const t = Math.min((setNum - 1) / 3, 1);
+  if (t <= 0.5) {
+    const p = t / 0.5;
+    return [0.918 + (0.976 - 0.918) * p, 0.702 + (0.451 - 0.702) * p, 0.031 + (0.086 - 0.031) * p];
+  }
+  const p = (t - 0.5) / 0.5;
+  return [0.976 + (0.937 - 0.976) * p, 0.451 + (0.267 - 0.451) * p, 0.086 + (0.267 - 0.086) * p];
+}
+
+function coloredBolt(r: number, g: number, b: number) {
+  const d = JSON.parse(JSON.stringify(electricPower));
+  d.layers[0].shapes[0].it[1].g.k.k = [0, r, g, b, 0.5, r, g, b, 1, r, g, b];
+  return d;
 }
 
 function getTodaySets(exerciseSets: any[]): any[] {
@@ -58,6 +79,24 @@ export function ActiveSessionTracker({
     return counts;
   });
 
+  const [lastLoggedExerciseId, setLastLoggedExerciseId] = useState<string | null>(() => {
+    let latestTime = 0;
+    let latestId: string | null = null;
+    (session.session_exercises || []).forEach((se: any) => {
+      const validSets = getTodaySets(se.exercise_sets || []).filter(
+        (s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0)
+      );
+      if (validSets.length > 0) {
+        const maxTime = Math.max(...validSets.map((s: any) => new Date(s.created_at).getTime()));
+        if (maxTime > latestTime) {
+          latestTime = maxTime;
+          latestId = se.id;
+        }
+      }
+    });
+    return latestId;
+  });
+
   // Add exercise picker state
   const [showPicker, setShowPicker] = useState(false);
   const [libraryExercises, setLibraryExercises] = useState<any[]>([]);
@@ -95,6 +134,7 @@ export function ActiveSessionTracker({
 
   const handleSetsChange = (exerciseId: string, count: number) => {
     setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
+    if (count > 0) setLastLoggedExerciseId(exerciseId);
   };
 
   const handleOpenPicker = async () => {
@@ -189,13 +229,26 @@ export function ActiveSessionTracker({
                 <div className="flex items-center gap-2">
                   {/* Zap icons for logged sets */}
                   {loggedSets > 0 && (
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: Math.min(loggedSets, 5) }).map((_, i) => (
-                        <Zap
-                          key={i}
-                          className="h-4 w-4 text-brand-cyan-400 fill-brand-cyan-400"
-                        />
-                      ))}
+                    <div className="flex items-end -space-x-3">
+                      {(() => {
+                        const count = Math.min(loggedSets, 5);
+                        return Array.from({ length: count }).map((_, i) => {
+                          const isAnimated = i === 0 && sessionExercise.id === lastLoggedExerciseId;
+                          const [r, g, b] = boltColor(i, count);
+                          const scale = 0.6 + 0.4 * ((count - 1 - i) / Math.max(count - 1, 1));
+                          return (
+                            <Lottie
+                              key={i}
+                              animationData={coloredBolt(r, g, b)}
+                              loop={isAnimated}
+                              autoplay={isAnimated}
+                              initialSegment={isAnimated ? undefined : [13, 14] as [number, number]}
+                              className="h-8 w-8"
+                              style={{ transform: `scale(${scale})` }}
+                            />
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                   {/* 3-dot menu */}

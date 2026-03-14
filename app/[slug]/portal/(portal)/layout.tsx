@@ -2,10 +2,13 @@ import { redirect } from 'next/navigation';
 import { getAuthenticatedMember } from '@/lib/actions/pin-auth';
 import { PortalHeader } from '@/components/member-portal/layout/portal-header';
 import { PortalNav } from '@/components/member-portal/layout/portal-nav';
+import { LiveSessionWidget } from '@/components/member-portal/layout/live-session-widget';
 import { RouteLoadingBar } from '@/components/ui/route-loading-bar';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
 import { SetCurrentGymCookie } from '@/components/pwa/set-current-gym-cookie';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { getActiveCheckIn } from '@/lib/actions/checkin-flow';
+import { getActiveWorkoutSession, getMemberStreak } from '@/lib/actions/members-portal';
 
 export default async function PortalLayout({
   children,
@@ -24,56 +27,38 @@ export default async function PortalLayout({
 
   const { memberId, gymId } = authResult.data;
 
-  // Get full gym and member data
+  // Get full gym and member data + active check-in + streak in parallel
   const supabase = createAdminSupabaseClient();
 
-  const { data: gym } = await supabase
-    .from('gyms')
-    .select('id, name, slug, logo_url, address, city, state')
-    .eq('id', gymId)
-    .eq('slug', params.slug)
-    .single();
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('*')
-    .eq('id', memberId)
-    .single();
+  const [{ data: gym }, { data: member }, activeCheckIn, streakResult] = await Promise.all([
+    supabase
+      .from('gyms')
+      .select('id, name, slug, logo_url, address, city, state')
+      .eq('id', gymId)
+      .eq('slug', params.slug)
+      .single(),
+    supabase
+      .from('members')
+      .select('*')
+      .eq('id', memberId)
+      .single(),
+    getActiveCheckIn(memberId, gymId),
+    getMemberStreak(memberId, gymId),
+  ]);
 
   if (!gym || !member) {
     redirect(`/${params.slug}/portal/sign-in`);
   }
 
-  // Calculate streak for header
-  const { data: recentCheckIns } = await supabase
-    .from('check_ins')
-    .select('check_in_at')
-    .eq('member_id', memberId)
-    .eq('gym_id', gymId)
-    .order('check_in_at', { ascending: false })
-    .limit(30);
+  const currentStreak = streakResult.streak || 0;
+  const checkedInToday = streakResult.checkedInToday || !!activeCheckIn;
+  const streakAtRisk = streakResult.atRisk || false;
 
-  let currentStreak = 0;
-  let checkedInToday = false;
-  if (recentCheckIns && recentCheckIns.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastDate = new Date(recentCheckIns[0].check_in_at);
-    lastDate.setHours(0, 0, 0, 0);
-    const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-    checkedInToday = daysDiff === 0;
-    if (daysDiff <= 1) {
-      currentStreak = 1;
-      let prevDate = lastDate;
-      for (let i = 1; i < recentCheckIns.length; i++) {
-        const d = new Date(recentCheckIns[i].check_in_at);
-        d.setHours(0, 0, 0, 0);
-        const diff = Math.floor((prevDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-        if (diff === 0) continue;
-        if (diff === 1) { currentStreak++; prevDate = d; }
-        else break;
-      }
-    }
+  // If checked in, fetch active workout session
+  let activeWorkout = null;
+  if (activeCheckIn) {
+    const workoutResult = await getActiveWorkoutSession(memberId, gymId);
+    activeWorkout = workoutResult.data;
   }
 
   return (
@@ -81,15 +66,25 @@ export default async function PortalLayout({
       <RouteLoadingBar />
       <div className="gradient-mesh" aria-hidden="true" />
       <div className="relative z-10">
-        <PortalHeader gym={gym} member={member} streak={currentStreak} checkedInToday={checkedInToday} />
+        <PortalHeader gym={gym} member={member} streak={currentStreak} checkedInToday={checkedInToday} streakAtRisk={streakAtRisk} />
 
         <div className="flex justify-center">
           <PortalNav gymSlug={params.slug} />
 
-          <main className="w-full max-w-md p-4 pb-24">
+          <main className={`w-full max-w-md p-4 ${activeCheckIn ? 'pb-40' : 'pb-24'}`}>
             {children}
           </main>
         </div>
+
+        {activeCheckIn && (
+          <LiveSessionWidget
+            checkInTime={activeCheckIn.check_in_at}
+            memberId={memberId}
+            gymId={gymId}
+            gymSlug={params.slug}
+            activeWorkout={activeWorkout}
+          />
+        )}
 
         <SetCurrentGymCookie slug={params.slug} />
         <InstallPrompt />

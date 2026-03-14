@@ -87,9 +87,7 @@ export function SettingsPageContent({
     setLoggingOut(true);
     try {
       await signOut();
-      toast.success('Logged out successfully');
-      router.push(`/${gymSlug}`);
-      router.refresh();
+      window.location.href = `/${gymSlug}/portal/sign-in`;
     } catch {
       toast.error('Failed to log out');
       setLoggingOut(false);

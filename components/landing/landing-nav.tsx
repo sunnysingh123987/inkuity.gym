@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { AnimatedLogo } from '@/components/ui/animated-logo'
 
 const navLinks = [
   { name: 'Home', href: '#' },
@@ -21,7 +22,7 @@ export function LandingNav() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1.5 transition-opacity hover:opacity-90">
-            <img src="/logo.png" alt="Inkuity" className="h-8 w-auto" />
+            <AnimatedLogo className="h-8 w-auto" />
             <span className="text-lg font-bold text-foreground">Inkuity</span>
           </Link>
 

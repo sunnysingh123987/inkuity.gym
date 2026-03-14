@@ -10,6 +10,8 @@ import {
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { NutritionTrackerPage } from '@/components/member-portal/diet/nutrition-tracker-page';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MealsPage({
   params,
 }: {

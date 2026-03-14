@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, ChevronUp, Zap, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, AlertTriangle, Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import electricPower from '@/public/icons/animated/electric-power.json';
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 import { ExerciseSetLogger, type ExerciseSetLoggerHandle } from '@/components/member-portal/sessions/exercise-set-logger';
 import {
   getActiveWorkoutSession,
@@ -20,6 +24,24 @@ interface WorkoutLogSheetProps {
   open: boolean;
   onClose: () => void;
   onProgressChange?: (completed: number, total: number) => void;
+}
+
+/** Color for a bolt at display index i out of total, yellow(right)→red(left) */
+function boltColor(index: number, total: number): [number, number, number] {
+  const setNum = total - index; // 1 = oldest/rightmost, total = latest/leftmost
+  const t = Math.min((setNum - 1) / 3, 1); // reddish starts at set 3
+  if (t <= 0.5) {
+    const p = t / 0.5;
+    return [0.918 + (0.976 - 0.918) * p, 0.702 + (0.451 - 0.702) * p, 0.031 + (0.086 - 0.031) * p];
+  }
+  const p = (t - 0.5) / 0.5;
+  return [0.976 + (0.937 - 0.976) * p, 0.451 + (0.267 - 0.451) * p, 0.086 + (0.267 - 0.086) * p];
+}
+
+function coloredBolt(r: number, g: number, b: number) {
+  const d = JSON.parse(JSON.stringify(electricPower));
+  d.layers[0].shapes[0].it[1].g.k.k = [0, r, g, b, 0.5, r, g, b, 1, r, g, b];
+  return d;
 }
 
 function getTodaySets(exerciseSets: any[]): any[] {
@@ -45,6 +67,7 @@ export function WorkoutLogSheet({
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [setsCount, setSetsCount] = useState<Record<string, number>>({});
+  const [lastLoggedExerciseId, setLastLoggedExerciseId] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const [conflict, setConflict] = useState<{
     routineName: string;
@@ -112,15 +135,22 @@ export function WorkoutLogSheet({
 
   function initSetsCount(sessionData: any) {
     const counts: Record<string, number> = {};
+    let latestTime = 0;
+    let latestId: string | null = null;
     (sessionData.session_exercises || []).forEach((se: any) => {
       const todaySets = getTodaySets(se.exercise_sets || []);
-      // Only count sets with non-zero values
       const validSets = todaySets.filter((s: any) => (s.weight && s.weight > 0) || (s.reps && s.reps > 0));
       if (validSets.length > 0) {
         counts[se.id] = validSets.length;
+        const maxTime = Math.max(...validSets.map((s: any) => new Date(s.created_at).getTime()));
+        if (maxTime > latestTime) {
+          latestTime = maxTime;
+          latestId = se.id;
+        }
       }
     });
     setSetsCount(counts);
+    if (latestId) setLastLoggedExerciseId(latestId);
   }
 
   // Use a ref for session so the ensure callback always has the latest value
@@ -199,6 +229,7 @@ export function WorkoutLogSheet({
 
   const handleSetsChange = (exerciseId: string, count: number) => {
     setSetsCount((prev) => ({ ...prev, [exerciseId]: count }));
+    if (count > 0) setLastLoggedExerciseId(exerciseId);
   };
 
   // When toggling exercises, flush the collapsing logger before unmounting it
@@ -245,6 +276,7 @@ export function WorkoutLogSheet({
         setSession(null);
         setExpandedId(null);
         setSetsCount({});
+        setLastLoggedExerciseId(null);
         setConflict(null);
         setCheckInStatus('loading');
         setCheckOutAt(undefined);
@@ -378,13 +410,26 @@ export function WorkoutLogSheet({
                       </h3>
                       <div className="flex items-center gap-2">
                         {loggedSets > 0 && (
-                          <div className="flex gap-0.5">
-                            {Array.from({ length: Math.min(loggedSets, 5) }).map((_, i) => (
-                              <Zap
-                                key={i}
-                                className="h-4 w-4 text-brand-cyan-400 fill-brand-cyan-400"
-                              />
-                            ))}
+                          <div className="flex items-end -space-x-3">
+                            {(() => {
+                              const count = Math.min(loggedSets, 5);
+                              return Array.from({ length: count }).map((_, i) => {
+                                const isAnimated = i === 0 && sessionExercise.id === lastLoggedExerciseId;
+                                const [r, g, b] = boltColor(i, count);
+                                const scale = 0.6 + 0.4 * ((count - 1 - i) / Math.max(count - 1, 1));
+                                return (
+                                  <Lottie
+                                    key={i}
+                                    animationData={coloredBolt(r, g, b)}
+                                    loop={isAnimated}
+                                    autoplay={isAnimated}
+                                    initialSegment={isAnimated ? undefined : [13, 14] as [number, number]}
+                                    className="h-8 w-8"
+                                    style={{ transform: `scale(${scale})` }}
+                                  />
+                                );
+                              });
+                            })()}
                           </div>
                         )}
                         {isExpanded ? (

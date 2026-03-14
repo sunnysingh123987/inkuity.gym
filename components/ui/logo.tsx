@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { AnimatedLogo } from './animated-logo'
 
 interface LogoProps {
   href?: string
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
   className?: string
+  animated?: boolean
 }
 
 const sizes = {
@@ -20,14 +22,18 @@ const textSizes = {
   lg: 'text-xl',
 }
 
-export function Logo({ href = '/dashboard', size = 'md', showText = true, className }: LogoProps) {
+export function Logo({ href = '/dashboard', size = 'md', showText = true, className, animated = true }: LogoProps) {
   const content = (
     <span className={cn('flex items-center gap-2', className)}>
-      <img
-        src="/logo.png"
-        alt="Inkuity"
-        className={cn(sizes[size], 'w-auto')}
-      />
+      {animated ? (
+        <AnimatedLogo className={cn(sizes[size], 'w-auto')} />
+      ) : (
+        <img
+          src="/logo.svg"
+          alt="Inkuity"
+          className={cn(sizes[size], 'w-auto')}
+        />
+      )}
       {showText && (
         <span className={cn('font-bold text-foreground', textSizes[size])}>
           Inkuity

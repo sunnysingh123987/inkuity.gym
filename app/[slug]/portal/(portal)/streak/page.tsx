@@ -36,6 +36,7 @@ export default async function StreakPage({
     <StreakPageContent
       streak={streakResult.streak}
       checkedInToday={checkedInToday}
+      streakAtRisk={streakResult.atRisk || false}
       initialCheckInDays={calendarResult.data || {}}
       memberId={memberId}
       gymId={gymId}

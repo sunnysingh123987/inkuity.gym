@@ -18,18 +18,27 @@ export async function getGymTodayStart(gymId: string, supabase?: ReturnType<type
     const { data } = await sb.from('gyms').select('timezone').eq('id', gymId).single();
     if (data?.timezone) tz = data.timezone;
   } catch {}
+  // Get today's date (YYYY-MM-DD) in the gym's timezone
   const now = new Date();
-  // Get today's date string (YYYY-MM-DD) in the gym's timezone
-  const localDate = now.toLocaleDateString('en-CA', { timeZone: tz }); // en-CA gives YYYY-MM-DD
-  // Compute UTC offset for the gym's timezone at this moment
-  // by comparing the local time string to UTC
-  const localStr = now.toLocaleString('en-US', { timeZone: tz, hour12: false });
-  const localNow = new Date(localStr);
-  const utcNow = new Date(now.toLocaleString('en-US', { timeZone: 'UTC', hour12: false }));
-  const offsetMs = localNow.getTime() - utcNow.getTime();
-  // Midnight in gym's timezone, converted to UTC
-  const midnightLocal = new Date(`${localDate}T00:00:00`);
-  const midnightUtc = new Date(midnightLocal.getTime() - offsetMs);
+  const localDate = now.toLocaleDateString('en-CA', { timeZone: tz });
+  // Build a date string that explicitly specifies the timezone
+  // by formatting the offset from the gym's timezone
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    timeZoneName: 'shortOffset',
+  }).formatToParts(now);
+  const offsetPart = parts.find((p) => p.type === 'timeZoneName')?.value || '+05:30';
+  // offsetPart is like "GMT+5:30" — convert to "+05:30"
+  const match = offsetPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  let tzOffset = '+00:00';
+  if (match) {
+    const sign = match[1];
+    const hrs = match[2].padStart(2, '0');
+    const mins = (match[3] || '00').padStart(2, '0');
+    tzOffset = `${sign}${hrs}:${mins}`;
+  }
+  // Midnight in gym's local timezone, parsed correctly to UTC
+  const midnightUtc = new Date(`${localDate}T00:00:00${tzOffset}`);
   return midnightUtc.toISOString();
 }
 
@@ -276,8 +285,8 @@ export async function recordQRCheckIn(
       }
     }
 
-    revalidatePath('/portal/dashboard');
-    revalidatePath('/portal/check-ins');
+    revalidatePath('/[slug]/portal/dashboard', 'page');
+    revalidatePath('/[slug]/portal/check-ins', 'page');
 
     return {
       success: true,
@@ -405,8 +414,8 @@ export async function checkOutMember(memberId: string, gymId: string) {
       return { success: false, error: 'Failed to check out' };
     }
 
-    revalidatePath('/portal/dashboard');
-    revalidatePath('/portal/check-ins');
+    revalidatePath('/[slug]/portal/dashboard', 'page');
+    revalidatePath('/[slug]/portal/check-ins', 'page');
 
     return { success: true };
   } catch (error: any) {

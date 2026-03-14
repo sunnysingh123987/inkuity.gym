@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, UtensilsCrossed, Search, Minus, Pencil, Check, X } from 'lucide-react';
+import { MealPhotoCapture } from './meal-photo-capture';
 
 export interface FoodItem {
   id: string;
@@ -40,6 +41,15 @@ interface FoodLogProps {
   onEditEntry: (entryId: string, updates: Partial<LoggedFoodEntry>) => void;
   onAddCustomFood: (food: Omit<FoodItem, 'id'>) => void;
   onEditDatabaseFood?: (foodId: string, updates: Partial<FoodItem>) => void;
+  onSnapSave?: (mealData: {
+    name: string;
+    description: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    matchedFoodItem?: FoodItem;
+  }) => void;
 }
 
 // ─── Reusable Bottom Sheet ────────────────────────────────────────────────────
@@ -138,9 +148,11 @@ export function FoodLog({
   onEditEntry,
   onAddCustomFood,
   onEditDatabaseFood,
+  onSnapSave,
 }: FoodLogProps) {
   // Add sheet state
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [snapOpen, setSnapOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -320,15 +332,30 @@ export function FoodLog({
             </div>
           )}
 
-          {/* Add Meal Button */}
-          <Button
-            onClick={openAddSheet}
-            variant="outline"
-            className="w-full border-dashed border-slate-700 text-slate-400 hover:text-white hover:border-brand-cyan-600"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Meal
-          </Button>
+          {/* Add Meal Actions */}
+          <div className="flex items-center gap-1.5 rounded-xl glass p-1">
+            <button
+              onClick={openAddSheet}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-white/[0.06] active:bg-white/[0.08] active:scale-[0.97] transition-all"
+            >
+              <Plus className="h-3.5 w-3.5 text-slate-400" />
+              <span className="text-[11px] font-semibold text-slate-300">Log Meal</span>
+            </button>
+            {onSnapSave && (
+              <>
+                <div className="w-px h-5 bg-white/[0.06]" />
+                <button
+                  onClick={() => setSnapOpen(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-white/[0.06] active:bg-white/[0.08] active:scale-[0.97] transition-all"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/camera_ai.svg" alt="" className="h-7 w-7 -my-1.5 -ml-1 text-brand-cyan-400" style={{ filter: 'invert(62%) sepia(93%) saturate(429%) hue-rotate(140deg) brightness(95%) contrast(92%)' }} />
+                  <span className="text-[11px] font-semibold text-brand-cyan-300">Take a Snap</span>
+                </button>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -788,6 +815,17 @@ export function FoodLog({
           </div>
         </div>
       </BottomSheet>
+
+      {/* ─── AI Snap Photo Capture ──────────────────────────────────────── */}
+      {onSnapSave && (
+        <MealPhotoCapture
+          isOpen={snapOpen}
+          onClose={() => setSnapOpen(false)}
+          onSave={onSnapSave}
+          mealType="meal"
+          foodDatabase={foodDatabase}
+        />
+      )}
     </>
   );
 }

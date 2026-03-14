@@ -3,11 +3,10 @@ import { redirect } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { WorkoutSuggestions } from '@/components/member-portal/dashboard/workout-suggestions';
 import { PageEntrance } from '@/components/animations/page-entrance';
-import { getWorkoutSuggestions } from '@/lib/actions/members-portal';
+import { getWorkoutSuggestions, getMemberStreak } from '@/lib/actions/members-portal';
 import { getActiveAnnouncements } from '@/lib/actions/announcements';
 import { ActiveAnnouncements } from '@/components/member-portal/dashboard/active-announcements';
 import { DashboardQuickActions } from '@/components/member-portal/dashboard/dashboard-quick-actions';
-import { AutoCheckoutWarning } from '@/components/member-portal/dashboard/auto-checkout-warning';
 import { WeeklyActivityBar } from '@/components/member-portal/dashboard/weekly-activity-bar';
 import { CompactStats } from '@/components/member-portal/dashboard/compact-stats';
 import { getActiveCheckIn, getLiveGymTraffic, getPeakHourToday, getHourlyTrafficAverage, getGymTodayStart } from '@/lib/actions/checkin-flow';
@@ -66,6 +65,7 @@ export default async function DashboardPage({
     liveTraffic,
     peakHour,
     gymTodayStart,
+    streakResult,
   ] = await Promise.all([
     supabase
       .from('check_ins')
@@ -96,49 +96,14 @@ export default async function DashboardPage({
     getLiveGymTraffic(gymId),
     getPeakHourToday(gymId),
     getGymTodayStart(gymId),
+    getMemberStreak(memberId, gymId),
   ]);
 
   const workoutSuggestions = suggestionsResult.data?.suggestions || [];
   const lastWorkoutsMap = suggestionsResult.data?.lastWorkouts || {};
   const activeAnnouncements = announcementsResult.data || [];
 
-  let currentStreak = 0;
-  if (recentCheckIns && recentCheckIns.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const lastCheckInDate = new Date(recentCheckIns[0].check_in_at);
-    lastCheckInDate.setHours(0, 0, 0, 0);
-
-    // Check if last check-in was today or yesterday
-    const daysDiff = Math.floor(
-      (today.getTime() - lastCheckInDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysDiff <= 1) {
-      currentStreak = 1;
-      let prevDate = lastCheckInDate;
-
-      for (let i = 1; i < recentCheckIns.length; i++) {
-        const checkInDate = new Date(recentCheckIns[i].check_in_at);
-        checkInDate.setHours(0, 0, 0, 0);
-
-        const diff = Math.floor(
-          (prevDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diff === 0) {
-          // Same day duplicate, skip
-          continue;
-        } else if (diff === 1) {
-          currentStreak++;
-          prevDate = checkInDate;
-        } else {
-          break;
-        }
-      }
-    }
-  }
+  const currentStreak = streakResult.streak || 0;
 
   // Check if already checked in today (gym-timezone-aware)
   const alreadyCheckedInToday = recentCheckIns?.some((ci) =>
@@ -172,13 +137,6 @@ export default async function DashboardPage({
           gymId={gymId}
           liveTraffic={liveTraffic}
         />
-        {activeCheckIn && (
-          <AutoCheckoutWarning
-            checkInTime={activeCheckIn.check_in_at}
-            memberId={memberId}
-            gymId={gymId}
-          />
-        )}
       </div>
 
       <div data-animate>

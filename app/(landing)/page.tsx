@@ -137,7 +137,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'Inkuity',
   url: 'https://inkuity.com',
-  logo: 'https://inkuity.com/logo.png',
+  logo: 'https://inkuity.com/logo.svg',
   description: 'Free all-in-one gym management platform with QR check-ins, workout tracking, AI diet plans, and member analytics.',
   email: 'contact@inkuity.com',
   sameAs: [],
@@ -819,7 +819,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div data-footer-col className="col-span-2 sm:col-span-1 lg:col-span-1">
               <div className="flex items-center gap-1.5 mb-3">
-                <img src="/logo.png" alt="Inkuity" className="h-7 sm:h-8 w-auto" />
+                <img src="/logo.svg" alt="Inkuity" className="h-7 sm:h-8 w-auto" />
                 <span className="text-base sm:text-lg font-bold text-foreground">Inkuity</span>
               </div>
               <p className="text-slate-400 text-sm mb-4">

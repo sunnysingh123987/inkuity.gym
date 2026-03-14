@@ -22,6 +22,7 @@ interface RoutineCardRedesignedProps {
   activeSessionId?: string;
   activeProgress?: { total: number; completed: number };
   onSelect?: (routine: any) => void;
+  onEdit?: (routine: any) => void;
 }
 
 const FALLBACK_CATEGORY = 'full-body';
@@ -47,6 +48,7 @@ export function RoutineCardRedesigned({
   activeSessionId,
   activeProgress,
   onSelect,
+  onEdit,
 }: RoutineCardRedesignedProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
@@ -112,8 +114,8 @@ export function RoutineCardRedesigned({
     if (menuOpen || showDeleteSheet) return;
     if (exerciseCount > 0 && onSelect) {
       onSelect(routine);
-    } else if (exerciseCount === 0) {
-      router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`);
+    } else if (exerciseCount === 0 && onEdit) {
+      onEdit(routine);
     }
   };
 
@@ -189,7 +191,7 @@ export function RoutineCardRedesigned({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => router.push(`/${gymSlug}/portal/workouts/new?edit=${routine.id}`)}
+                  onClick={() => onEdit?.(routine)}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit

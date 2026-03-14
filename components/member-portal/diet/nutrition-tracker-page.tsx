@@ -314,6 +314,54 @@ export function NutritionTrackerPage({
     });
   };
 
+  const handleSnapSave = (mealData: {
+    name: string;
+    description: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    matchedFoodItem?: FoodItem;
+  }) => {
+    // If AI matched an existing food item, use it; otherwise log as a standalone entry
+    if (mealData.matchedFoodItem) {
+      handleAddFoodEntry(mealData.matchedFoodItem, 1);
+    } else {
+      const entry: LoggedFoodEntry = {
+        id: `temp-${Date.now()}`,
+        foodItemId: '',
+        name: mealData.name,
+        servingSize: '1 serving',
+        quantity: 1,
+        calories: mealData.calories,
+        protein: mealData.protein,
+        carbs: mealData.carbs,
+        fat: mealData.fat,
+        loggedAt: new Date().toISOString(),
+      };
+      setFoodLog((prev) => [...prev, entry]);
+      startTransition(async () => {
+        const result = await addFoodLogEntry({
+          memberId,
+          gymId,
+          name: mealData.name,
+          servingSize: '1 serving',
+          quantity: 1,
+          calories: mealData.calories,
+          protein: mealData.protein,
+          carbs: mealData.carbs,
+          fat: mealData.fat,
+          loggedDate: today,
+        });
+        if (result.success && result.data) {
+          setFoodLog((prev) =>
+            prev.map((e) => (e.id === entry.id ? { ...e, id: result.data.id } : e))
+          );
+        }
+      });
+    }
+  };
+
   const handleAddCustomFood = (food: Omit<FoodItem, 'id'>) => {
     // Optimistically add to local food database list
     const tempId = `temp-${Date.now()}`;
@@ -384,6 +432,7 @@ export function NutritionTrackerPage({
         onEditEntry={handleEditFoodEntry}
         onAddCustomFood={handleAddCustomFood}
         onEditDatabaseFood={handleEditDatabaseFood}
+        onSnapSave={handleSnapSave}
       />
 
       {/* Section 5: How Does This Work */}

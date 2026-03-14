@@ -260,8 +260,7 @@ export interface AnalyzedMeal {
 
 export async function analyzeMealPhoto(
   imageBase64: string,
-  mealType: string,
-  availableFoods?: string[]
+  mealType: string
 ): Promise<{ success: boolean; data?: AnalyzedMeal; error?: string }> {
   try {
     // Determine the media type from the base64 string
@@ -275,7 +274,7 @@ export async function analyzeMealPhoto(
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       messages: [
         {
@@ -291,7 +290,7 @@ export async function analyzeMealPhoto(
             },
             {
               type: 'text',
-              text: `Analyze this ${mealType} photo and identify all food items. This is likely Indian food — recognize common Indian dishes (dal, roti, rice, sabzi, curry, dosa, idli, paratha, biryani, etc.) and use standard Indian serving sizes. Estimate the nutritional content for each item and provide totals.${availableFoods && availableFoods.length > 0 ? `\n\nThe user already has these foods in their database: ${availableFoods.join(', ')}. If any detected food matches one of these, use the same name. If the food is different or not in the list, use an appropriate descriptive name — it will be added as a new food option.` : ''}
+              text: `Analyze this ${mealType} photo and identify all food items. This is likely Indian food — recognize common Indian dishes (dal, roti, rice, sabzi, curry, dosa, idli, paratha, biryani, etc.) and use standard Indian serving sizes. Estimate the nutritional content for each item and provide totals.
 
 Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
 {
