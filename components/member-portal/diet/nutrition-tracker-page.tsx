@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useTransition, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -148,9 +149,39 @@ export function NutritionTrackerPage({
   memberHeightInches,
   memberGender,
 }: NutritionTrackerPageProps) {
+  const router = useRouter();
   const [foodLog, setFoodLog] = useState<LoggedFoodEntry[]>(initialFoodLog);
   const [foodDatabase, setFoodDatabase] = useState<FoodItem[]>(initialFoodDatabase);
   const [isPending, startTransition] = useTransition();
+
+  // Sync client state when server data refreshes (e.g. after midnight)
+  useEffect(() => {
+    setFoodLog(initialFoodLog);
+  }, [initialFoodLog]);
+
+  // Refresh page data at midnight when date changes
+  useEffect(() => {
+    const checkDateChange = () => {
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      if (currentDate !== dateRef.current) {
+        dateRef.current = currentDate;
+        router.refresh();
+      }
+    };
+    const dateRef = { current: new Date().toISOString().split('T')[0] };
+    // Check every 30 seconds
+    const interval = setInterval(checkDateChange, 30_000);
+    // Also check on tab visibility change (user returns to app)
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') checkDateChange();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [router]);
 
   // Editable nutrition targets
   const [activeTargets, setActiveTargets] = useState<NutritionTargets>(targets);
@@ -322,6 +353,7 @@ export function NutritionTrackerPage({
     carbs: number;
     fat: number;
     matchedFoodItem?: FoodItem;
+    imageUrl?: string;
   }) => {
     // If AI matched an existing food item, use it; otherwise log as a standalone entry
     if (mealData.matchedFoodItem) {
@@ -352,6 +384,7 @@ export function NutritionTrackerPage({
           carbs: mealData.carbs,
           fat: mealData.fat,
           loggedDate: today,
+          imageUrl: mealData.imageUrl,
         });
         if (result.success && result.data) {
           setFoodLog((prev) =>
@@ -433,6 +466,7 @@ export function NutritionTrackerPage({
         onAddCustomFood={handleAddCustomFood}
         onEditDatabaseFood={handleEditDatabaseFood}
         onSnapSave={handleSnapSave}
+        memberId={memberId}
       />
 
       {/* Section 5: How Does This Work */}

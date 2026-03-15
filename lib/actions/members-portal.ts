@@ -2562,25 +2562,31 @@ export async function addFoodLogEntry(input: {
   carbs: number;
   fat: number;
   loggedDate: string;
+  imageUrl?: string;
 }) {
   try {
     const supabase = createAdminSupabaseClient();
 
+    const insertData: Record<string, unknown> = {
+      member_id: input.memberId,
+      gym_id: input.gymId,
+      food_item_id: input.foodItemId || null,
+      name: input.name,
+      serving_size: input.servingSize,
+      quantity: input.quantity,
+      calories: input.calories,
+      protein: input.protein,
+      carbs: input.carbs,
+      fat: input.fat,
+      logged_date: input.loggedDate,
+    };
+    if (input.imageUrl) {
+      insertData.image_url = input.imageUrl;
+    }
+
     const { data, error } = await supabase
       .from('food_log_entries')
-      .insert({
-        member_id: input.memberId,
-        gym_id: input.gymId,
-        food_item_id: input.foodItemId || null,
-        name: input.name,
-        serving_size: input.servingSize,
-        quantity: input.quantity,
-        calories: input.calories,
-        protein: input.protein,
-        carbs: input.carbs,
-        fat: input.fat,
-        logged_date: input.loggedDate,
-      })
+      .insert(insertData)
       .select()
       .single();
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Camera, Upload, Loader2, X, Check,
+  Camera, ImagePlus, Loader2, X, Check, RotateCcw, Clock,
 } from 'lucide-react';
-import { analyzeMealPhoto, type AnalyzedMeal } from '@/lib/actions/ai-diet';
+import { analyzeMealPhoto, getSnapUsage, markSnapPermanent, type AnalyzedMeal, type SnapInfo } from '@/lib/actions/ai-diet';
 import type { FoodItem } from './food-log';
 
 interface MealPhotoCaptureProps {
@@ -19,22 +19,34 @@ interface MealPhotoCaptureProps {
     carbs: number;
     fat: number;
     matchedFoodItem?: FoodItem;
+    imageUrl?: string;
   }) => void;
   mealType?: string;
   foodDatabase?: FoodItem[];
+  memberId: string;
 }
 
 /** Try to match an AI-detected food name against the user's food database */
 function matchFood(name: string, database: FoodItem[]): FoodItem | undefined {
   const n = name.toLowerCase().trim();
-  // Exact match
   const exact = database.find((f) => f.name.toLowerCase().trim() === n);
   if (exact) return exact;
-  // Substring match (either direction)
   return database.find((f) => {
     const fn = f.name.toLowerCase().trim();
     return fn.includes(n) || n.includes(fn);
   });
+}
+
+function getTimeUntilMidnight(): { hours: number; minutes: number; seconds: number } {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  const diff = midnight.getTime() - now.getTime();
+  return {
+    hours: Math.floor(diff / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diff % (1000 * 60)) / 1000),
+  };
 }
 
 export function MealPhotoCapture({
@@ -43,14 +55,23 @@ export function MealPhotoCapture({
   onSave,
   mealType = 'meal',
   foodDatabase = [],
+  memberId,
 }: MealPhotoCaptureProps) {
   const [visible, setVisible] = useState(false);
-  const [mode, setMode] = useState<'capture' | 'preview' | 'analyzing' | 'results'>('capture');
+  const [mounted, setMounted] = useState(false);
+  const [mode, setMode] = useState<'loading' | 'capture' | 'preview' | 'analyzing' | 'results' | 'limit'>('loading');
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraFailed, setCameraFailed] = useState(false);
   const [imageBase64, setImageBase64] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState<AnalyzedMeal | null>(null);
   const [matchedFood, setMatchedFood] = useState<FoodItem | undefined>();
+  const [remaining, setRemaining] = useState<number | undefined>();
+  const [used, setUsed] = useState(0);
+  const [snaps, setSnaps] = useState<SnapInfo[]>([]);
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
+  const [countdown, setCountdown] = useState(getTimeUntilMidnight());
 
   // Editable result fields
   const [editName, setEditName] = useState('');
@@ -60,41 +81,115 @@ export function MealPhotoCapture({
   const [editCarbs, setEditCarbs] = useState('');
   const [editFat, setEditFat] = useState('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Animate in
-  const [mounted, setMounted] = useState(false);
-  useState(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => setVisible(true));
-      setMounted(true);
-    }
-  });
-
-  // Sync visibility with open prop
-  if (isOpen && !mounted) {
-    setMounted(true);
-    requestAnimationFrame(() => setVisible(true));
-  }
+  const SNAP_LIMIT = 5;
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    setCameraReady(false);
   }, []);
 
   const resetState = useCallback(() => {
-    setMode('capture');
+    setMode('loading');
+    setCameraReady(false);
+    setCameraFailed(false);
     setImageBase64('');
     setImagePreview('');
     setError('');
     setResult(null);
     setMatchedFood(undefined);
     stopCamera();
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
   }, [stopCamera]);
+
+  const startCamera = useCallback(async () => {
+    try {
+      setError('');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraReady(true);
+      setCameraFailed(false);
+    } catch {
+      setCameraFailed(true);
+    }
+  }, []);
+
+  // Lock body scroll when sheet is open
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
+  // Check usage and start camera when sheet opens
+  useEffect(() => {
+    if (isOpen && !mounted) {
+      setMounted(true);
+      requestAnimationFrame(() => setVisible(true));
+
+      // Check snap usage
+      if (memberId) {
+        getSnapUsage(memberId).then(({ used: u, limit, snaps: s }) => {
+          setUsed(u);
+          setRemaining(limit - u);
+          setSnaps(s);
+          if (u >= limit) {
+            setMode('limit');
+          } else {
+            setMode('capture');
+          }
+        });
+      } else {
+        setMode('capture');
+      }
+    }
+    if (isOpen && mounted && mode === 'capture' && !cameraReady && !cameraFailed && !imagePreview) {
+      startCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mounted, mode]);
+
+  // Countdown timer for limit mode
+  useEffect(() => {
+    if (mode === 'limit') {
+      setCountdown(getTimeUntilMidnight());
+      countdownRef.current = setInterval(() => {
+        setCountdown(getTimeUntilMidnight());
+      }, 1000);
+      return () => {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+      };
+    }
+  }, [mode]);
 
   const handleClose = () => {
     setVisible(false);
@@ -103,20 +198,6 @@ export function MealPhotoCapture({
       setMounted(false);
       onClose();
     }, 300);
-  };
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch {
-      setError('Unable to access camera. Use file upload instead.');
-    }
   };
 
   const capturePhoto = () => {
@@ -134,15 +215,39 @@ export function MealPhotoCapture({
     stopCamera();
   };
 
+  const compressImage = (dataUrl: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const dataUrl = ev.target?.result as string;
-      setImagePreview(dataUrl);
-      setImageBase64(dataUrl);
+      const compressed = await compressImage(dataUrl);
+      setImagePreview(compressed);
+      setImageBase64(compressed);
+      setError('');
       setMode('preview');
+      stopCamera();
     };
     reader.readAsDataURL(file);
   };
@@ -151,7 +256,16 @@ export function MealPhotoCapture({
     setMode('analyzing');
     setError('');
 
-    const res = await analyzeMealPhoto(imageBase64, mealType);
+    const res = await analyzeMealPhoto(imageBase64, mealType, memberId);
+
+    if (res.remaining !== undefined) {
+      setRemaining(res.remaining);
+      setUsed(SNAP_LIMIT - res.remaining);
+    }
+    if (res.imageUrl) {
+      setCurrentImageUrl(res.imageUrl);
+      setSnaps((prev) => [...prev, { url: res.imageUrl!, status: 'temp', path: '' }]);
+    }
 
     if (res.success && res.data) {
       setResult(res.data);
@@ -162,15 +276,28 @@ export function MealPhotoCapture({
       setEditCarbs(String(res.data.carbs));
       setEditFat(String(res.data.fat));
 
-      // Try to match the top-level meal name against user's food database
       const matched = matchFood(res.data.name, foodDatabase);
       setMatchedFood(matched);
 
       setMode('results');
     } else {
       setError(res.error || 'Failed to analyze photo');
-      setMode('preview');
+      // If limit reached after this attempt, show limit screen
+      if (res.remaining === 0) {
+        setMode('limit');
+      } else {
+        setMode('preview');
+      }
     }
+  };
+
+  const handleRetake = () => {
+    setImageBase64('');
+    setImagePreview('');
+    setError('');
+    setMode('capture');
+    setCameraFailed(false);
+    // Camera will auto-start via the useEffect
   };
 
   const handleSave = () => {
@@ -182,11 +309,18 @@ export function MealPhotoCapture({
       carbs: parseInt(editCarbs) || 0,
       fat: parseInt(editFat) || 0,
       matchedFoodItem: matchedFood,
+      imageUrl: currentImageUrl || undefined,
     });
+    // Mark snap as permanent
+    if (currentImageUrl && memberId) {
+      markSnapPermanent(memberId, currentImageUrl);
+    }
     handleClose();
   };
 
   if (!isOpen && !mounted) return null;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] overscroll-none touch-none">
@@ -213,69 +347,183 @@ export function MealPhotoCapture({
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-3">
-          <h2 className="text-lg font-bold text-white">
-            {mode === 'results' ? 'Analysis Results' : `Snap ${mealType.charAt(0).toUpperCase() + mealType.slice(1)}`}
-          </h2>
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              {mode === 'results' ? 'Analysis Results' : mode === 'limit' ? 'Snap Meal' : `Snap ${mealType.charAt(0).toUpperCase() + mealType.slice(1)}`}
+            </h2>
+            {remaining !== undefined && mode !== 'limit' && (
+              <p className={`text-xs mt-0.5 ${remaining <= 1 ? 'text-red-400' : 'text-slate-500'}`}>
+                {remaining} snap{remaining !== 1 ? 's' : ''} remaining today
+              </p>
+            )}
+          </div>
           <button onClick={handleClose} className="p-2 rounded-lg glass-hover transition-colors">
             <X className="h-5 w-5 text-slate-400" />
           </button>
         </div>
 
         <div className="overflow-y-auto px-4 pb-6" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+          {/* ── Loading ── */}
+          {mode === 'loading' && (
+            <div className="flex flex-col items-center py-16">
+              <Loader2 className="h-8 w-8 text-brand-cyan-400 animate-spin" />
+            </div>
+          )}
+
+          {/* ── Limit Reached ── */}
+          {mode === 'limit' && (
+            <div className="flex flex-col items-center py-6 space-y-6">
+              {/* Snap usage thumbnails */}
+              <div className="flex items-center gap-2">
+                {Array.from({ length: SNAP_LIMIT }).map((_, i) => {
+                  const snap = snaps[i];
+                  return (
+                    <div
+                      key={i}
+                      className={`w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all ${
+                        snap
+                          ? snap.status === 'permanent'
+                            ? 'border-2 border-emerald-500/50 ring-1 ring-emerald-500/20'
+                            : 'border-2 border-red-500/40 ring-1 ring-red-500/20'
+                          : 'bg-slate-700/30 border border-slate-600/30'
+                      }`}
+                    >
+                      {snap ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={snap.url}
+                          alt={`Snap ${i + 1}`}
+                          className={`w-full h-full object-cover ${snap.status === 'temp' ? 'opacity-60' : ''}`}
+                        />
+                      ) : (
+                        <Camera className="h-4 w-4 text-slate-600" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="text-center space-y-1">
+                <p className="text-white font-semibold text-base">All snaps used for today</p>
+                <p className="text-slate-400 text-sm">You&apos;ve used all {SNAP_LIMIT} AI meal snaps</p>
+              </div>
+
+              {/* Countdown timer */}
+              <div className="glass rounded-2xl px-6 py-5 w-full">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-brand-cyan-400" />
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Refreshes in</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className="text-3xl font-bold text-white font-mono tabular-nums">{pad(countdown.hours)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase mt-1">Hours</span>
+                  </div>
+                  <span className="text-2xl font-bold text-slate-600 -mt-4">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-3xl font-bold text-white font-mono tabular-nums">{pad(countdown.minutes)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase mt-1">Mins</span>
+                  </div>
+                  <span className="text-2xl font-bold text-slate-600 -mt-4">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-3xl font-bold text-brand-cyan-400 font-mono tabular-nums">{pad(countdown.seconds)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase mt-1">Secs</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 text-center">
+                You can still log meals manually from the food database
+              </p>
+            </div>
+          )}
+
           {/* ── Capture ── */}
           {mode === 'capture' && (
             <div className="space-y-4">
-              <div className="relative aspect-[4/3] glass rounded-xl overflow-hidden">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-                {!streamRef.current && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <Camera className="h-12 w-12 text-slate-500" />
+              {/* Live camera viewfinder (only when camera API works) */}
+              {!cameraFailed && (
+                <>
+                  <div className="relative aspect-[4/3] glass rounded-xl overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    {!cameraReady && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="h-8 w-8 text-brand-cyan-400 animate-spin" />
+                        <p className="text-sm text-slate-400">Opening camera...</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
                     <button
-                      onClick={startCamera}
-                      className="px-4 py-2 rounded-xl bg-brand-cyan-500 text-white text-sm font-medium hover:bg-brand-cyan-600 transition-colors"
+                      onClick={capturePhoto}
+                      disabled={!cameraReady}
+                      className="flex-1 py-3 rounded-xl bg-brand-cyan-500 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-brand-cyan-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Open Camera
+                      <Camera className="h-4 w-4" />
+                      Capture
+                    </button>
+                    <button
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="py-3 px-4 rounded-xl glass text-slate-300 text-sm font-medium flex items-center justify-center gap-2 glass-hover transition-colors"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      Gallery
                     </button>
                   </div>
-                )}
-              </div>
+                </>
+              )}
 
-              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-              <div className="flex gap-3">
-                {streamRef.current && (
+              {/* Fallback when camera API is unavailable (HTTP / no permission) */}
+              {cameraFailed && (
+                <div className="flex flex-col items-center gap-4 py-4">
                   <button
-                    onClick={capturePhoto}
-                    className="flex-1 py-3 rounded-xl bg-brand-cyan-500 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-brand-cyan-600 transition-colors"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="w-full py-8 rounded-xl glass flex flex-col items-center justify-center gap-3 glass-hover transition-colors active:scale-[0.98]"
                   >
-                    <Camera className="h-4 w-4" />
-                    Capture
+                    <div className="w-16 h-16 rounded-full bg-brand-cyan-500/20 flex items-center justify-center">
+                      <Camera className="h-8 w-8 text-brand-cyan-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white font-semibold">Snap Your Meal</p>
+                      <p className="text-slate-400 text-xs mt-1">Take a photo to analyze nutrition</p>
+                    </div>
                   </button>
-                )}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 py-3 rounded-xl glass text-slate-300 text-sm font-medium flex items-center justify-center gap-2 glass-hover transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </div>
+
+                  <button
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="text-sm text-slate-400 underline underline-offset-2 decoration-slate-600 py-2"
+                  >
+                    or choose from gallery
+                  </button>
+                </div>
+              )}
+
             </div>
           )}
+
+          {/* Hidden file inputs (always rendered so refs work in any mode) */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
 
           {/* ── Preview ── */}
           {mode === 'preview' && (
@@ -285,24 +533,47 @@ export function MealPhotoCapture({
                 <img src={imagePreview} alt="Meal preview" className="w-full h-full object-cover" />
               </div>
 
-              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+              {error && (
+                <div className="flex items-start gap-3 px-3 py-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <RotateCcw className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              )}
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setMode('capture'); setImageBase64(''); setImagePreview(''); }}
-                  className="flex-1 py-3 rounded-xl glass text-slate-300 text-sm font-medium flex items-center justify-center gap-2 glass-hover transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  Retake
-                </button>
-                <button
-                  onClick={analyzePhoto}
-                  className="flex-1 py-3 rounded-xl bg-brand-cyan-500 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-brand-cyan-600 transition-colors"
-                >
-                  <Camera className="h-4 w-4" />
-                  Analyze
-                </button>
-              </div>
+              {error ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="text-sm text-slate-400 underline underline-offset-2 decoration-slate-600 py-3"
+                  >
+                    choose from gallery
+                  </button>
+                  <button
+                    onClick={handleRetake}
+                    className="flex-1 py-3 rounded-xl bg-brand-cyan-500 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-brand-cyan-600 transition-colors"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Retake
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleRetake}
+                    className="flex-1 py-3 rounded-xl glass text-slate-300 text-sm font-medium flex items-center justify-center gap-2 glass-hover transition-colors"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Retake
+                  </button>
+                  <button
+                    onClick={analyzePhoto}
+                    className="flex-1 py-3 rounded-xl bg-brand-cyan-500 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-brand-cyan-600 transition-colors"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Analyze
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

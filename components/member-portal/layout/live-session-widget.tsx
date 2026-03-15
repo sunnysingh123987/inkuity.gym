@@ -7,7 +7,6 @@ import {
   ChevronUp,
   ChevronDown,
   Dumbbell,
-  LogOut,
   Loader2,
   Zap,
   X,
@@ -496,12 +495,6 @@ export function LiveSessionWidget({
                   >
                     <Zap className="h-3.5 w-3.5" />
                     Quick
-                  </button>
-                  <button
-                    onClick={() => setShowCheckoutConfirm(true)}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-orange-500/10 text-orange-400 text-xs font-medium hover:bg-orange-500/20 transition-colors"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
                   </button>
                 </div>
               )}

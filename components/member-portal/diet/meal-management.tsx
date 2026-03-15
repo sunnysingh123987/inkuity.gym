@@ -311,6 +311,7 @@ export function MealManagement({
         onClose={() => setIsPhotoOpen(false)}
         onSave={handlePhotoSave}
         mealType={selectedMealType}
+        memberId=""
       />
 
       {/* Override Confirmation Dialog */}

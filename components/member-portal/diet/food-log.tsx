@@ -50,6 +50,7 @@ interface FoodLogProps {
     fat: number;
     matchedFoodItem?: FoodItem;
   }) => void;
+  memberId?: string;
 }
 
 // ─── Reusable Bottom Sheet ────────────────────────────────────────────────────
@@ -149,6 +150,7 @@ export function FoodLog({
   onAddCustomFood,
   onEditDatabaseFood,
   onSnapSave,
+  memberId,
 }: FoodLogProps) {
   // Add sheet state
   const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -348,7 +350,6 @@ export function FoodLog({
                   onClick={() => setSnapOpen(true)}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-white/[0.06] active:bg-white/[0.08] active:scale-[0.97] transition-all"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/icons/camera_ai.svg" alt="" className="h-7 w-7 -my-1.5 -ml-1 text-brand-cyan-400" style={{ filter: 'invert(62%) sepia(93%) saturate(429%) hue-rotate(140deg) brightness(95%) contrast(92%)' }} />
                   <span className="text-[11px] font-semibold text-brand-cyan-300">Take a Snap</span>
@@ -824,6 +825,7 @@ export function FoodLog({
           onSave={onSnapSave}
           mealType="meal"
           foodDatabase={foodDatabase}
+          memberId={memberId || ''}
         />
       )}
     </>
