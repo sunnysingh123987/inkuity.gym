@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
-import { SplashScreen } from '@/components/pwa/splash-screen'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
 
@@ -49,7 +48,49 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={plusJakarta.className}>
-        <SplashScreen />
+        {/* Inline splash: visible instantly in HTML before any JS loads */}
+        <div
+          id="pwa-splash"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#020617',
+            transition: 'opacity 0.5s ease',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/animated/inkuity_splash.gif"
+            alt="Inkuity"
+            width={192}
+            height={192}
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+        {/* Hide splash immediately if not standalone PWA (browser usage) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+                var splashShown = sessionStorage.getItem('inkuity_splash_shown');
+                var el = document.getElementById('pwa-splash');
+                if (!el) return;
+                if (!isStandalone || splashShown) {
+                  el.style.display = 'none';
+                } else {
+                  sessionStorage.setItem('inkuity_splash_shown', '1');
+                  setTimeout(function() { el.style.opacity = '0'; }, 2000);
+                  setTimeout(function() { el.remove(); }, 2500);
+                }
+              })();
+            `,
+          }}
+        />
         {children}
         <Toaster />
         <SpeedInsights />
